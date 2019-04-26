@@ -24,7 +24,7 @@ class Inhibition(nn.Module):
         )
 
         # apply gaussian
-        self.convolver.weight.data = gaussian_tensor.create_distributed_tensor(scope, std=1.0)
+        self.convolver.weight.data = gaussian_tensor.create_mexican_hat(scope, std_1=1, std_2=2)
         self.convolver.weight.data = self.convolver.weight.data.view(1, 1, -1, 1, 1)
 
     def forward(self, activations: torch.Tensor):
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     tensor_in = torch.ones([1, 1, 6, 5, 5], dtype=torch.float32)
     for i in range(6):
         tensor_in[:, :, i, :, :] *= i
-    inhibitor = Inhibition(5, padding="cycle")
+    inhibitor = Inhibition(10, padding="cycle")
 
     tensor_out = inhibitor(tensor_in).squeeze_().squeeze_()
     pprint(tensor_out)

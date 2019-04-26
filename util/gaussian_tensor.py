@@ -17,5 +17,5 @@ def create_distributed_tensor(num_filters, std):
 
 
 def create_mexican_hat(num_filters, std_1, std_2):
-    return (create_distributed_tensor(num_filters, std_1) - create_distributed_tensor(num_filters, std_2))*(-1)
+    return (create_distributed_tensor(num_filters, std_1) - create_distributed_tensor(num_filters, std_2))
 
