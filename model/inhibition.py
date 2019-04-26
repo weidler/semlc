@@ -24,7 +24,7 @@ class Inhibition(nn.Module):
         )
 
         # apply gaussian
-        self.convolver.weight.data = gaussian_tensor.create_distributed_tensor(scope, std=1.0)
+        self.convolver.weight.data = gaussian_tensor.create_mexican_hat(scope, std=1.0)
         self.convolver.weight.data = self.convolver.weight.data.view(1, 1, -1, 1, 1)
 
     def forward(self, activations: torch.Tensor):
