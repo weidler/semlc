@@ -14,5 +14,3 @@ def create_mexican_hat(num_filters, std):
     window = signal.ricker(num_filters, std)
     distr_tensor = torch.Tensor([[window]])
     return distr_tensor
-
-
