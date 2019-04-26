@@ -14,3 +14,8 @@ def create_distributed_tensor(num_filters, std):
     window = signal.gaussian(num_filters, std=std)
     distr_tensor = torch.Tensor([[window]])
     return distr_tensor
+
+
+def create_mexican_hat(num_filters, std_1, std_2):
+    return (create_distributed_tensor(num_filters, std_1) - create_distributed_tensor(num_filters, std_2))*(-1)
+
