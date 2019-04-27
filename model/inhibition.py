@@ -6,7 +6,7 @@ from util import gaussian_tensor
 
 class Inhibition(nn.Module):
 
-    def __init__(self, scope: int, padding="zeros"):
+    def __init__(self, scope: int, padding: str="zeros", learn_weights=False):
         super().__init__()
 
         assert padding in ["zeros", "cycle"]
@@ -24,8 +24,13 @@ class Inhibition(nn.Module):
         )
 
         # apply gaussian
-        self.convolver.weight.data = gaussian_tensor.create_mexican_hat(scope, std_1=1, std_2=2)
+        self.convolver.weight.data = gaussian_tensor.create_mexican_hat(scope, std=2)
         self.convolver.weight.data = self.convolver.weight.data.view(1, 1, -1, 1, 1)
+
+        # freeze weights if desired to retain initialized structure
+        if not learn_weights:
+            for param in self.convolver.parameters():
+                print(param.requires_grad)
 
     def forward(self, activations: torch.Tensor):
         if self.padding_strategy == "cycle":
@@ -40,10 +45,11 @@ class Inhibition(nn.Module):
 if __name__ == "__main__":
     from pprint import pprint
 
-    tensor_in = torch.ones([1, 1, 6, 5, 5], dtype=torch.float32)
-    for i in range(6):
+    scope = 15
+    tensor_in = torch.ones([1, 1, scope, 5, 5], dtype=torch.float32)
+    for i in range(scope):
         tensor_in[:, :, i, :, :] *= i
-    inhibitor = Inhibition(10, padding="cycle")
+    inhibitor = Inhibition(scope, padding="cycle")
 
     tensor_out = inhibitor(tensor_in).squeeze_().squeeze_()
     pprint(tensor_out)
