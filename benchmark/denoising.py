@@ -6,58 +6,9 @@ import torch
 import torchvision
 from torch import nn, optim
 
+from model.network.benchmark import BaseDenoisingCNN
 from transforms.noise import GaussianNoise
 from util import cifar
-
-
-class ConvolutionalEncoder(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-
-        self.conv = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=5),
-            nn.ReLU(True),
-            nn.Conv2d(16, 32, kernel_size=5),
-            nn.ReLU(True)
-        )
-
-    def forward(self, sample):
-        return self.conv(sample)
-
-
-class ConvolutionalDecoder(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-
-        self.conv = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, kernel_size=5),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(16, 3, kernel_size=5),
-            nn.Sigmoid()
-        )
-
-    def forward(self, sample):
-        out = self.conv(sample)
-
-        return out
-
-
-class DenoisingCNN(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-
-        self.encoder = ConvolutionalEncoder()
-        self.decoder = ConvolutionalDecoder()
-
-    def forward(self, image_tensor):
-        encoding = self.encoder(image_tensor)
-        decoding = self.decoder(encoding)
-
-        return decoding
-
 
 if __name__ == "__main__":
     torch.random.manual_seed(1000)
@@ -88,7 +39,7 @@ if __name__ == "__main__":
 
     label_names = cifar.unpickle("../data/cifar10/cifar-10-batches-py/batches.meta")[b"label_names"]
 
-    autoencoder = DenoisingCNN()
+    autoencoder = BaseDenoisingCNN()
     optimizer = optim.SGD(autoencoder.parameters(), lr=0.01)
     criterion = nn.MSELoss()
 
