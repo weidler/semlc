@@ -32,7 +32,12 @@ class Inhibition(nn.Module):
             for param in self.convolver.parameters():
                 print(param.requires_grad)
 
-    def forward(self, activations: torch.Tensor):
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # catch weird scope-input-combinations; TODO do we really want this?
+        if activations.shape[2] < self.scope:
+            raise RuntimeError("Inhibition not possible. "
+                               "Given activation has less filters than the Inhibitor's scope.")
+
         if self.padding_strategy == "cycle":
             activations = torch.cat((
                 activations[:, :, -self.scope // 2 + 1:, :, :],
@@ -46,10 +51,10 @@ if __name__ == "__main__":
     from pprint import pprint
 
     scope = 15
-    tensor_in = torch.ones([1, 1, scope, 5, 5], dtype=torch.float32)
-    for i in range(scope):
+    tensor_in = torch.ones([1, 1, scope//2, 5, 5], dtype=torch.float32)
+    for i in range(tensor_in.shape[2]):
         tensor_in[:, :, i, :, :] *= i
-    inhibitor = Inhibition(scope, padding="cycle")
+    inhibitor = Inhibition(scope, padding="zeros")
 
     tensor_out = inhibitor(tensor_in).squeeze_().squeeze_()
     pprint(tensor_out)
