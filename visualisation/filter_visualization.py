@@ -22,7 +22,6 @@ class FilterVisualization:
         # Define optimizer for the image
         optimizer = Adam([processed_image], lr=0.1, weight_decay=1e-6)
         num_filters = selected_layer.out_channels
-        print(num_filters)
         fig, axs = plt.subplots(num_filters)
         for selected_filter in range(num_filters):
             for i in range(1, steps+1):
@@ -31,7 +30,6 @@ class FilterVisualization:
                 x = processed_image
                 for index, layer in enumerate(self.layers):
                     x = layer(x)
-                    print(index, layer)
                     if index == num_layer:
                         break
                 # Loss function is the mean of the output of the selected layer/filter
