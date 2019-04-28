@@ -55,7 +55,7 @@ class CNNLayerVisualization():
         # Hook the selected layer
         self.hook_layer()
         # Generate a random image
-        random_image = np.uint8(np.random.uniform(150, 180, (224, 224, 3)))
+        random_image = np.uint8(np.random.uniform(150, 180, (3, 3, 3)))
         # Process image and return variable
         processed_image = preprocess_image(random_image, False)
         # Define optimizer for the image
@@ -83,12 +83,13 @@ class CNNLayerVisualization():
             optimizer.step()
             # Recreate image
             self.created_image = recreate_image(processed_image)
-            plt.imshow(self.created_image)
-            plt.show()
+            if i == 30:
+                plt.imshow(self.created_image)
+                plt.show()
             # Save image
-            if i % 5 == 0:
-                im_path = '../generated/layer_vis_l' + str(self.selected_layer) +                     '_f' + str(self.selected_filter) + '_iter' + str(i) + '.jpg'
-                save_image(self.created_image, im_path)
+            # i % 5 == 0:
+                #im_path = '../generated/layer_vis_l' + str(self.selected_layer) +                     '_f' + str(self.selected_filter) + '_iter' + str(i) + '.jpg'
+                #save_image(self.created_image, im_path)
 
     def visualise_layer_without_hooks(self):
         # Process image and return variable
@@ -125,7 +126,8 @@ class CNNLayerVisualization():
             optimizer.step()
             # Recreate image
             self.created_image = recreate_image(processed_image)
-            plt.imshow(self.created_image)
+            if i == 31:
+                plt.imshow(self.created_image)
             
             # Save image
             if i % 5 == 0:
@@ -134,17 +136,4 @@ class CNNLayerVisualization():
 
 
 # In[55]:
-
-
-cnn_layer = 17
-filter_pos = 5
-# Fully connected layer is not needed
-pretrained_model = models.vgg16(pretrained=True).features
-layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos)
-
-# Layer visualization with pytorch hooks
-layer_vis.visualise_layer_with_hooks()
-
-# Layer visualization without pytorch hooks
-# layer_vis.visualise_layer_without_hooks()
 
