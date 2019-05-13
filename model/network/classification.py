@@ -1,7 +1,7 @@
 from torch import nn as nn, nn
 
 from model.inhibition_module import InhibitionModule
-from model.layer import Inhibition, RecurrentInhibition
+from model.inhibition_layer import Inhibition, RecurrentInhibition
 
 
 class InhibitionClassificationCNN(nn.Module, InhibitionModule):
