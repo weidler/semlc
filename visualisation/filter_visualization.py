@@ -1,7 +1,7 @@
 import torch
 from torch.optim import Adam
 
-from model.network.inhibition import InhibitionClassificationCNN
+from model.network.classification import InhibitionClassificationCNN
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt

@@ -7,9 +7,9 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.benchmark import BaseClassificationCNN
-from model.network.inhibition import InhibitionClassificationCNN
-from training.train import train, accuracy
+from model.network.classification import InhibitionClassificationCNN, BaseClassificationCNN
+from training.train import train
+from training.evaluation import accuracy
 
 torch.random.manual_seed(12311)
 numpy.random.seed(12311)

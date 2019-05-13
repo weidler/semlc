@@ -1,10 +1,10 @@
 import torch
-import torch.nn.functional as F
 
 from torch import nn
 
 
 # DENOISING
+from model.network.classification import BaseClassificationCNN
 
 
 class ConvolutionalEncoder(nn.Module):
@@ -54,40 +54,3 @@ class BaseDenoisingCNN(nn.Module):
         decoding = self.decoder(encoding)
 
         return decoding
-
-
-# CLASSIFICATION
-
-
-class BaseClassificationCNN(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 6, 5),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(6, 16, 5),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
-        )
-
-        self.classifier = nn.Sequential(
-            nn.Linear(16 * 5 * 5, 120),
-            nn.ReLU(inplace=True),
-            nn.Linear(120, 84),
-            nn.ReLU(inplace=True),
-            nn.Linear(84, 10)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = x.view(-1, 16 * 5 * 5)
-        x = self.classifier(x)
-
-        return x
-
-
-if __name__ == "__main__":
-    net = BaseClassificationCNN()
-    net(torch.ones([1, 3, 32, 32]))

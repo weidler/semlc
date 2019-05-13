@@ -1,9 +1,7 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn as nn, nn
 
-from model.layer import Inhibition, RecurrentInhibition
 from model.inhibition_module import InhibitionModule
+from model.layer import Inhibition, RecurrentInhibition
 
 
 class InhibitionClassificationCNN(nn.Module, InhibitionModule):
@@ -43,6 +41,30 @@ class InhibitionClassificationCNN(nn.Module, InhibitionModule):
         return self.layers
 
 
-if __name__ == "__main__":
-    net = InhibitionClassificationCNN()
-    net(torch.ones([1, 3, 32, 32]))
+class BaseClassificationCNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 6, 5),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(6, 16, 5),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(16 * 5 * 5, 120),
+            nn.ReLU(inplace=True),
+            nn.Linear(120, 84),
+            nn.ReLU(inplace=True),
+            nn.Linear(84, 10)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(-1, 16 * 5 * 5)
+        x = self.classifier(x)
+
+        return x
