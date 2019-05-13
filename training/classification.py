@@ -5,7 +5,7 @@ import torch
 
 import torchvision
 from torch import nn
-from torchvision.transforms import ToTensor, transforms
+from torchvision import transforms
 
 from model.network.benchmark import BaseClassificationCNN
 from model.network.inhibition import InhibitionClassificationCNN
@@ -21,10 +21,10 @@ train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, downloa
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
 baseline_network = BaseClassificationCNN()
-inhibition_network = InhibitionClassificationCNN()
+inhibition_network = InhibitionClassificationCNN(learn_inhibition_weights=True)
 recurrent_inhibition_network = InhibitionClassificationCNN(inhibition_strategy="recurrent")
 
-network = baseline_network
+network = inhibition_network
 
 train(net=network,
       num_epoch=3,
