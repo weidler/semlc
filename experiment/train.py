@@ -2,7 +2,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 
-def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, check_loss=1000):
+def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, check_loss=1000, logger=None):
     train_loader = DataLoader(train_set, batch_size=batch_size,
                               shuffle=True, num_workers=2)
     # Adam optimizer by default
@@ -27,7 +27,12 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, che
             if i % check_loss == check_loss - 1:
                 print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / check_loss))
                 loss_history.append(running_loss / check_loss)
+                if logger is not None:
+                    logger.update(running_loss / check_loss, epoch)
                 running_loss = 0.0
+
+        if epoch % 5 == 0 or epoch == num_epoch - 1:
+            logger.save_model(epoch)
 
         print('Finished Training')
 
