@@ -12,7 +12,7 @@ from model.network.classification import InhibitionClassificationCNN, BaseClassi
 from experiment.train import train
 from experiment.eval import accuracy
 
-from util.logging import Logger
+from util.ourlogging import Logger
 
 torch.random.manual_seed(12311)
 numpy.random.seed(12311)

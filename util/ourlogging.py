@@ -9,8 +9,8 @@ class Logger:
 
     def __init__(self, model: nn.Module):
         self.model = model
-        self.loss_filename = f"../results/{model.__class__.__name__}.loss"
-        self.model_filename = f"../saved_models/{model.__class__.__name__}_n.model"
+        self.loss_filename = f"../results/{model.__class__.__name__}_{model.inhibition_strategy}.loss"
+        self.model_filename = f"../saved_models/{model.__class__.__name__}_{model.inhibition_strategy}_n.model"
 
         self.loss_history = []
 
