@@ -13,7 +13,7 @@ def visualize_filters(filters: List[Tensor]):
     :param rows: number of rows in plot
     :param cols: number of cols in plot
     """
-    rows, cols = get_factors_for_plot(len(filters))
+    rows, cols = get_dim_for_plot(len(filters))
     fig, axs = plt.subplots(rows, cols)
     f = 0
     for row in range(rows):
@@ -33,7 +33,7 @@ def plot_unsorted_and_sorted_filters(filters: List[Tensor], sorted_filters: List
     :param rows: number of rows in plot
     :param cols: number of cols in plot
     """
-    rows, cols = get_factors_for_plot(len(filters))
+    rows, cols = get_dim_for_plot(len(filters))
     fig, axs = plt.subplots(rows, cols)
     fig.suptitle('unsorted')
     fig2, axs2 = plt.subplots(rows, cols)
@@ -64,10 +64,9 @@ def show_ordering_difference(filters: List[Tensor], sorted_filters: List[Tensor]
                 print(i + 1, j + 1)
 
 
-def get_factors_for_plot(n):
+def get_dim_for_plot(n):
     """
-    returns the "best" factors for plotting filters, e.g. n = 6 returns 2*3 and 16 returns 4*4
-    (does not work well for prime numbers)
+    returns the "best" dimension for plotting filters, e.g. n = 6 returns 2,3 and 16 returns 4,4
     :param n: the number of filters
     :return: a tuple of rows and cols for the plot
     """
@@ -80,6 +79,8 @@ def get_factors_for_plot(n):
             solution = True
         else:
             val -= 1
+    if val == 1:
+        return get_dim_for_plot(n+1)
     if val <= val2:
         return val, val2
     else:
