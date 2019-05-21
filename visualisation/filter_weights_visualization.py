@@ -6,13 +6,14 @@ from torch import Tensor
 from model.network.classification import InhibitionClassificationCNN
 
 
-def visualize_filters(filters: List[Tensor], rows: int, cols: int):
+def visualize_filters(filters: List[Tensor]):
     """
     visualizes the given filters, rows * cols must be >= number of filters
     :param filters: the filters
     :param rows: number of rows in plot
     :param cols: number of cols in plot
     """
+    rows, cols = get_factors_for_plot(len(filters))
     fig, axs = plt.subplots(rows, cols)
     f = 0
     for row in range(rows):
@@ -24,7 +25,7 @@ def visualize_filters(filters: List[Tensor], rows: int, cols: int):
     plt.show()
 
 
-def plot_unsorted_and_sorted_filters(filters: List[Tensor], sorted_filters: List[Tensor], rows: int, cols: int):
+def plot_unsorted_and_sorted_filters(filters: List[Tensor], sorted_filters: List[Tensor]):
     """
     visualizes the given filters, rows * cols must be >= number of filters
     :param filters: the filters
@@ -32,6 +33,7 @@ def plot_unsorted_and_sorted_filters(filters: List[Tensor], sorted_filters: List
     :param rows: number of rows in plot
     :param cols: number of cols in plot
     """
+    rows, cols = get_factors_for_plot(len(filters))
     fig, axs = plt.subplots(rows, cols)
     fig.suptitle('unsorted')
     fig2, axs2 = plt.subplots(rows, cols)
@@ -62,10 +64,33 @@ def show_ordering_difference(filters: List[Tensor], sorted_filters: List[Tensor]
                 print(i + 1, j + 1)
 
 
+def get_factors_for_plot(n):
+    """
+    returns the "best" factors for plotting filters, e.g. n = 6 returns 2*3 and 16 returns 4*4
+    (does not work well for prime numbers)
+    :param n: the number of filters
+    :return: a tuple of rows and cols for the plot
+    """
+    nsqrt = np.math.ceil(np.math.sqrt(n))
+    solution = False
+    val = nsqrt
+    while not solution:
+        val2 = int(n/val)
+        if val2 * val == float(n):
+            solution = True
+        else:
+            val -= 1
+    if val <= val2:
+        return val, val2
+    else:
+        return val2, val
+
+
 if __name__ == "__main__":
     # how to use
     model = InhibitionClassificationCNN()
-    show_ordering_difference(model.get_filters_from_layer(0), model.sort_filters_in_layer(0))
-    #visualize_filters(model.sort_filters_in_layer(0), 2, 3)
-    plot_unsorted_and_sorted_filters(model.features[0].weight.data.numpy(), model.sort_filters_in_layer(0), 2, 3)
+    #show_ordering_difference(model.get_filters_from_layer(0), model.sort_filters_in_layer(0))
+    #visualize_filters(model.sort_filters_in_layer(0))
+    plot_unsorted_and_sorted_filters(model.get_filters_from_layer(0), model.sort_filters_in_layer(0))
+
 
