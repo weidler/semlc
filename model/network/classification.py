@@ -38,9 +38,6 @@ class InhibitionClassificationCNN(nn.Module, InhibitionModule):
 
         return x
 
-    def get_layers_for_visualization(self):
-        return self.layers
-
 
 class BaseClassificationCNN(nn.Module):
     def __init__(self):
