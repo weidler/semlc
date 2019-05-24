@@ -6,13 +6,20 @@
 <body>
 <h2>Modeling Lateral Inhibition in Convolutional Neural Networks</h2>
 <p style="margin-bottom: 5px;">
-    Students: Quinton Denman, Julian Lehnen, Dávid Sebők , Tonio Weidler;
-    Supervisors: Mario Senden, Gerhard Weiss, Kurt Driessens;
-    Semester: 2019;
+    Students: Quinton Denman, Julian Lehnen, Dávid Sebők and Tonio Weidler<br>
+    Supervisors: Mario Senden, Gerhard Weiss, Kurt Driessens<br>
+    Semester: 2019
 </p>
+<!--<table style="width: 100%">
+    <tr>
+        <td style="float: left">Students: Quinton Denman, Julian Lehnen, Dávid Sebők and Tonio Weidler</td>
+        <td>Supervisors: Mario Senden, Gerhard Weiss, Kurt Driessens</td>
+        <td style="float: right">Semester: 2019</td>
+    </tr>
+</table>-->
 
 <figure style="float: left; width: min-content; height: min-content;">
-    <img alt="" src="2019_Lehnen_img_1.png" style="width: 400px; height: 570px;">
+    <img alt="" src="2019_Lehnen_img_1.png">
     <figcaption>Fig 1. - Column B receives a strong excitation and inhibits the activity of columns A and C.
     </figcaption>
 </figure>
@@ -29,7 +36,8 @@
     the nodes in the next hidden layer and those nodes in the hidden layer influence the nodes in the output layer. This
     forms a network of connected nodes which (crudely) approximates the network of connected neurons present in the
     human brain. A CNN has a similar structure but contains at least one layer where the process of <i>convolution</i>
-    is performed. Such layers employ so called <i>filters</i> that learn to respond to specific features within an image,
+    is performed. Such layers employ so called <i>filters</i> that learn to respond to specific features within an
+    image,
     for example lines at different angles.
 </p>
 <p align="justify">
@@ -41,7 +49,8 @@
 </p>
 <p align="justify">
     The specific concept we will be trying to replicate is called <b>Lateral Inhibition</b>. The brain has billions of
-    neurons (brain cells) grouped into sectors with each sector handling different tasks. All the neurons responsible for
+    neurons (brain cells) grouped into sectors with each sector handling different tasks. All the neurons responsible
+    for
     handling visual input are located in one section of the brain, called the visual cortex, and were found to be
     arranged into six so called areas. In the first area, the primary visual cortex, neurons are organized in a series
     of columns. Some of these columns are responsible for identifying and processing different orientations of a line
@@ -77,6 +86,16 @@
     our third approach we therefore attempt to mathematically determine the state of the neurons at the point at which
     they stabilize and then calculate this in one step.
 </p>
+
+<figure style="float: left; width: min-content; height: min-content;">
+    <img alt="" src="2019_Lehnen_img_2.png">
+    <figcaption>Fig 2. - Visualization of the inhibition process as implemented in our first and second approach. On the
+        left is a compact representation where the self-referring arrow represents an arbitrary number of application of
+        the inhibition. Hence, a single inhibition refers to approach one, while any additional repetitions result in
+        approach two. On the right, the process is clarified by unfolding the loop. For the third approach, no
+        repetitions are needed, but the way inhibition is applied changes.
+    </figcaption>
+</figure>
 
 <h4>Research questions:</h4>
 <ul>
