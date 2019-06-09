@@ -1,5 +1,7 @@
 #!/usr/bin/env zsh
-### DO NOT RUN YET, WORK IN PROGRESS
+### run with $ sbatch test.sh
+### monitor with $ sacct
+### cancel with $ scancel <jobid>
 
 ### Job name
 #SBATCH --job-name=TESTJOB
@@ -22,4 +24,4 @@
 ### Change to working directory
 cd ../experiment
 
-python classification.py
+python test.py
