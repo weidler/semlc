@@ -8,6 +8,7 @@ from matplotlib.axes import Axes
 from torch import nn
 
 from util import weight_initialization
+from util.complex import div_complex
 
 
 class Inhibition(nn.Module):
@@ -168,15 +169,43 @@ class RecurrentInhibition(nn.Module):
         plt.pause(0.001)
 
 
-if __name__ == "__main__":
+class ConvergedInhibition(nn.Module):
+    """Inhibition layer using the single operation convergence point strategy.
 
+    Input shape:
+        N x C x H x W
+        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
+    """
+    def __init__(self, scope: int):
+        super().__init__()
+        self.scope = scope
+
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=2)
+
+        # kronecker delta with mass at i=0 is identity to convolution
+        self.kronecker_delta = torch.zeros(scope).index_fill(0, torch.tensor([0]), 1)
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        fourier_activations = torch.rfft(activations, 1, onesided=False)
+        fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
+
+        out = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
+
+        return out
+
+if __name__ == "__main__":
+    import sys
+
+    print(sys.version)
     scope = 7
     tensor_in = torch.ones([1, 7, 14, 14], dtype=torch.float32)
     for i in range(tensor_in.shape[1]):
         tensor_in[:, i, :, :] *= random.randint(1, tensor_in.shape[1])
     # inhibitor = Inhibition(6, padding="zeros")
     inhibitor_rec = RecurrentInhibition(scope, padding="zeros")
+    inhibitor_conv = ConvergedInhibition(scope)
 
-    for i in range(100):
-        # tensor_out = inhibitor(tensor_in)
-        tensor_out_rec = inhibitor_rec(tensor_in, plot_convergence=True)
+    # tensor_out_rec = inhibitor_rec(tensor_in, plot_convergence=True)
+    tensor_out_conv = inhibitor_conv(tensor_in)
+
+    plt.plot(tensor_out_conv.numpy())

@@ -41,24 +41,29 @@ def div_complex_vectorized(numerator: torch.Tensor, denominator: torch.Tensor):
 
 
 def div_complex(numerator: torch.Tensor, denominator: torch.Tensor):
-    """Optimized vectorized complex tensor division."""
-    assert numerator.shape[0] == denominator.shape[0]
-    assert numerator.shape[1] == 2 and denominator.shape[1] == 2
+    """Optimized vectorized complex tensor division.
 
-    denominator_real = denominator[:, 0] ** 2 + (-denominator[:, 1]) ** 2
-    numerator_real = (numerator[:, 0] * denominator[:, 0]) - (numerator[:, 1] * (-denominator[:, 1]))
-    numerator_complex = (numerator[:, 0] * (-denominator[:, 1])) + (numerator[:, 1] * denominator[:, 0])
+    Shape of denominator and numerator must match. Input shape: N x C x H x W."""
+    # assert numerator.shape[-2] == denominator.shape[-2]
+    assert numerator.shape[-1] == 2 and denominator.shape[-1] == 2
 
-    return torch.stack((numerator_real/denominator_real, numerator_complex/denominator_real), dim=1)
+    denominator_real = denominator[:, :, :, :, 0] ** 2 + (-denominator[:, :, :, :, 1]) ** 2
+    numerator_real = (numerator[:, :, :, :, 0] * denominator[:, :, :, :, 0]) - (numerator[:, :, :, :, 1] * (-denominator[:, :, :, :, 1]))
+    numerator_complex = (numerator[:, :, :, :, 0] * (-denominator[:, :, :, :, 1])) + (numerator[:, :, :, :, 1] * denominator[:, :, :, :, 0])
+
+    return torch.stack((numerator_real/denominator_real, numerator_complex/denominator_real), dim=-1)
 
 
 if __name__ == "__main__":
+    # sanity check
+    t = torch.randn((14, 14, 100, 2))
+
     # benchmarking
     a = torch.randn((100, 2))
     b = torch.randn((100, 2))
 
     for method in [div_complex_iterative, div_complex_vectorized, div_complex]:
         start = time.time()
-        for i in range(1000):
+        for i in range(100):
             method(a, b)
         print(f"{method.__name__}: {round(time.time() - start, 2)}s")

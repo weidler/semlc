@@ -8,7 +8,7 @@ with open("../results/BaseClassificationCNN.loss", "r") as f:
 with open("../results/InhibitionClassificationCNN.loss", "r") as f:
     single_loss = [float(t.split("    ")[1]) for t in f.readlines()]
 
-with open("../results/RecInhibitionClassificationCNN.loss", "r") as f:
+with open("../results/RecInhibitionClassificationCNNmy um.loss", "r") as f:
     rec_loss = [float(t.split("\t")[1]) for t in f.readlines()]
 
 base_loss = [statistics.mean(base_loss[i-2:i+1]) for i in range(2, len(base_loss), 3)]
