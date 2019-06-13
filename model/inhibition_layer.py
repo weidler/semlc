@@ -1,5 +1,4 @@
 import math
-import random
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -9,7 +8,7 @@ from torch import nn
 
 from util import weight_initialization
 from util.complex import div_complex
-
+from util.linalg import toeplitz1D
 
 
 class Inhibition(nn.Module):
@@ -171,12 +170,14 @@ class RecurrentInhibition(nn.Module):
 
 
 class ConvergedInhibition(nn.Module):
-    """Inhibition layer using the single operation convergence point strategy.
+    """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
+    using deconvolution in the frequency domain with fourier transforms.
 
     Input shape:
         N x C x H x W
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
+
     def __init__(self, scope: int):
         super().__init__()
         self.scope = scope
@@ -207,40 +208,37 @@ class ConvergedInhibition(nn.Module):
 
 
 class ConvergedToeplitzInhibition(nn.Module):
-    """Inhibition layer using the single operation convergence point strategy.
+    """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
+    using the inverse of a Toeplitz matrix.
 
     Input shape:
         N x C x H x W
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
+
     def __init__(self, scope: int):
         super().__init__()
         self.scope = scope
 
         # inhibition filter
         self.inhibition_filter = weight_initialization.mexican_hat(scope, std=2)
-        self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
-
-        # kronecker delta with mass at i=0 is identity to convolution
-        self.kronecker_delta = torch.zeros(scope).index_fill(0, torch.tensor([0]), 1)
-        self.kronecker_delta = self.kronecker_delta.view((1, 1, 1, -1))
+        self.cutoff = math.floor(scope/2)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        # bring the dimension that needs to be fourier transformed to the end
-        activations = activations.permute((0, 2, 3, 1))
+        # construct filter toeplitz
+        m = activations.shape[1]
 
-        # fourier transform
-        fourier_activations = torch.rfft(activations, 1, onesided=False)
-        fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
+        tpl = toeplitz1D(self.inhibition_filter.squeeze(), m)[:, self.cutoff:-self.cutoff]
+        tpl_inv = (torch.eye(m, m) - tpl).inverse()
 
-        # divide in frequency domain, then bring back to time domain
-        inhibited_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
+        # stack activation depth-columns for depth-wise convolution with tpl_inv
+        stacked_activations = activations.view(-1, m)
 
-        # restore original shape
-        inhibited_tensor = inhibited_tensor.permute((0, 3, 1, 2))
+        # convolve by multiplying with tpl
+        convoluted = torch.matmul(stacked_activations, tpl_inv)
 
-        return inhibited_tensor
-
+        # recover original shape
+        return convoluted.view(activations.shape)
 
 if __name__ == "__main__":
     from scipy.signal import gaussian
@@ -254,15 +252,17 @@ if __name__ == "__main__":
     inhibitor = Inhibition(scope, padding="zeros")
     inhibitor_rec = RecurrentInhibition(scope, padding="zeros")
     inhibitor_conv = ConvergedInhibition(scope)
+    inhibitor_tpl = ConvergedToeplitzInhibition(scope)
 
     tensor_out = inhibitor(tensor_in)
     tensor_out_rec = inhibitor_rec(tensor_in)
     tensor_out_conv = inhibitor_conv(tensor_in)
+    tensor_out_tpl = inhibitor_tpl(tensor_in)
 
     plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
     plt.plot(tensor_out[0, :, 4, 7].numpy(), label="Single Shot")
     plt.plot(tensor_out_rec[0, :, 4, 7].numpy(), label="Recurrent")
     plt.plot(tensor_out_conv[0, :, 4, 7].numpy(), label="Converged")
+    plt.plot(tensor_out_tpl[0, :, 4, 7].numpy(), label="Converged Toeplitz")
     plt.legend()
     plt.show()
-

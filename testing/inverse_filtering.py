@@ -48,7 +48,7 @@ implement by setting da/dt to 0 and solving for a:
 a = (I - W)^-1 z 
 
 """
-a_2 = np.dot(inv(np.eye(n_points) - W), z)
+a_2 = np.matmul(z, inv(np.eye(n_points) - W))
 
 """
 Scenario 3 (convolution):
