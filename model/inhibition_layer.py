@@ -11,6 +11,7 @@ from util import weight_initialization
 from util.complex import div_complex
 
 
+
 class Inhibition(nn.Module):
     """Nice Inhibition Layer. """
 
@@ -180,32 +181,88 @@ class ConvergedInhibition(nn.Module):
         super().__init__()
         self.scope = scope
 
+        # inhibition filter
         self.inhibition_filter = weight_initialization.mexican_hat(scope, std=2)
+        self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
 
         # kronecker delta with mass at i=0 is identity to convolution
         self.kronecker_delta = torch.zeros(scope).index_fill(0, torch.tensor([0]), 1)
+        self.kronecker_delta = self.kronecker_delta.view((1, 1, 1, -1))
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # bring the dimension that needs to be fourier transformed to the end
+        activations = activations.permute((0, 2, 3, 1))
+
+        # fourier transform
         fourier_activations = torch.rfft(activations, 1, onesided=False)
         fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
 
-        out = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
+        # divide in frequency domain, then bring back to time domain
+        inhibited_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
 
-        return out
+        # restore original shape
+        inhibited_tensor = inhibited_tensor.permute((0, 3, 1, 2))
+
+        return inhibited_tensor
+
+
+class ConvergedToeplitzInhibition(nn.Module):
+    """Inhibition layer using the single operation convergence point strategy.
+
+    Input shape:
+        N x C x H x W
+        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
+    """
+    def __init__(self, scope: int):
+        super().__init__()
+        self.scope = scope
+
+        # inhibition filter
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=2)
+        self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
+
+        # kronecker delta with mass at i=0 is identity to convolution
+        self.kronecker_delta = torch.zeros(scope).index_fill(0, torch.tensor([0]), 1)
+        self.kronecker_delta = self.kronecker_delta.view((1, 1, 1, -1))
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # bring the dimension that needs to be fourier transformed to the end
+        activations = activations.permute((0, 2, 3, 1))
+
+        # fourier transform
+        fourier_activations = torch.rfft(activations, 1, onesided=False)
+        fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
+
+        # divide in frequency domain, then bring back to time domain
+        inhibited_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
+
+        # restore original shape
+        inhibited_tensor = inhibited_tensor.permute((0, 3, 1, 2))
+
+        return inhibited_tensor
+
 
 if __name__ == "__main__":
-    import sys
+    from scipy.signal import gaussian
 
-    print(sys.version)
-    scope = 7
-    tensor_in = torch.ones([1, 7, 14, 14], dtype=torch.float32)
-    for i in range(tensor_in.shape[1]):
-        tensor_in[:, i, :, :] *= random.randint(1, tensor_in.shape[1])
-    # inhibitor = Inhibition(6, padding="zeros")
+    scope = 51
+    tensor_in = torch.zeros((1, scope, 14, 14))
+    for i in range(tensor_in.shape[-1]):
+        for j in range(tensor_in.shape[-2]):
+            tensor_in[0, :, i, j] = torch.from_numpy(gaussian(scope, 4))
+
+    inhibitor = Inhibition(scope, padding="zeros")
     inhibitor_rec = RecurrentInhibition(scope, padding="zeros")
     inhibitor_conv = ConvergedInhibition(scope)
 
-    # tensor_out_rec = inhibitor_rec(tensor_in, plot_convergence=True)
+    tensor_out = inhibitor(tensor_in)
+    tensor_out_rec = inhibitor_rec(tensor_in)
     tensor_out_conv = inhibitor_conv(tensor_in)
 
-    plt.plot(tensor_out_conv.numpy())
+    plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
+    plt.plot(tensor_out[0, :, 4, 7].numpy(), label="Single Shot")
+    plt.plot(tensor_out_rec[0, :, 4, 7].numpy(), label="Recurrent")
+    plt.plot(tensor_out_conv[0, :, 4, 7].numpy(), label="Converged")
+    plt.legend()
+    plt.show()
+

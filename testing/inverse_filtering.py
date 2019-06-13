@@ -12,6 +12,7 @@ import torch
 from scipy.linalg import toeplitz, inv
 from scipy.signal import ricker, gaussian
 
+from util import weight_initialization
 from util.complex import div_complex
 
 n_points = 101
@@ -19,7 +20,8 @@ w_ricker = 7
 w_input = 4
 
 x = np.linspace(-10, 10, 101)
-k = np.roll(ricker(n_points, w_ricker), int(n_points / 2) + 1) * .12  # Ricker kernel
+k = weight_initialization.mexican_hat(n_points, std=w_ricker).numpy() * .12
+#k = np.roll(ricker(n_points, w_ricker), int(n_points / 2) + 1) * .12  # Ricker kernel
 W = toeplitz(k)  # kernel -> Toeplitz
 z = gaussian(n_points, w_input)  # input
 
@@ -31,7 +33,7 @@ recurrent implementation
 """
 
 dt = 1
-n_steps = 500
+n_steps = 5
 
 a_1 = np.zeros(n_points)
 

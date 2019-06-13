@@ -59,8 +59,8 @@ if __name__ == "__main__":
     t = torch.randn((14, 14, 100, 2))
 
     # benchmarking
-    a = torch.randn((100, 2))
-    b = torch.randn((100, 2))
+    a = torch.randn((1000, 2))
+    b = torch.randn((1000, 2))
 
     for method in [div_complex_iterative, div_complex_vectorized, div_complex]:
         start = time.time()
