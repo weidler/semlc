@@ -4,17 +4,18 @@ from typing import List
 import matplotlib.pyplot as plt
 import torch
 from matplotlib.axes import Axes
+from scipy.linalg import toeplitz
 from torch import nn
 
 from util import weight_initialization
 from util.complex import div_complex
-from util.linalg import toeplitz1D
+from util.linalg import toeplitz1d
 
 
 class Inhibition(nn.Module):
     """Nice Inhibition Layer. """
 
-    def __init__(self, scope: int, padding: str = "zeros", learn_weights=False, analyzer=None):
+    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights=False, analyzer=None):
         super().__init__()
 
         assert scope % 2 == 1
@@ -34,7 +35,7 @@ class Inhibition(nn.Module):
         )
 
         # apply gaussian
-        self.convolver.weight.data = weight_initialization.mexican_hat(scope, std=2)
+        self.convolver.weight.data = weight_initialization.mexican_hat(scope, damping=0.12, std=ricker_width)
         self.convolver.weight.data = self.convolver.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure
@@ -74,7 +75,7 @@ class RecurrentInhibition(nn.Module):
     axs_convergence: List[Axes]
     fig_convergence: plt.Figure
 
-    def __init__(self, scope: int, padding: str = "zeros", learn_weights: bool = False, decay: float = 0.05,
+    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights: bool = False, decay: float = 0.05,
                  max_steps: int = 10, convergence_threshold: float = 0.00):
         super().__init__()
 
@@ -97,7 +98,7 @@ class RecurrentInhibition(nn.Module):
         )
 
         # apply gaussian
-        self.W_rec.weight.data = weight_initialization.mexican_hat(scope, std=2)
+        self.W_rec.weight.data = weight_initialization.mexican_hat(scope, std=ricker_width)
         self.W_rec.weight.data = self.W_rec.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure
@@ -178,15 +179,15 @@ class ConvergedInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int):
+    def __init__(self, scope: int, ricker_width: int):
         super().__init__()
         self.scope = scope
 
-        # inhibition filter
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=2)
+        # inhibition filter, focused at i=0
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12).roll(math.ceil(scope / 2))
         self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
 
-        # kronecker delta with mass at i=0 is identity to convolution
+        # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
         self.kronecker_delta = torch.zeros(scope).index_fill(0, torch.tensor([0]), 1)
         self.kronecker_delta = self.kronecker_delta.view((1, 1, 1, -1))
 
@@ -216,53 +217,59 @@ class ConvergedToeplitzInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int):
+    def __init__(self, scope: int, ricker_width: int):
         super().__init__()
         self.scope = scope
 
         # inhibition filter
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=2)
-        self.cutoff = math.floor(scope/2)
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12).roll(math.ceil(scope / 2))
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
         m = activations.shape[1]
-
-        tpl = toeplitz1D(self.inhibition_filter.squeeze(), m)[:, self.cutoff:-self.cutoff]
-        tpl_inv = (torch.eye(m, m) - tpl).inverse()
+        tpl = toeplitz1d(self.inhibition_filter.squeeze(), m)
+        tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
         # stack activation depth-columns for depth-wise convolution with tpl_inv
-        stacked_activations = activations.view(-1, m)
+        stacked_activations = activations.unbind(dim=2)
+        stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
 
         # convolve by multiplying with tpl
-        convoluted = torch.matmul(stacked_activations, tpl_inv)
+        convoluted = stacked_activations.matmul(tpl_inv)
+        convoluted = convoluted.permute((0, 2, 1))
 
         # recover original shape
-        return convoluted.view(activations.shape)
+        return convoluted.view_as(activations)
+
 
 if __name__ == "__main__":
     from scipy.signal import gaussian
 
-    scope = 51
-    tensor_in = torch.zeros((1, scope, 14, 14))
+    scope = 101
+    depth = 101
+    width = 14
+    height = 14
+    wavelet_width = 2
+    tensor_in = torch.zeros((1, depth, width, height))
     for i in range(tensor_in.shape[-1]):
         for j in range(tensor_in.shape[-2]):
-            tensor_in[0, :, i, j] = torch.from_numpy(gaussian(scope, 4))
+            tensor_in[0, :, i, j] = torch.from_numpy(gaussian(depth, 4))
 
-    inhibitor = Inhibition(scope, padding="zeros")
-    inhibitor_rec = RecurrentInhibition(scope, padding="zeros")
-    inhibitor_conv = ConvergedInhibition(scope)
-    inhibitor_tpl = ConvergedToeplitzInhibition(scope)
+    inhibitor = Inhibition(scope, wavelet_width, padding="zeros")
+    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros")
+    inhibitor_conv = ConvergedInhibition(scope, wavelet_width)
+    inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width)
 
     tensor_out = inhibitor(tensor_in)
     tensor_out_rec = inhibitor_rec(tensor_in)
-    tensor_out_conv = inhibitor_conv(tensor_in)
     tensor_out_tpl = inhibitor_tpl(tensor_in)
+    tensor_out_conv = inhibitor_conv(tensor_in)
 
+    plt.clf()
     plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
-    plt.plot(tensor_out[0, :, 4, 7].numpy(), label="Single Shot")
-    plt.plot(tensor_out_rec[0, :, 4, 7].numpy(), label="Recurrent")
-    plt.plot(tensor_out_conv[0, :, 4, 7].numpy(), label="Converged")
-    plt.plot(tensor_out_tpl[0, :, 4, 7].numpy(), label="Converged Toeplitz")
+    # plt.plot(tensor_out[0, :, 4, 7].numpy(), "-.", label="Single Shot")
+    # plt.plot(tensor_out_rec[0, :, 4, 7].numpy(), label="Recurrent")
+    plt.plot(tensor_out_conv[0, :, 4, 7].numpy(), "--", label="Converged")
+    plt.plot(tensor_out_tpl[0, :, 4, 7].numpy(), ":", label="Converged Toeplitz")
     plt.legend()
     plt.show()
