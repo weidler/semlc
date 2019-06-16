@@ -4,13 +4,20 @@ from typing import List
 import matplotlib.pyplot as plt
 import torch
 from matplotlib.axes import Axes
-from scipy.linalg import toeplitz
 from torch import nn
 from torch.nn.functional import pad
 
 from util import weight_initialization
 from util.complex import div_complex
 from util.linalg import toeplitz1d
+
+
+def pad_roll(k, in_channels):
+    pad_left = (in_channels - scope) // 2
+    pad_right = (in_channels - scope) - pad_left
+    k = pad(k, [pad_left, pad_right]).roll(math.floor(in_channels / 2) + 1)
+
+    return k
 
 
 class Inhibition(nn.Module):
@@ -76,7 +83,8 @@ class RecurrentInhibition(nn.Module):
     axs_convergence: List[Axes]
     fig_convergence: plt.Figure
 
-    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights: bool = False, decay: float = 0.05,
+    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights: bool = False,
+                 decay: float = 0.05,
                  max_steps: int = 10, convergence_threshold: float = 0.00):
         super().__init__()
 
@@ -180,28 +188,26 @@ class ConvergedInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int):
+    def __init__(self, scope: int, ricker_width: int, in_channels: int):
         super().__init__()
         self.scope = scope
 
         # inhibition filter, focused at i=0
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12).roll(math.ceil(scope / 2))
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
+        self.inhibition_filter = pad_roll(self.inhibition_filter, in_channels)
         self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
 
         # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
-        self.kronecker_delta = torch.zeros(scope).index_fill(0, torch.tensor([0]), 1)
+        self.kronecker_delta = torch.zeros(in_channels).index_fill(0, torch.tensor([0]), 1)
         self.kronecker_delta = self.kronecker_delta.view((1, 1, 1, -1))
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # bring the dimension that needs to be fourier transformed to the end
-        m = activations.shape[1]
         activations = activations.permute((0, 2, 3, 1))
 
         # fourier transform
         fourier_activations = torch.rfft(activations, 1, onesided=False)
-        pad_left = math.floor((m - self.scope) / 2)
-        pad_right = (m - self.scope) - pad_left
-        fourier_filter = torch.rfft(pad(self.kronecker_delta - self.inhibition_filter, [pad_left, pad_right]), 1, onesided=False)
+        fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
 
         # divide in frequency domain, then bring back to time domain
         inhibited_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
@@ -226,10 +232,8 @@ class ConvergedToeplitzInhibition(nn.Module):
         self.scope = scope
 
         # inhibition filter
-        pad_left = (in_channels - scope) // 2
-        pad_right = (in_channels - scope) - pad_left
         self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
-        self.inhibition_filter = pad(self.inhibition_filter, [pad_left, pad_right]).roll(-math.ceil(in_channels / 2))
+        self.inhibition_filter = pad_roll(self.inhibition_filter, in_channels)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
@@ -253,7 +257,7 @@ if __name__ == "__main__":
     from scipy.signal import gaussian
 
     scope = 91
-    depth = 101
+    depth = 100
     width = 14
     height = 14
     wavelet_width = 7
@@ -264,7 +268,7 @@ if __name__ == "__main__":
 
     inhibitor = Inhibition(scope, wavelet_width, padding="zeros")
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros")
-    inhibitor_conv = ConvergedInhibition(scope, wavelet_width)
+    inhibitor_conv = ConvergedInhibition(scope, wavelet_width, in_channels=depth)
     inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
 
     plt.clf()

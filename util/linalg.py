@@ -47,7 +47,7 @@ def toeplitz1d(k: torch.Tensor, m: int, mode: str="circular") -> torch.Tensor:
         else:
             rows.append(torch.cat((torch.zeros(1, i, dtype=k.dtype), k[:, :n-i]), dim=1))
 
-    return torch.cat(rows, dim=0).t()
+    return torch.cat(rows, dim=0)
 
 
 if __name__ == "__main__":
