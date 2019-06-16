@@ -189,7 +189,7 @@ class ConvergedInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int):
+    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
@@ -197,6 +197,7 @@ class ConvergedInhibition(nn.Module):
         # inhibition filter, focused at i=0
         inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
+        self.inhibition_filter.requires_grad = learn_weights
 
         # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
         self.kronecker_delta = torch.zeros(in_channels).index_fill(0, torch.tensor([0]), 1)
@@ -233,7 +234,7 @@ class ConvergedToeplitzInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int):
+    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
@@ -241,6 +242,7 @@ class ConvergedToeplitzInhibition(nn.Module):
         # inhibition filter
         inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
+        self.inhibition_filter.requires_grad = learn_weights
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # pad roll the filter;
@@ -270,13 +272,14 @@ if __name__ == "__main__":
     depth = 100
     width = 14
     height = 14
-    wavelet_width = 3
+    wavelet_width = 6
 
     tensor_in = torch.zeros((1, depth, width, height))
     for i in range(tensor_in.shape[-1]):
         for j in range(tensor_in.shape[-2]):
             tensor_in[0, :, i, j] = torch.from_numpy(gaussian(depth, 4))
 
+    simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
     inhibitor = Inhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, in_channels=depth)
@@ -301,7 +304,7 @@ if __name__ == "__main__":
     plt.show()
 
     # CHECK AUTO GRAD
-    for test_layer in [inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
+    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
         optimizer = optim.SGD(test_layer.parameters(), 0.01)
         start_time = time.time()
         for i in range(100):
