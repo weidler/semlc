@@ -1,11 +1,13 @@
 import math
+import random
+import time
 from typing import List
 
 import matplotlib.pyplot as plt
 import torch
 from matplotlib.axes import Axes
-from torch import nn
-from torch.nn.functional import pad
+from torch import nn, optim
+from torch.nn.functional import pad, mse_loss
 
 from util import weight_initialization
 from util.complex import div_complex
@@ -13,11 +15,11 @@ from util.linalg import toeplitz1d
 
 
 def pad_roll(k, in_channels):
-    pad_left = (in_channels - scope) // 2
-    pad_right = (in_channels - scope) - pad_left
-    k = pad(k, [pad_left, pad_right]).roll(math.floor(in_channels / 2) + 1)
-
-    return k
+    """Zero-pad around filter, then roll to have center at i=0. Need to use concatenation to keep padding out of
+    auto grad functionality. If torch's pad() function would be used, padding can be adjusted during optimization."""
+    pad_left = torch.zeros((1, 1, (in_channels - scope) // 2), dtype=k.dtype)
+    pad_right = torch.zeros((1, 1, (in_channels - scope) - pad_left.shape[-1]), dtype=k.dtype)
+    return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
 
 
 class Inhibition(nn.Module):
@@ -84,8 +86,7 @@ class RecurrentInhibition(nn.Module):
     fig_convergence: plt.Figure
 
     def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights: bool = False,
-                 decay: float = 0.05,
-                 max_steps: int = 10, convergence_threshold: float = 0.00):
+                 decay: float = 0.05, max_steps: int = 10, convergence_threshold: float = 0.00):
         super().__init__()
 
         assert padding in ["zeros", "cycle"]
@@ -107,7 +108,7 @@ class RecurrentInhibition(nn.Module):
         )
 
         # apply gaussian
-        self.W_rec.weight.data = weight_initialization.mexican_hat(scope, std=ricker_width)
+        self.W_rec.weight.data = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
         self.W_rec.weight.data = self.W_rec.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure
@@ -191,11 +192,11 @@ class ConvergedInhibition(nn.Module):
     def __init__(self, scope: int, ricker_width: int, in_channels: int):
         super().__init__()
         self.scope = scope
+        self.in_channels = in_channels
 
         # inhibition filter, focused at i=0
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
-        self.inhibition_filter = pad_roll(self.inhibition_filter, in_channels)
-        self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
+        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
+        self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
 
         # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
         self.kronecker_delta = torch.zeros(in_channels).index_fill(0, torch.tensor([0]), 1)
@@ -205,9 +206,14 @@ class ConvergedInhibition(nn.Module):
         # bring the dimension that needs to be fourier transformed to the end
         activations = activations.permute((0, 2, 3, 1))
 
+        # pad roll the filter;
+        # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
+        kernel = pad_roll(self.inhibition_filter, self.in_channels)
+        kernel = kernel.view((1, 1, 1, -1))
+
         # fourier transform
         fourier_activations = torch.rfft(activations, 1, onesided=False)
-        fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
+        fourier_filter = torch.rfft(self.kronecker_delta - kernel, 1, onesided=False)
 
         # divide in frequency domain, then bring back to time domain
         inhibited_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
@@ -230,15 +236,19 @@ class ConvergedToeplitzInhibition(nn.Module):
     def __init__(self, scope: int, ricker_width: int, in_channels: int):
         super().__init__()
         self.scope = scope
+        self.in_channels = in_channels
 
         # inhibition filter
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
-        self.inhibition_filter = pad_roll(self.inhibition_filter, in_channels)
+        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
+        self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # pad roll the filter;
+        # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
+        kernel = pad_roll(self.inhibition_filter, self.in_channels)
+
         # construct filter toeplitz
-        m = activations.shape[1]
-        tpl = toeplitz1d(self.inhibition_filter.squeeze(), m)
+        tpl = toeplitz1d(kernel.squeeze(), self.in_channels)
         tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
         # stack activation depth-columns for depth-wise convolution with tpl_inv
@@ -256,18 +266,19 @@ class ConvergedToeplitzInhibition(nn.Module):
 if __name__ == "__main__":
     from scipy.signal import gaussian
 
-    scope = 91
+    scope = 99
     depth = 100
     width = 14
     height = 14
-    wavelet_width = 7
+    wavelet_width = 3
+
     tensor_in = torch.zeros((1, depth, width, height))
     for i in range(tensor_in.shape[-1]):
         for j in range(tensor_in.shape[-2]):
             tensor_in[0, :, i, j] = torch.from_numpy(gaussian(depth, 4))
 
-    inhibitor = Inhibition(scope, wavelet_width, padding="zeros")
-    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros")
+    inhibitor = Inhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
+    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, in_channels=depth)
     inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
 
@@ -275,16 +286,35 @@ if __name__ == "__main__":
     plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
 
     tensor_out = inhibitor(tensor_in)
-    plt.plot(tensor_out[0, :, 4, 7].numpy(), "-.", label="Single Shot")
+    plt.plot(tensor_out[0, :, 4, 7].detach().numpy(), "-.", label="Single Shot")
 
-    # tensor_out_rec = inhibitor_rec(tensor_in)
-    # plt.plot(tensor_out_rec[0, :, 4, 7].numpy(), label="Recurrent")
+    tensor_out_rec = inhibitor_rec(tensor_in)
+    plt.plot(tensor_out_rec[0, :, 4, 7].detach().numpy(), label="Recurrent")
 
     tensor_out_conv = inhibitor_conv(tensor_in)
-    plt.plot(tensor_out_conv[0, :, 4, 7].numpy(), "--", label="Converged")
+    plt.plot(tensor_out_conv[0, :, 4, 7].detach().numpy(), "--", label="Converged")
 
     tensor_out_tpl = inhibitor_tpl(tensor_in)
-    plt.plot(tensor_out_tpl[0, :, 4, 7].numpy(), ":", label="Converged Toeplitz")
+    plt.plot(tensor_out_tpl[0, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz")
 
     plt.legend()
     plt.show()
+
+    # CHECK AUTO GRAD
+    for test_layer in [inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
+        optimizer = optim.SGD(test_layer.parameters(), 0.01)
+        start_time = time.time()
+        for i in range(100):
+            # print(f"BEFORE: {test_layer.inhibition_filter}")
+            optimizer.zero_grad()
+
+            out = test_layer(tensor_in)
+            target = out * random.random()
+
+            loss = mse_loss(out, target)
+            loss.backward()
+
+            optimizer.step()
+            # print(f"AFTER: {test_layer.inhibition_filter}")
+        print(f"Executed {test_layer.__class__.__name__} in {round(time.time() - start_time, 2)}s")
+
