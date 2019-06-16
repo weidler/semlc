@@ -6,6 +6,7 @@ import torch
 from matplotlib.axes import Axes
 from scipy.linalg import toeplitz
 from torch import nn
+from torch.nn.functional import pad
 
 from util import weight_initialization
 from util.complex import div_complex
@@ -193,11 +194,14 @@ class ConvergedInhibition(nn.Module):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # bring the dimension that needs to be fourier transformed to the end
+        m = activations.shape[1]
         activations = activations.permute((0, 2, 3, 1))
 
         # fourier transform
         fourier_activations = torch.rfft(activations, 1, onesided=False)
-        fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
+        pad_left = math.floor((m - self.scope) / 2)
+        pad_right = (m - self.scope) - pad_left
+        fourier_filter = torch.rfft(pad(self.kronecker_delta - self.inhibition_filter, [pad_left, pad_right]), 1, onesided=False)
 
         # divide in frequency domain, then bring back to time domain
         inhibited_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
@@ -217,12 +221,15 @@ class ConvergedToeplitzInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int):
+    def __init__(self, scope: int, ricker_width: int, in_channels: int):
         super().__init__()
         self.scope = scope
 
         # inhibition filter
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12).roll(math.ceil(scope / 2))
+        pad_left = (in_channels - scope) // 2
+        pad_right = (in_channels - scope) - pad_left
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
+        self.inhibition_filter = pad(self.inhibition_filter, [pad_left, pad_right]).roll(-math.ceil(in_channels / 2))
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
@@ -245,11 +252,11 @@ class ConvergedToeplitzInhibition(nn.Module):
 if __name__ == "__main__":
     from scipy.signal import gaussian
 
-    scope = 101
+    scope = 91
     depth = 101
     width = 14
     height = 14
-    wavelet_width = 2
+    wavelet_width = 7
     tensor_in = torch.zeros((1, depth, width, height))
     for i in range(tensor_in.shape[-1]):
         for j in range(tensor_in.shape[-2]):
@@ -258,18 +265,22 @@ if __name__ == "__main__":
     inhibitor = Inhibition(scope, wavelet_width, padding="zeros")
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros")
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width)
-    inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width)
-
-    tensor_out = inhibitor(tensor_in)
-    tensor_out_rec = inhibitor_rec(tensor_in)
-    tensor_out_tpl = inhibitor_tpl(tensor_in)
-    tensor_out_conv = inhibitor_conv(tensor_in)
+    inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
 
     plt.clf()
     plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
-    # plt.plot(tensor_out[0, :, 4, 7].numpy(), "-.", label="Single Shot")
+
+    tensor_out = inhibitor(tensor_in)
+    plt.plot(tensor_out[0, :, 4, 7].numpy(), "-.", label="Single Shot")
+
+    # tensor_out_rec = inhibitor_rec(tensor_in)
     # plt.plot(tensor_out_rec[0, :, 4, 7].numpy(), label="Recurrent")
+
+    tensor_out_conv = inhibitor_conv(tensor_in)
     plt.plot(tensor_out_conv[0, :, 4, 7].numpy(), "--", label="Converged")
+
+    tensor_out_tpl = inhibitor_tpl(tensor_in)
     plt.plot(tensor_out_tpl[0, :, 4, 7].numpy(), ":", label="Converged Toeplitz")
+
     plt.legend()
     plt.show()
