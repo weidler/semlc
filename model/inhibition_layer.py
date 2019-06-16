@@ -140,7 +140,7 @@ class RecurrentInhibition(nn.Module):
             # Old method which gave training improvement
             # converged_inhibition = (1 - self.decay) * converged_inhibition + self.decay * phi
             # new method
-            converged_inhibition += dt * (-converged_inhibition + phi)
+            converged_inhibition = dt * (-converged_inhibition + phi)
             steps += 1
             step_difference = nn.functional.mse_loss(previous_converged_inhibition, converged_inhibition).item()
             step_differences.append(step_difference)
