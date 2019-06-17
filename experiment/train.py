@@ -1,3 +1,4 @@
+import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
@@ -19,7 +20,10 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, che
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = net(inputs)
+            if torch.cuda.is_available():
+                outputs = net(inputs.cuda())
+            else:
+                outputs = net(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()

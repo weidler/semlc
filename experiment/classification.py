@@ -8,8 +8,9 @@ from torch import nn
 from torchvision import transforms
 
 from model.network.alexnet import AlexNet, SmallAlexNet
+from model.network.alexnet_paper import ConvNet18
 from model.network.classification import InhibitionClassificationCNN, BaseClassificationCNN
-from experiment.train import train
+from experiment.train import train, custom_optimizer_conv18
 from experiment.eval import accuracy
 
 from util.ourlogging import Logger
@@ -37,18 +38,25 @@ test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, downloa
 # baseline_network = BaseClassificationCNN()
 # inhibition_network = InhibitionClassificationCNN(learn_inhibition_weights=True)
 # recurrent_inhibition_network = InhibitionClassificationCNN(inhibition_strategy="recurrent")
-alexnet = SmallAlexNet()
+# alexnet = SmallAlexNet()
+conv18 = ConvNet18()
+# conv11 = ConvNet11()
 
-network = alexnet
+network = conv18
+
+if use_cuda:
+    network.cuda()
+
 logger = Logger(network)
 
 train(net=network,
-      num_epoch=30,
+      num_epoch=10,
       train_set=train_set,
-      batch_size=128,
+      batch_size=16,
       criterion=nn.CrossEntropyLoss(),
       logger=logger,
       check_loss=100,
-      learn_rate=0.001)
+      optimizer=custom_optimizer_conv18(network),
+      learn_rate=0.01)
 
-print(accuracy(network, test_set, 128))
+print(accuracy(network, test_set, 16))

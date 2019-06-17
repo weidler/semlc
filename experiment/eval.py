@@ -10,7 +10,10 @@ def accuracy(net, data_set, batch_size):
     with torch.no_grad():
         for data in data_loader:
             images, labels = data
-            outputs = net(images)
+            if torch.cuda.is_available():
+                outputs = net(images.cuda())
+            else:
+                outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
