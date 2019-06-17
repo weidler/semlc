@@ -127,6 +127,7 @@ class RecurrentInhibition(nn.Module):
 
         # inhibit
         steps = 0
+        dt = 1
         step_difference = math.inf
         step_differences = []
         converged_inhibition: torch.Tensor = activations.clone()
@@ -136,8 +137,10 @@ class RecurrentInhibition(nn.Module):
             phi = activations + inhib_rec
 
             previous_converged_inhibition = converged_inhibition
-            converged_inhibition = (1 - self.decay) * converged_inhibition + self.decay * phi
-
+            # Old method which gave training improvement
+            # converged_inhibition = (1 - self.decay) * converged_inhibition + self.decay * phi
+            # new method
+            converged_inhibition = dt * phi
             steps += 1
             step_difference = nn.functional.mse_loss(previous_converged_inhibition, converged_inhibition).item()
             step_differences.append(step_difference)
