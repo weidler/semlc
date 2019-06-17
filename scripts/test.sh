@@ -4,16 +4,16 @@
 ### cancel with $ scancel <jobid>
 
 ### Job name
-#SBATCH --job-name=TESTJOB
+#SBATCH --job-name=ALEXNET
 
 ### File for the output
-#SBATCH --output=TESTJOB_OUTPUT
+#SBATCH --output=ALEXNET_OUTPUT
 
-### Time your job needs to execute, e. g. 0 min 10 sec
-#SBATCH --time=00:00:10
+### Time your job needs to execute
+#SBATCH --time=03:00:00
 
 ### Memory your job needs per node, e. g. 1G
-#SBATCH --mem=2M
+#SBATCH --mem-per-cpu=2G
 
 ### request gpu
 #SBATCH --gres=gpu:pascal:1
@@ -21,7 +21,7 @@
 ### run as maastricht university dke project group
 #SBATCH --account=um_dke
 
-### Change to working directory
-cd ../experiment
+### Run script
+./setup.sh
 
-python test.py
+
