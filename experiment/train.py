@@ -15,6 +15,11 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, che
     loss_history = []
     for epoch in range(num_epoch):  # loop over the dataset multiple times
         running_loss = 0.0
+
+        if epoch >= 120 and epoch % 10 == 0:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = param_group['lr']*0.1
+
         for i, (inputs, labels) in enumerate(train_loader, 0):
             # zero the parameter gradients
             optimizer.zero_grad()

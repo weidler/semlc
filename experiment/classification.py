@@ -8,7 +8,7 @@ from torch import nn
 from torchvision import transforms
 
 from model.network.alexnet import AlexNet, SmallAlexNet
-from model.network.alexnet_paper import ConvNet18
+from model.network.alexnet_paper import ConvNet18, ConvNet11
 from model.network.classification import InhibitionClassificationCNN, BaseClassificationCNN
 from experiment.train import train, custom_optimizer_conv18
 from experiment.eval import accuracy
@@ -52,11 +52,11 @@ logger = Logger(network)
 train(net=network,
       num_epoch=10,
       train_set=train_set,
-      batch_size=16,
+      batch_size=128,
       criterion=nn.CrossEntropyLoss(),
       logger=logger,
       check_loss=100,
-      optimizer=custom_optimizer_conv18(network),
-      learn_rate=0.01)
+      # optimizer=custom_optimizer_conv18(network)
+      learn_rate=0.001)
 
-print(accuracy(network, test_set, 16))
+print(accuracy(network, test_set, 128))
