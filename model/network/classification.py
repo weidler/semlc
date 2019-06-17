@@ -1,7 +1,7 @@
 from torch import nn as nn, nn
 
 from model.inhibition_module import InhibitionModule
-from model.inhibition_layer import Inhibition, RecurrentInhibition
+from model.inhibition_layer import SingleShotInhibition, RecurrentInhibition
 
 
 class InhibitionClassificationCNN(nn.Module, InhibitionModule):
@@ -14,7 +14,7 @@ class InhibitionClassificationCNN(nn.Module, InhibitionModule):
 
         self.features = nn.Sequential(
             nn.Conv2d(3, 6, 5),
-            Inhibition(5, learn_weights=learn_inhibition_weights) if self.inhibition_strategy == "once"
+            SingleShotInhibition(5, learn_weights=learn_inhibition_weights) if self.inhibition_strategy == "once"
                         else RecurrentInhibition(5, learn_weights=learn_inhibition_weights),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),

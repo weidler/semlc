@@ -1,7 +1,7 @@
 from torch import nn
 #from torchvision.models import AlexNet
 
-from model.inhibition_layer import Inhibition, RecurrentInhibition
+from model.inhibition_layer import SingleShotInhibition, RecurrentInhibition
 
 
 class AlexNetInhibition(nn.Module):
@@ -18,7 +18,7 @@ class AlexNetInhibition(nn.Module):
         self.features.add_module("conv_1", nn.Conv2d(3, 96, kernel_size=11, stride=4, padding=2))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Inhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
                                      else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter+=1
@@ -27,7 +27,7 @@ class AlexNetInhibition(nn.Module):
         self.features.add_module("conv_2", nn.Conv2d(96, 256, kernel_size=5, padding=2))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Inhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
                                      else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1
@@ -36,7 +36,7 @@ class AlexNetInhibition(nn.Module):
         self.features.add_module("conv_3", nn.Conv2d(256, 384, kernel_size=3, padding=1))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Inhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
                                      else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1
@@ -44,7 +44,7 @@ class AlexNetInhibition(nn.Module):
         self.features.add_module("conv_4", nn.Conv2d(384, 384, kernel_size=3, padding=1))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Inhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
                                      else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1
@@ -52,7 +52,7 @@ class AlexNetInhibition(nn.Module):
         self.features.add_module("conv_5", nn.Conv2d(384, 256, kernel_size=3, padding=1))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Inhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
                                      else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1

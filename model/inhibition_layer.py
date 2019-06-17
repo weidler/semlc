@@ -22,10 +22,11 @@ def pad_roll(k, in_channels):
     return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
 
 
-class Inhibition(nn.Module):
+class SingleShotInhibition(nn.Module):
     """Nice Inhibition Layer. """
 
-    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights=False, analyzer=None):
+    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights=False, analyzer=None,
+                 damp: float = 0.12):
         super().__init__()
 
         assert scope % 2 == 1
@@ -33,6 +34,7 @@ class Inhibition(nn.Module):
         self.padding_strategy = padding
         self.scope = scope
         self.analyzer = analyzer
+        self.damp = damp
 
         self.convolver: nn.Conv3d = nn.Conv3d(
             in_channels=1,
@@ -45,7 +47,7 @@ class Inhibition(nn.Module):
         )
 
         # apply gaussian
-        self.convolver.weight.data = weight_initialization.mexican_hat(scope, damping=0.12, std=ricker_width)
+        self.convolver.weight.data = weight_initialization.mexican_hat(scope, damping=damp, std=ricker_width)
         self.convolver.weight.data = self.convolver.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure
@@ -86,7 +88,7 @@ class RecurrentInhibition(nn.Module):
     fig_convergence: plt.Figure
 
     def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights: bool = False,
-                 decay: float = 0.05, max_steps: int = 10, convergence_threshold: float = 0.00):
+                 decay: float = 0.05, max_steps: int = 10, convergence_threshold: float = 0.00, damp: float = 0.12):
         super().__init__()
 
         assert padding in ["zeros", "cycle"]
@@ -95,6 +97,7 @@ class RecurrentInhibition(nn.Module):
         self.padding_strategy = padding
         self.scope = scope
         self.convergence_threshold = convergence_threshold
+        self.damp = damp
 
         # recurrent convolution filter
         self.W_rec: nn.Conv3d = nn.Conv3d(
@@ -108,7 +111,7 @@ class RecurrentInhibition(nn.Module):
         )
 
         # apply gaussian
-        self.W_rec.weight.data = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
+        self.W_rec.weight.data = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
         self.W_rec.weight.data = self.W_rec.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure
@@ -192,13 +195,14 @@ class ConvergedInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True):
+    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True, damp: float = 0.12):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
+        self.damp = damp
 
         # inhibition filter, focused at i=0
-        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
+        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
         self.inhibition_filter.requires_grad = learn_weights
 
@@ -237,13 +241,14 @@ class ConvergedToeplitzInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True):
+    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True, damp: float = 0.12):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
+        self.damp = damp
 
         # inhibition filter
-        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=0.12)
+        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
         self.inhibition_filter.requires_grad = learn_weights
 
@@ -283,7 +288,7 @@ if __name__ == "__main__":
             tensor_in[0, :, i, j] = torch.from_numpy(gaussian(depth, 4))
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-    inhibitor = Inhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
+    inhibitor = SingleShotInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, in_channels=depth)
     inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
