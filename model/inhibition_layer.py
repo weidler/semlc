@@ -119,10 +119,10 @@ class RecurrentInhibition(nn.Module):
             for param in self.W_rec.parameters():
                 param.requires_grad = False
 
-        # figures for visualization
-        self.fig_convergence, self.axs_convergence = plt.subplots(1, 2)
-        self.fig_convergence.set_size_inches(12, 5)
-        self.fig_convergence.suptitle("Convergence of Single Recursive Inhibition Process", )
+        # # figures for visualization
+        # self.fig_convergence, self.axs_convergence = plt.subplots(1, 2)
+        # self.fig_convergence.set_size_inches(12, 5)
+        # self.fig_convergence.suptitle("Convergence of Single Recursive Inhibition Process", )
 
     def forward(self, activations: torch.Tensor, plot_convergence=False) -> torch.Tensor:
         # catch weird scope-input-combinations; TODO do we really want this?
@@ -160,8 +160,8 @@ class RecurrentInhibition(nn.Module):
             step_difference = nn.functional.mse_loss(previous_converged_inhibition, converged_inhibition).item()
             step_differences.append(step_difference)
 
-            if plot_convergence:
-                self._plot_inhibition_convergence(activations, converged_inhibition, step_differences)
+            # if plot_convergence:
+            #     self._plot_inhibition_convergence(activations, converged_inhibition, step_differences)
 
         # return inhibited activations without augmented channel dimension
         return converged_inhibition.squeeze_(dim=1)
