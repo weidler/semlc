@@ -14,7 +14,7 @@ from util.complex import div_complex
 from util.linalg import toeplitz1d
 
 
-def pad_roll(k, in_channels):
+def pad_roll(k, in_channels, scope):
     """Zero-pad around filter, then roll to have center at i=0. Need to use concatenation to keep padding out of
     auto grad functionality. If torch's pad() function would be used, padding can be adjusted during optimization."""
     pad_left = torch.zeros((1, 1, (in_channels - scope) // 2), dtype=k.dtype)
@@ -216,7 +216,7 @@ class ConvergedInhibition(nn.Module):
 
         # pad roll the filter;
         # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
-        kernel = pad_roll(self.inhibition_filter, self.in_channels)
+        kernel = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
         kernel = kernel.view((1, 1, 1, -1))
 
         # fourier transform
@@ -255,7 +255,7 @@ class ConvergedToeplitzInhibition(nn.Module):
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # pad roll the filter;
         # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
-        kernel = pad_roll(self.inhibition_filter, self.in_channels)
+        kernel = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
 
         # construct filter toeplitz
         tpl = toeplitz1d(kernel.squeeze(), self.in_channels)
