@@ -9,9 +9,9 @@ class Logger:
 
     def __init__(self, model: nn.Module):
         self.model = model
-        inhibition_strategy = self.model.inhibition_strategy if hasattr(self.model, 'inhibition_strategy') else ''
-        self.loss_filename = f"../results/{model.__class__.__name__}_{inhibition_strategy}.loss"
-        self.model_filename = f"../saved_models/{model.__class__.__name__}_{inhibition_strategy}_n.model"
+        inhibition_strategy = '_' + self.model.inhibition_strategy if hasattr(self.model, 'inhibition_strategy') else ''
+        self.loss_filename = f"../results/{model.__class__.__name__}{inhibition_strategy}.loss"
+        self.model_filename = f"../saved_models/{model.__class__.__name__}{inhibition_strategy}_n.model"
 
         self.loss_history = []
 

@@ -7,7 +7,7 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, che
                               shuffle=True, num_workers=2)
     # Adam optimizer by default
     # optimizer = optim.Adam(net.parameters(), lr=learn_rate)
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=learn_rate, momentum=0.9, weight_decay=5e-4)
 
     loss_history = []
     for epoch in range(num_epoch):  # loop over the dataset multiple times
@@ -34,6 +34,6 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, che
         if epoch % 5 == 0 or epoch == num_epoch - 1:
             logger.save_model(epoch)
 
-        print('Finished Training')
+        print('Finished Epoch')
 
 
