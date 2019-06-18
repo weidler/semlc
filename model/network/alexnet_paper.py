@@ -7,9 +7,10 @@ from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition
 
 class ConvNet18(nn.Module):
 
-    def __init__(self, scope=[1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
+    def __init__(self, logdir=None, scope=[1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
         counter = 1
+        self.logdir = logdir
         # self.inhibition_strategy = inhibition_strategy
 
         # assert self.inhibition_strategy in ["once", "recurrent"]
@@ -87,9 +88,10 @@ class ConvNet18(nn.Module):
 
 class ConvNet11(nn.Module):
 
-    def __init__(self,  scope=[1,1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
+    def __init__(self, logdir=None, scope=[1,1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
         counter = 1
+        self.logdir = logdir
         # self.inhibition_strategy = inhibition_strategy
 
         # assert self.inhibition_strategy in ["once", "recurrent"]
@@ -162,7 +164,7 @@ class ConvNet11(nn.Module):
             counter+=1
         self.features.add_module("relu_4", self.relu4)
 
-        self.fc = nn.Linear(32 * 7 * 7, 10)
+        self.fc = nn.Linear(32 * 5 * 5, 10)
         torch.nn.init.normal_(self.fc.weight, 0, 0.01)
 
         self.classifier = nn.Sequential(
@@ -172,7 +174,7 @@ class ConvNet11(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), 32 * 7 * 7)
+        x = x.view(x.size(0), 32 * 5 * 5)
         x = self.classifier(x)
 
         return x
