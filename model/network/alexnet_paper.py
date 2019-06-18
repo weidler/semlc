@@ -43,7 +43,6 @@ class ConvNet18(nn.Module):
                                      else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
             counter+=1
         self.features.add_module("pool_1", self.pool1)
-        # activation after pooling is what the paper says
         self.features.add_module("relu_1", self.relu1)
         # self.features.add_module("rnorm_1", rnorm1)
         self.features.add_module("conv_2", self.conv2)
@@ -174,4 +173,4 @@ class ConvNet11(nn.Module):
 
 if __name__ == "__main__":
     net = ConvNet18()
-    print(net.features)
+    print(sum(p.numel() for p in net.parameters()))

@@ -107,6 +107,7 @@ axs[1].set_ylabel("Execution Time")
 axs[0].set_xlabel("Number of Filters")
 axs[1].set_xlabel("Number of Filters")
 
+depth_x.remove(32)
 axs[0].set_xticks(depth_x)
 axs[1].set_xticks(depth_x)
 
