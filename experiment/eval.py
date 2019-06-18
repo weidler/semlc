@@ -1,5 +1,12 @@
+import statistics
+
+import torchvision
+from typing import List, Tuple
+
 import torch
-from torch.utils.data import DataLoader
+from scipy.stats import sem, t
+from torch import nn
+from torch.utils.data import DataLoader, Dataset
 
 
 def accuracy(net, data_set, batch_size):
@@ -19,3 +26,30 @@ def accuracy(net, data_set, batch_size):
             correct += (predicted == labels).sum().item()
 
     return 100 * correct / total
+
+
+def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize: int, confidence: float=0.95) \
+        -> Tuple[List[float], Tuple[float, float]]:
+    """Determine the mean accuracy of a given list of networks, alongside the confidence interval of this mean.
+    This way, for multiple training runs with random initialization of on architecture, the resulting networks can be
+    evaluated for accuracy with more confidence about the true power of the architecture.
+
+    :param networks:        list of network modules
+    :param data:            test data set
+    :param batchsize:       batchsize for testruns
+    :param confidence:      confidence that mean lies in interval, given at range [0, 1]
+
+    :return:                mean accuracy and confidence interval
+    """
+
+    accuracies = []
+    for network in networks:
+        acc = accuracy(network, data, batchsize)
+        accuracies.append(acc)
+
+    mean = statistics.mean(accuracies)
+    error = sem(accuracies)
+    h = error * t.ppf((1 + confidence) / 2., len(accuracies) - 1)
+    interval = (mean - h, mean + h)
+
+    return mean, interval

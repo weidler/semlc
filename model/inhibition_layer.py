@@ -8,6 +8,7 @@ import torch
 from matplotlib.axes import Axes
 from torch import nn, optim
 from torch.nn.functional import pad, mse_loss
+from tqdm import tqdm
 
 from util import weight_initialization
 from util.complex import div_complex
@@ -351,6 +352,14 @@ class ConvergedToeplitzFrozenInhibition(nn.Module):
 if __name__ == "__main__":
     from scipy.signal import gaussian
 
+    # CUDA
+    use_cuda = False
+    if torch.cuda.is_available():
+        use_cuda = True
+        torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    print(f"USE CUDA: {use_cuda}.")
+
+    # SETTINGS
     batches = 1
     scope = 99
     depth = 100
@@ -373,31 +382,32 @@ if __name__ == "__main__":
     inhibitor_tpl_freeze = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, in_channels=depth)
 
     plt.clf()
-    plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
+    plt.plot(tensor_in[0, :, 4, 7].cpu().numpy(), label="Input")
 
     tensor_out = inhibitor(tensor_in)
-    plt.plot(tensor_out[0, :, 4, 7].detach().numpy(), "-.", label="Single Shot")
+    plt.plot(tensor_out[0, :, 4, 7].detach().cpu().numpy(), "-.", label="Single Shot")
 
     tensor_out_rec = inhibitor_rec(tensor_in)
-    plt.plot(tensor_out_rec[0, :, 4, 7].detach().numpy(), label="Recurrent")
+    plt.plot(tensor_out_rec[0, :, 4, 7].detach().cpu().numpy(), label="Recurrent")
 
     tensor_out_conv = inhibitor_conv(tensor_in)
-    plt.plot(tensor_out_conv[0, :, 4, 7].detach().numpy(), "--", label="Converged")
+    plt.plot(tensor_out_conv[0, :, 4, 7].detach().cpu().numpy(), "--", label="Converged")
 
     tensor_out_conv_freeze = inhibitor_conv_freeze(tensor_in)
-    plt.plot(tensor_out_conv_freeze[0, :, 4, 7].detach().numpy(), "--", label="Converged Frozen")
+    plt.plot(tensor_out_conv_freeze[0, :, 4, 7].detach().cpu().numpy(), "--", label="Converged Frozen")
 
     tensor_out_tpl = inhibitor_tpl(tensor_in)
-    plt.plot(tensor_out_tpl[0, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz")
+    plt.plot(tensor_out_tpl[0, :, 4, 7].detach().cpu().numpy(), ":", label="Converged Toeplitz")
 
     tensor_out_tpl_freeze = inhibitor_tpl_freeze(tensor_in)
-    plt.plot(tensor_out_tpl_freeze[0, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz Frozen")
+    plt.plot(tensor_out_tpl_freeze[0, :, 4, 7].detach().cpu().numpy(), ":", label="Converged Toeplitz Frozen")
 
     plt.legend()
-    plt.show()
+    # plt.show()
 
-    # CHECK AUTO GRAD
-    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl, inhibitor_tpl_freeze]:
+    # BENCHMARK
+    results = []
+    for test_layer in tqdm([simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl, inhibitor_tpl_freeze]):
         optimizer = None
         has_parameters = len(list(test_layer.parameters())) > 0
         if has_parameters:
@@ -418,5 +428,10 @@ if __name__ == "__main__":
                 loss.backward()
                 optimizer.step()
             # print(f"AFTER: {test_layer.inhibition_filter}")
-        print(f"Executed {test_layer.__class__.__name__} in {round(time.time() - start_time, 2)}s")
 
+        execution_time = round(time.time() - start_time, 2)
+        results.append((test_layer.__class__.__name__, execution_time))
+
+    ranked_performance = sorted(results, key=lambda x: x[1])
+    for i, (name, t) in enumerate(ranked_performance, 1):
+        print(f"{i}.\t{name} with {t}s.")
