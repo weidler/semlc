@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, check_loss=1000, optimizer=None, logger=None):
     train_loader = DataLoader(train_set, batch_size=batch_size,
-                              shuffle=True, num_workers=2)
+                              shuffle=True)
     # Adam optimizer by default
     if optimizer is None:
         optimizer = optim.Adam(net.parameters(), lr=learn_rate)
