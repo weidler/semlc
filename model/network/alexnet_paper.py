@@ -10,9 +10,9 @@ class ConvNet18(nn.Module):
     def __init__(self, scope=[1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
         counter = 1
-        self.inhibition_strategy = inhibition_strategy
+        # self.inhibition_strategy = inhibition_strategy
 
-        assert self.inhibition_strategy in ["once", "recurrent"]
+        # assert self.inhibition_strategy in ["once", "recurrent"]
 
         self.features = nn.Sequential()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)
@@ -90,9 +90,9 @@ class ConvNet11(nn.Module):
     def __init__(self,  scope=[1,1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
         counter = 1
-        self.inhibition_strategy = inhibition_strategy
+        # self.inhibition_strategy = inhibition_strategy
 
-        assert self.inhibition_strategy in ["once", "recurrent"]
+        # assert self.inhibition_strategy in ["once", "recurrent"]
 
         self.features = nn.Sequential()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2)
