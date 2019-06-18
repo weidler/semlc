@@ -4,7 +4,7 @@ from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition
 
 class ConvNet18(nn.Module):
 
-    def __init__(self, scope=[1,1,1], width=0, damp=0, inhibition_strategy: str = "once", counter = 0, learn_inhibition_weights=False, inhibition_depth=1):
+    def __init__(self, scope=[1,1,1], width=0, damp=0, inhibition_strategy: str = "once", counter = 1, learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
         self.inhibition_strategy = inhibition_strategy
 
@@ -82,7 +82,7 @@ class ConvNet18(nn.Module):
 
 class ConvNet11(nn.Module):
 
-    def __init__(self,  scope=[1,1,1,1], width=0, damp=0, inhibition_strategy: str = "once", counter = 0, learn_inhibition_weights=False, inhibition_depth=1):
+    def __init__(self,  scope=[1,1,1,1], width=0, damp=0, inhibition_strategy: str = "once", counter = 1, learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
         self.inhibition_strategy = inhibition_strategy
 
