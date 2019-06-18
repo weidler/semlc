@@ -25,8 +25,7 @@ def pad_roll(k, in_channels, scope):
 class SingleShotInhibition(nn.Module):
     """Nice Inhibition Layer. """
 
-    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights=False, analyzer=None,
-                 damp: float = 0.12):
+    def __init__(self, scope: int, ricker_width: int, damp: float, padding: str = "zeros", learn_weights=False, analyzer=None):
         super().__init__()
 
         assert scope % 2 == 1
@@ -56,10 +55,6 @@ class SingleShotInhibition(nn.Module):
                 param.requires_grad = False
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        # catch weird scope-input-combinations; TODO do we really want this?
-        if activations.shape[1] < self.scope:
-            raise RuntimeError("Inhibition not possible. "
-                               "Given activation has less filters than the Inhibitor's scope.")
 
         # augment channel dimension
         activations = activations.unsqueeze(dim=1)
@@ -87,8 +82,8 @@ class RecurrentInhibition(nn.Module):
     axs_convergence: List[Axes]
     fig_convergence: plt.Figure
 
-    def __init__(self, scope: int, ricker_width: int, padding: str = "zeros", learn_weights: bool = False,
-                 decay: float = 0.05, max_steps: int = 10, convergence_threshold: float = 0.00, damp: float = 0.12):
+    def __init__(self, scope: int, ricker_width: int, damp: float = 0.12, padding: str = "zeros", learn_weights: bool = False,
+                 decay: float = 0.05, max_steps: int = 10, convergence_threshold: float = 0.00):
         super().__init__()
 
         assert padding in ["zeros", "cycle"]
@@ -125,10 +120,6 @@ class RecurrentInhibition(nn.Module):
         # self.fig_convergence.suptitle("Convergence of Single Recursive Inhibition Process", )
 
     def forward(self, activations: torch.Tensor, plot_convergence=False) -> torch.Tensor:
-        # catch weird scope-input-combinations; TODO do we really want this?
-        if activations.shape[1] < self.scope:
-            raise RuntimeError("Inhibition not possible. "
-                               "Given activation has less filters than the Inhibitor's scope.")
 
         # augment channel dimension
         activations = activations.unsqueeze(dim=1)
@@ -195,7 +186,7 @@ class ConvergedInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True, damp: float = 0.12):
+    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool=True):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
@@ -241,7 +232,7 @@ class ConvergedToeplitzInhibition(nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int, learn_weights: bool=True, damp: float = 0.12):
+    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool=True):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels

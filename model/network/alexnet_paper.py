@@ -1,11 +1,14 @@
 from torch import nn
 import torch
-
+from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition
 
 class ConvNet18(nn.Module):
 
-    def __init__(self):
+    def __init__(self,  scope, width, damp, inhibition_strategy: str = "once", counter = 1, learn_inhibition_weights=False, inhibition_depth=1):
         super().__init__()
+        self.inhibition_strategy = inhibition_strategy
+
+        assert self.inhibition_strategy in ["once", "recurrent"]
 
         self.features = nn.Sequential()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)
@@ -33,15 +36,33 @@ class ConvNet18(nn.Module):
         self.pool3 = nn.AvgPool2d(kernel_size=3, stride=2)
 
         self.features.add_module("conv_1", self.conv1)
+        if counter <= inhibition_depth:
+            self.features.add_module("inhib_{}".format(counter),
+                                     SingleShotInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights)
+                                     if self.inhibition_strategy == "once"
+                                     else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
+            counter+=1
         self.features.add_module("pool_1", self.pool1)
         # activation after pooling is what the paper says
         self.features.add_module("relu_1", self.relu1)
         # self.features.add_module("rnorm_1", rnorm1)
         self.features.add_module("conv_2", self.conv2)
+        if counter <= inhibition_depth:
+            self.features.add_module("inhib_{}".format(counter),
+                                     SingleShotInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights)
+                                     if self.inhibition_strategy == "once"
+                                     else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
+            counter+=1
         self.features.add_module("relu_2", self.relu2)
         self.features.add_module("pool_2", self.pool2)
         # self.features.add_module("rnorm_2", rnorm2)
         self.features.add_module("conv_3", self.conv3)
+        if counter <= inhibition_depth:
+            self.features.add_module("inhib_{}".format(counter),
+                                     SingleShotInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights)
+                                     if self.inhibition_strategy == "once"
+                                     else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
+            counter+=1
         self.features.add_module("relu_3", self.relu3)
         self.features.add_module("pool_3", self.pool3)
 
@@ -62,8 +83,11 @@ class ConvNet18(nn.Module):
 
 class ConvNet11(nn.Module):
 
-    def __init__(self):
+    def __init__(self,  scope, width, damp, inhibition_strategy: str = "once", counter = 1, learn_inhibition_weights=False, inhibition_depth=1):
         super().__init__()
+        self.inhibition_strategy = inhibition_strategy
+
+        assert self.inhibition_strategy in ["once", "recurrent"]
 
         self.features = nn.Sequential()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2)
@@ -97,16 +121,40 @@ class ConvNet11(nn.Module):
         self.relu4 = nn.ReLU(inplace=True)
 
         self.features.add_module("conv_1", self.conv1)
+        if counter <= inhibition_depth:
+            self.features.add_module("inhib_{}".format(counter),
+                                     SingleShotInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights)
+                                     if self.inhibition_strategy == "once"
+                                     else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
+            counter+=1
         self.features.add_module("relu_1", self.relu1)
         self.features.add_module("pool_1", self.pool1)
         # self.features.add_module("rnorm_1", rnorm1)
         self.features.add_module("conv_2", self.conv2)
+        if counter <= inhibition_depth:
+            self.features.add_module("inhib_{}".format(counter),
+                                     SingleShotInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights)
+                                     if self.inhibition_strategy == "once"
+                                     else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
+            counter+=1
         self.features.add_module("relu_2", self.relu2)
         # self.features.add_module("rnorm_2", rnorm2)
         self.features.add_module("pool_2", self.pool2)
         self.features.add_module("conv_3", self.conv3)
+        if counter <= inhibition_depth:
+            self.features.add_module("inhib_{}".format(counter),
+                                     SingleShotInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights)
+                                     if self.inhibition_strategy == "once"
+                                     else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
+            counter+=1
         self.features.add_module("relu_3", self.relu3)
         self.features.add_module("conv_4", self.conv4)
+        if counter <= inhibition_depth:
+            self.features.add_module("inhib_{}".format(counter),
+                                     SingleShotInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights)
+                                     if self.inhibition_strategy == "once"
+                                     else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
+            counter+=1
         self.features.add_module("relu_4", self.relu4)
 
         self.fc = nn.Linear(32 * 7 * 7, 10)
