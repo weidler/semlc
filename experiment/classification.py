@@ -8,7 +8,7 @@ from torchvision import transforms
 
 from experiment.eval import accuracy
 from experiment.train import train
-from model.network.alexnet_paper import ConvNet18
+from model.network.alexnet_paper import ConvNet18, ConvNet11
 from util.ourlogging import Logger
 
 torch.random.manual_seed(12311)
@@ -21,7 +21,7 @@ if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 print(f"USE CUDA: {use_cuda}.")
 
-transform = transforms.Compose([transforms.RandomCrop(28),
+transform = transforms.Compose([transforms.RandomCrop(24),
                                 transforms.RandomVerticalFlip(),
 
                                 # these transforms need to be in the end, s.t. the data loader produces (normed) tensors
@@ -37,9 +37,9 @@ test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, downloa
 # recurrent_inhibition_network = InhibitionClassificationCNN(inhibition_strategy="recurrent")
 # alexnet = SmallAlexNet()
 conv18 = ConvNet18()
-# conv11 = ConvNet11()
+conv11 = ConvNet11()
 
-network = conv18
+network = conv11
 
 if use_cuda:
     network.cuda()
