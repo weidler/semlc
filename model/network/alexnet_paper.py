@@ -1,11 +1,15 @@
 from torch import nn
 import torch
+from torch.nn import Dropout
+
 from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition
+
 
 class ConvNet18(nn.Module):
 
-    def __init__(self, scope=[1,1,1], width=0, damp=0, inhibition_strategy: str = "once", counter = 1, learn_inhibition_weights=False, inhibition_depth=0):
+    def __init__(self, scope=[1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
+        counter = 1
         self.inhibition_strategy = inhibition_strategy
 
         assert self.inhibition_strategy in ["once", "recurrent"]
@@ -69,6 +73,7 @@ class ConvNet18(nn.Module):
         torch.nn.init.normal_(self.fc.weight, 0, 0.01)
 
         self.classifier = nn.Sequential(
+            Dropout(),
             self.fc
         )
 
@@ -82,8 +87,9 @@ class ConvNet18(nn.Module):
 
 class ConvNet11(nn.Module):
 
-    def __init__(self,  scope=[1,1,1,1], width=0, damp=0, inhibition_strategy: str = "once", counter = 1, learn_inhibition_weights=False, inhibition_depth=0):
+    def __init__(self,  scope=[1,1,1,1], width=0, damp=0, inhibition_strategy: str = "once", learn_inhibition_weights=False, inhibition_depth=0):
         super().__init__()
+        counter = 1
         self.inhibition_strategy = inhibition_strategy
 
         assert self.inhibition_strategy in ["once", "recurrent"]
@@ -160,6 +166,7 @@ class ConvNet11(nn.Module):
         torch.nn.init.normal_(self.fc.weight, 0, 0.01)
 
         self.classifier = nn.Sequential(
+            Dropout(),
             self.fc
         )
 
