@@ -34,7 +34,7 @@ n_steps = 5
 a_1 = np.zeros(n_points)
 
 for i in range(n_steps):
-    a_1 += dt * (-a_1 + z + np.dot(W, a_1))
+    a_1 = dt * (z + np.dot(W, a_1))
 
 """
 Scenario 2 (matrix multiplication):

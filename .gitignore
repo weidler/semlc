@@ -1,3 +1,7 @@
+saved_models/*.model
+results/*.loss
+results/*.txt
+results/*.png
 data/cifar10/*
 generated/
 .idea/

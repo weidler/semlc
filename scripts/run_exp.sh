@@ -1,13 +1,13 @@
 #!/usr/bin/env zsh
-### run with $ sbatch test.sh
+### run with $ sbatch --job-name=<name> --output=<output> run_exp.sh <filename>
 ### monitor with $ sacct
 ### cancel with $ scancel <jobid>
 
 ### Job name
-#SBATCH --job-name=ALEXNET
+#SBATCH --job-name=undefined
 
 ### File for the output
-#SBATCH --output=ALEXNET_OUTPUT
+#SBATCH --output=undefined.out
 
 ### Time your job needs to execute
 #SBATCH --time=03:00:00
@@ -16,12 +16,15 @@
 #SBATCH --mem-per-cpu=2G
 
 ### request gpu
-#SBATCH --gres=gpu:pascal:1
+#SBATCH --gres=gpu:kepler:1
 
 ### run as maastricht university dke project group
 #SBATCH --account=um_dke
 
+### start environment
+source .brains/bin/activate
+module load cuda
+
 ### Run script
-./setup.sh
-
-
+cd ../experiment
+python "$1"

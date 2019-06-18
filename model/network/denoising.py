@@ -4,7 +4,7 @@ from torch import nn
 
 
 # DENOISING
-from model.inhibition_layer import Inhibition
+from model.inhibition_layer import SingleShotInhibition
 from model.network.classification import BaseClassificationCNN
 
 
@@ -49,7 +49,7 @@ class ConvolutionalEncoderWithInhibition(nn.Module):
 
         self.conv = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=5),
-            Inhibition(7),
+            SingleShotInhibition(7),
             nn.ReLU(True),
             nn.Conv2d(16, 32, kernel_size=5),
             nn.ReLU(True)
