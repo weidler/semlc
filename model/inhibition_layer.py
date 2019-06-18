@@ -276,16 +276,18 @@ class ConvergedToeplitzInhibition(nn.Module):
 if __name__ == "__main__":
     from scipy.signal import gaussian
 
+    batches = 4
     scope = 99
     depth = 100
     width = 14
     height = 14
     wavelet_width = 6
 
-    tensor_in = torch.zeros((1, depth, width, height))
-    for i in range(tensor_in.shape[-1]):
-        for j in range(tensor_in.shape[-2]):
-            tensor_in[0, :, i, j] = torch.from_numpy(gaussian(depth, 4))
+    tensor_in = torch.zeros((batches, depth, width, height))
+    for b in range(batches):
+        for i in range(tensor_in.shape[-1]):
+            for j in range(tensor_in.shape[-2]):
+                tensor_in[b, :, i, j] = torch.from_numpy(gaussian(depth, 6))
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
     inhibitor = SingleShotInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
@@ -294,19 +296,19 @@ if __name__ == "__main__":
     inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
 
     plt.clf()
-    plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
+    plt.plot(tensor_in[2, :, 4, 7].numpy(), label="Input")
 
     tensor_out = inhibitor(tensor_in)
-    plt.plot(tensor_out[0, :, 4, 7].detach().numpy(), "-.", label="Single Shot")
+    plt.plot(tensor_out[2, :, 4, 7].detach().numpy(), "-.", label="Single Shot")
 
     tensor_out_rec = inhibitor_rec(tensor_in)
-    plt.plot(tensor_out_rec[0, :, 4, 7].detach().numpy(), label="Recurrent")
+    plt.plot(tensor_out_rec[2, :, 4, 7].detach().numpy(), label="Recurrent")
 
     tensor_out_conv = inhibitor_conv(tensor_in)
-    plt.plot(tensor_out_conv[0, :, 4, 7].detach().numpy(), "--", label="Converged")
+    plt.plot(tensor_out_conv[2, :, 4, 7].detach().numpy(), "--", label="Converged")
 
     tensor_out_tpl = inhibitor_tpl(tensor_in)
-    plt.plot(tensor_out_tpl[0, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz")
+    plt.plot(tensor_out_tpl[2, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz")
 
     plt.legend()
     plt.show()
