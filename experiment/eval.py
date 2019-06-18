@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 
 def accuracy(net, data_set, batch_size):
     data_loader = DataLoader(data_set, batch_size=batch_size,
-                             shuffle=False, num_workers=2)
+                             shuffle=False, num_workers=0)
     correct = 0
     total = 0
     with torch.no_grad():
