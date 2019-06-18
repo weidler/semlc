@@ -232,6 +232,45 @@ class ConvergedInhibition(nn.Module):
         return inhibited_tensor
 
 
+class ConvergedFrozenInhibition(nn.Module):
+    """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
+    using deconvolution in the frequency domain with fourier transforms. Filter is frozen, implementation is optimized
+    towards speed taking this into account.
+
+    Input shape:
+        N x C x H x W
+        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
+    """
+
+    def __init__(self, scope: int, ricker_width: int, in_channels: int, damp: float = 0.12):
+        super().__init__()
+        self.scope = scope
+        self.in_channels = in_channels
+        self.damp = damp
+
+        # inhibition filter, focused at i=0
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
+        self.inhibition_filter = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
+        self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
+
+        # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
+        self.kronecker_delta = torch.zeros(in_channels).index_fill(0, torch.tensor([0]), 1)
+        self.kronecker_delta = self.kronecker_delta.view((1, 1, 1, -1))
+
+        # filter in frequency domain
+        self.fourier_filter = torch.rfft(self.kronecker_delta - self.inhibition_filter, 1, onesided=False)
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # bring the dimension that needs to be fourier transformed to the end
+        activations = activations.permute((0, 2, 3, 1))
+
+        # divide in frequency domain, then bring back to time domain
+        fourier_activations = torch.rfft(activations, 1, onesided=False)
+        inhibited_tensor = torch.irfft(div_complex(fourier_activations, self.fourier_filter), 1, onesided=False)
+
+        return inhibited_tensor.permute((0, 3, 1, 2))
+
+
 class ConvergedToeplitzInhibition(nn.Module):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
@@ -273,10 +312,46 @@ class ConvergedToeplitzInhibition(nn.Module):
         return convoluted.view_as(activations)
 
 
+class ConvergedToeplitzFrozenInhibition(nn.Module):
+    """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
+    using the inverse of a Toeplitz matrix.
+
+    Input shape:
+        N x C x H x W
+        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
+    """
+
+    def __init__(self, scope: int, ricker_width: int, in_channels: int, damp: float = 0.12):
+        super().__init__()
+        self.scope = scope
+        self.in_channels = in_channels
+        self.damp = damp
+
+        # inhibition filter
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
+        self.inhibition_filter = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
+
+        # construct filter toeplitz
+        tpl = toeplitz1d(self.inhibition_filter.squeeze(), self.in_channels)
+        self.tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # stack activation depth-columns for depth-wise convolution with tpl_inv
+        stacked_activations = activations.unbind(dim=2)
+        stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
+
+        # convolve by multiplying with tpl
+        convoluted = stacked_activations.matmul(self.tpl_inv)
+        convoluted = convoluted.permute((0, 2, 1))
+
+        # recover original shape
+        return convoluted.view_as(activations)
+
+
 if __name__ == "__main__":
     from scipy.signal import gaussian
 
-    batches = 4
+    batches = 1
     scope = 99
     depth = 100
     width = 14
@@ -293,41 +368,55 @@ if __name__ == "__main__":
     inhibitor = SingleShotInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, in_channels=depth)
+    inhibitor_conv_freeze = ConvergedFrozenInhibition(scope, wavelet_width, in_channels=depth)
     inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
+    inhibitor_tpl_freeze = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, in_channels=depth)
 
     plt.clf()
-    plt.plot(tensor_in[2, :, 4, 7].numpy(), label="Input")
+    plt.plot(tensor_in[0, :, 4, 7].numpy(), label="Input")
 
     tensor_out = inhibitor(tensor_in)
-    plt.plot(tensor_out[2, :, 4, 7].detach().numpy(), "-.", label="Single Shot")
+    plt.plot(tensor_out[0, :, 4, 7].detach().numpy(), "-.", label="Single Shot")
 
     tensor_out_rec = inhibitor_rec(tensor_in)
-    plt.plot(tensor_out_rec[2, :, 4, 7].detach().numpy(), label="Recurrent")
+    plt.plot(tensor_out_rec[0, :, 4, 7].detach().numpy(), label="Recurrent")
 
     tensor_out_conv = inhibitor_conv(tensor_in)
-    plt.plot(tensor_out_conv[2, :, 4, 7].detach().numpy(), "--", label="Converged")
+    plt.plot(tensor_out_conv[0, :, 4, 7].detach().numpy(), "--", label="Converged")
+
+    tensor_out_conv_freeze = inhibitor_conv_freeze(tensor_in)
+    plt.plot(tensor_out_conv_freeze[0, :, 4, 7].detach().numpy(), "--", label="Converged Frozen")
 
     tensor_out_tpl = inhibitor_tpl(tensor_in)
-    plt.plot(tensor_out_tpl[2, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz")
+    plt.plot(tensor_out_tpl[0, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz")
+
+    tensor_out_tpl_freeze = inhibitor_tpl_freeze(tensor_in)
+    plt.plot(tensor_out_tpl_freeze[0, :, 4, 7].detach().numpy(), ":", label="Converged Toeplitz Frozen")
 
     plt.legend()
     plt.show()
 
     # CHECK AUTO GRAD
-    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
-        optimizer = optim.SGD(test_layer.parameters(), 0.01)
+    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl, inhibitor_tpl_freeze]:
+        optimizer = None
+        has_parameters = len(list(test_layer.parameters())) > 0
+        if has_parameters:
+            optimizer = optim.SGD(test_layer.parameters(), 0.01)
+
         start_time = time.time()
         for i in range(100):
             # print(f"BEFORE: {test_layer.inhibition_filter}")
-            optimizer.zero_grad()
+            if has_parameters:
+                optimizer.zero_grad()
 
             out = test_layer(tensor_in)
             target = out * random.random()
 
             loss = mse_loss(out, target)
-            loss.backward()
 
-            optimizer.step()
+            if has_parameters:
+                loss.backward()
+                optimizer.step()
             # print(f"AFTER: {test_layer.inhibition_filter}")
         print(f"Executed {test_layer.__class__.__name__} in {round(time.time() - start_time, 2)}s")
 
