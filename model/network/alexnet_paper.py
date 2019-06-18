@@ -70,7 +70,8 @@ class ConvNet18(nn.Module):
         self.features.add_module("relu_3", self.relu3)
         self.features.add_module("pool_3", self.pool3)
 
-        self.fc = nn.Linear(64 * 3 * 3, 10)
+        # self.fc = nn.Linear(64 * 3 * 3, 10)
+        self.fc = nn.Linear(64 * 2 * 2, 10)
         torch.nn.init.normal_(self.fc.weight, 0, 0.01)
 
         self.classifier = nn.Sequential(
@@ -80,7 +81,8 @@ class ConvNet18(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), 64 * 3 * 3)
+        # x = x.view(x.size(0), 64 * 3 * 3)
+        x = x.view(x.size(0), 64 * 2 * 2)
         x = self.classifier(x)
 
         return x

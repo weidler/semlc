@@ -10,7 +10,7 @@ class Logger:
     def __init__(self, model: nn.Module):
         self.model = model
         inhibition_strategy = '_' + self.model.inhibition_strategy if hasattr(self.model, 'inhibition_strategy') else ''
-        logdir = self.model.logdir +'/' if hasattr(self.model, 'logdir') else ''
+        logdir = f"{self.model.logdir}/" if self.model.logdir is not None else ''
         self.loss_filename = f"../results/{logdir}{model.__class__.__name__}{inhibition_strategy}.loss"
         self.model_filename = f"../saved_models/{logdir}{model.__class__.__name__}{inhibition_strategy}_n.model"
 
