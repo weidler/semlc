@@ -15,6 +15,7 @@ class Logger:
         self.acc_filename = f"../results/{logdir}{model.__class__.__name__}{inhibition_strategy}.acc"
         self.log_filename = f"../logs/{logdir}{model.__class__.__name__}{inhibition_strategy}.log"
         self.model_filename = f"../saved_models/{logdir}{model.__class__.__name__}{inhibition_strategy}_n.model"
+        self.opt_filename = f"../saved_models/opt/{logdir}{model.__class__.__name__}{inhibition_strategy}_n.opt"
 
         self.loss_history = []
         self.acc_history = []
@@ -34,6 +35,10 @@ class Logger:
     def save_model(self, epoch):
         os.makedirs(os.path.dirname(self.model_filename), exist_ok=True)
         torch.save(self.model.state_dict(), re.sub("_n", f"_{epoch}", self.model_filename))
+
+    def save_optimizer(self, optimizer, epoch):
+        os.makedirs(os.path.dirname(self.opt_filename), exist_ok=True)
+        torch.save(optimizer.state_dict(), re.sub("_n", f"_{epoch}", self.opt_filename))
 
     def log(self, data, console=False):
         os.makedirs(os.path.dirname(self.log_filename), exist_ok=True)

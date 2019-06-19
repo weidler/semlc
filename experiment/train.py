@@ -50,6 +50,7 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, tes
 
         if epoch % 5 == 0 or epoch == num_epoch - 1:
             logger.save_model(epoch)
+            logger.save_optimizer(optimizer, epoch)
 
 
 def custom_optimizer_conv18(model):
