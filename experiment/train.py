@@ -8,13 +8,18 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, che
                               shuffle=True)
     # Adam optimizer by default
     if optimizer is None:
-        optimizer = optim.Adam(net.parameters(), lr=learn_rate)
+        optimizer = optim.Adam(net.parameters(), lr=learn_rate)#, weight_decay=4e-3)
         # optimizer = optim.SGD(net.parameters(), lr=learn_rate, momentum=0.9, weight_decay=5e-4)
         # optimizer = custom_optimizer_conv18(net)
 
     loss_history = []
     for epoch in range(num_epoch):  # loop over the dataset multiple times
         running_loss = 0.0
+        if epoch == 100: #and epoch % 20 == 0:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = param_group['lr'] * 0.1
+                print('changed lrate', param_group['lr'])
+
         for i, (inputs, labels) in enumerate(train_loader, 0):
             # zero the parameter gradients
             optimizer.zero_grad()

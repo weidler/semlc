@@ -106,14 +106,14 @@ class ConvNet11(nn.Module):
 
         self.pool1 = nn.MaxPool2d(kernel_size=3, stride=2)
 
-        # rnorm1 = nn.BatchNorm2d(3)
+        rnorm1 = nn.BatchNorm2d(64)
 
         self.conv2 = nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2)
         torch.nn.init.normal_(self.conv2.weight, 0, 0.01)
 
         self.relu2 = nn.ReLU(inplace=True)
 
-        # rnorm2 = nn.BatchNorm2d(3)
+        rnorm2 = nn.BatchNorm2d(64)
 
         self.pool2 = nn.AvgPool2d(kernel_size=3, stride=2)
 
@@ -138,7 +138,7 @@ class ConvNet11(nn.Module):
             counter+=1
         self.features.add_module("relu_1", self.relu1)
         self.features.add_module("pool_1", self.pool1)
-        # self.features.add_module("rnorm_1", rnorm1)
+        self.features.add_module("rnorm_1", rnorm1)
         self.features.add_module("conv_2", self.conv2)
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
@@ -147,7 +147,7 @@ class ConvNet11(nn.Module):
             else ConvergedInhibition(scope[counter-1], width, damp, learn_weights=learn_inhibition_weights))
             counter+=1
         self.features.add_module("relu_2", self.relu2)
-        # self.features.add_module("rnorm_2", rnorm2)
+        self.features.add_module("rnorm_2", rnorm2)
         self.features.add_module("pool_2", self.pool2)
         self.features.add_module("conv_3", self.conv3)
         if counter <= inhibition_depth:
@@ -170,7 +170,7 @@ class ConvNet11(nn.Module):
         torch.nn.init.normal_(self.fc.weight, 0, 0.01)
 
         self.classifier = nn.Sequential(
-            Dropout(),
+            # Dropout(),
             self.fc
         )
 

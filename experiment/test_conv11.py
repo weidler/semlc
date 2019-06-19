@@ -28,7 +28,7 @@ if torch.cuda.is_available():
 print(f"USE CUDA: {use_cuda}.")
 
 transform = transforms.Compose([transforms.RandomCrop(24),
-                                transforms.RandomVerticalFlip(),
+                                transforms.RandomHorizontalFlip(),
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                 ])
@@ -36,7 +36,7 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-conv11 = ConvNet11(logdir="transform")
+conv11 = ConvNet11(logdir="nearpaper_bnorm")
 
 network = conv11
 
@@ -44,16 +44,15 @@ if use_cuda:
     network.cuda()
 
 logger = Logger(network)
-logger.save_model(0)
 
 train(net=network,
       num_epoch=200,
       train_set=train_set,
-      batch_size=16,
+      batch_size=128,
       criterion=nn.CrossEntropyLoss(),
       logger=logger,
       check_loss=100,
       learn_rate=0.001)
 
 network.eval()
-print(accuracy(network, test_set, 16))
+print(accuracy(network, test_set, 128))
