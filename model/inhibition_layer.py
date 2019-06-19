@@ -10,6 +10,7 @@ from torch import nn, optim
 from torch.nn.functional import pad, mse_loss
 from tqdm import tqdm
 
+from model.inhibition_module import InhibitionModule
 from util import weight_initialization
 from util.complex import div_complex
 from util.linalg import toeplitz1d
@@ -23,7 +24,7 @@ def pad_roll(k, in_channels, scope):
     return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
 
 
-class SingleShotInhibition(nn.Module):
+class SingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
     def __init__(self, scope: int, ricker_width: int, damp: float, padding: str = "zeros", learn_weights=False, analyzer=None):
@@ -78,7 +79,7 @@ class SingleShotInhibition(nn.Module):
         return inhibitions.squeeze_(dim=1)
 
 
-class RecurrentInhibition(nn.Module):
+class RecurrentInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
     axs_convergence: List[Axes]
     fig_convergence: plt.Figure
@@ -178,7 +179,7 @@ class RecurrentInhibition(nn.Module):
         plt.pause(0.001)
 
 
-class ConvergedInhibition(nn.Module):
+class ConvergedInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms.
 
@@ -224,7 +225,7 @@ class ConvergedInhibition(nn.Module):
         return inhibited_tensor
 
 
-class ConvergedFrozenInhibition(nn.Module):
+class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms. Filter is frozen, implementation is optimized
     towards speed taking this into account.
@@ -263,7 +264,7 @@ class ConvergedFrozenInhibition(nn.Module):
         return inhibited_tensor.permute((0, 3, 1, 2))
 
 
-class ConvergedToeplitzInhibition(nn.Module):
+class ConvergedToeplitzInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
@@ -304,7 +305,7 @@ class ConvergedToeplitzInhibition(nn.Module):
         return convoluted.view_as(activations)
 
 
-class ConvergedToeplitzFrozenInhibition(nn.Module):
+class ConvergedToeplitzFrozenInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
