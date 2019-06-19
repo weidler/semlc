@@ -1,9 +1,11 @@
 saved_models/*.model
 results/*.loss
+results/*.acc
 results/*.txt
 results/*.png
 data/cifar10/*
 generated/
+logs/
 .idea/
 
 # Created by https://www.gitignore.io/api/python,pycharm

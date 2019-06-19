@@ -1,9 +1,6 @@
 import sys
 sys.path.append("../")
 
-import random
-
-import numpy
 import torch
 
 import torchvision
@@ -16,9 +13,6 @@ from experiment.eval import accuracy
 
 from util.ourlogging import Logger
 
-torch.random.manual_seed(12311)
-numpy.random.seed(12311)
-random.seed(12311)
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -36,23 +30,23 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-conv11 = ConvNet11(logdir="nearpaper_bnorm")
+iterations = 10
+for i in range(0, iterations):
+    network = ConvNet11(logdir=f"baseline_{i+1}")
 
-network = conv11
+    if use_cuda:
+        network.cuda()
 
-if use_cuda:
-    network.cuda()
+    logger = Logger(network)
 
-logger = Logger(network)
+    train(net=network,
+          num_epoch=160,
+          train_set=train_set,
+          batch_size=128,
+          criterion=nn.CrossEntropyLoss(),
+          logger=logger,
+          test_set=test_set,
+          learn_rate=0.001)
 
-train(net=network,
-      num_epoch=200,
-      train_set=train_set,
-      batch_size=128,
-      criterion=nn.CrossEntropyLoss(),
-      logger=logger,
-      test_set=test_set,
-      learn_rate=0.001)
-
-network.eval()
-print(accuracy(network, test_set, 128))
+    network.eval()
+    logger.log(f"acc: {accuracy(network, test_set, 128)}")
