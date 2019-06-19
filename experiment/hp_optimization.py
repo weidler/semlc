@@ -1,3 +1,7 @@
+import sys
+sys.path.append("../")
+
+import random
 import torch
 import torch.optim as optim
 from torch import nn
@@ -9,6 +13,13 @@ from experiment.eval import accuracy
 from experiment.train import custom_optimizer_conv11
 from util.ourlogging import Logger
 from model.network.alexnet_paper import ConvNet11
+
+use_cuda = False
+if torch.cuda.is_available():
+    use_cuda = True
+    torch.set_default_tensor_type(torch.cuda.FloatTensor)
+
+print(f"USE CUDA: {use_cuda}.")
 
 
 def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, shuffle=True, pin_memory=False):
@@ -47,12 +58,11 @@ def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, 
 
     # define transforms
     valid_transform = transforms.Compose([
-            transforms.CenterCrop(24),
             transforms.ToTensor(),
             normalize,
     ])
     if augment:
-        train_transform = transforms.Compose([
+        valid_transform = train_transform = transforms.Compose([
             transforms.RandomCrop(24),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
@@ -72,6 +82,11 @@ def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, 
 
     valid_dataset = datasets.CIFAR10(
         root=data_dir, train=True,
+        download=True, transform=valid_transform,
+    )
+
+    test_dataset = datasets.CIFAR10(
+        root=data_dir, train=False,
         download=True, transform=valid_transform,
     )
 
@@ -95,98 +110,130 @@ def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, 
         pin_memory=pin_memory,
     )
 
-    return train_loader, valid_loader
+    return train_loader, valid_loader, test_dataset
 
 
-def hp_opt(num_epoch, train_loader, val_loader, criterion, learn_rate=0.01, test_set=None, optimizer=None):
-    strategies = ["once", "converged", "toeplitz"]
+def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
+    configurations = []
+    for i in range(samples):
+        # for the lack of do while loops
+        scope = random.choice(range_scope.T)
+        width = random.choice(range_ricker_width)
+        damp = random.choice(range_damp)
+        config = [scope[0], width, damp]
+        while configurations.count(config) > 0:
+            scope = random.choice(range_scope.T)
+            width = random.choice(range_ricker_width)
+            damp = random.choice(range_damp)
+            config = [scope[0], width, damp]
+        configurations.append(config)
+    return configurations
+
+
+def validate(net, val_loader, optimizer, criterion):
+    model_loss = 0.0
+    val_size = val_loader.__len__()
+    net.eval()
+    # check validation loss to decide which model we keep
+    for i, (inputs, labels) in enumerate(val_loader, 0):
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        if torch.cuda.is_available():
+            outputs = net(inputs.cuda())
+        else:
+            outputs = net(inputs)
+        loss = criterion(outputs, labels)
+        model_loss += loss.item()
+    return model_loss / val_size
+    # if best_loss > model_loss:
+    #    best_loss = model_loss
+    #    # save the model
+    #    logger.save_model(num_epoch, best=True)
+    #    best_net = net
+
+
+def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None, optimizer=None, log_acc=True):
+    strategies = ["toeplitz", "once", "once_learned", "converged"]
     # scope is specific to each layer
-    range_scope = np.array([[17, 19, 21, 23],
-                            [33, 35, 37, 39],
-                            [33, 35, 37, 39],
-                            [33, 35, 37, 39],
+    range_scope = np.array([[9, 19, 31],
+                            [9, 35, 37],
+                            [33, 35, 37],
+                            [33, 35, 37],
                             ])
-    range_ricker_width = np.linspace(3.0, 6.0, num=4)
-    range_damp = np.linspace(0.1, 0.16, num=4)
+    range_ricker_width = [3, 4, 6, 8, 10]
+    range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
+    configurations = get_random_samples(samples, range_scope, range_ricker_width, range_damp)
     best_loss = np.Infinity
     best_net = None
-    test = 0
-    for scope in range_scope.T:
-        for ricker_width in range_ricker_width:
-            for damp in range_damp:
-                for strategy in strategies:
-                    net = ConvNet11(scope=scope,
-                                    width=ricker_width,
-                                    damp=damp,
-                                    inhibition_depth=2,
-                                    inhibition_strategy=strategy,
-                                    logdir=f"scope_{scope[0]}/width_{ricker_width}/damp_{damp}/{strategy}"
-                                    )
-                    logger = Logger(net)
-                    
-                    # Adam optimizer by default
-                    if optimizer is None:
-                        optimizer = optim.Adam(net.parameters(), lr=learn_rate)
+    for strategy in strategies:
+        print("starting", strategy)
+        for scope, ricker_width, damp in configurations:
+            #fix scope when applying depth > 1
+            net = ConvNet11(scope=[scope],
+                            width=ricker_width,
+                            damp=damp,
+                            inhibition_depth=1,
+                            inhibition_strategy=strategy,
+                            logdir=f"{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
+                            )
 
-                    loss_history = []
-                    num_examples = train_loader.__len__()
-                    for epoch in range(num_epoch):  # loop over the dataset multiple times
-                        running_loss = 0.0
-                        if epoch == 100:
-                            for param_group in optimizer.param_groups:
-                                param_group['lr'] = param_group['lr'] * 0.1
+            if use_cuda:
+                net.cuda()
 
-                        for i, (inputs, labels) in enumerate(train_loader, 0):
-                            # zero the parameter gradients
-                            optimizer.zero_grad()
+            logger = Logger(net)
 
-                            # forward + backward + optimize
-                            if torch.cuda.is_available():
-                                outputs = net(inputs.cuda())
+            # Adam optimizer by default
+            if optimizer is None:
+                optimizer = optim.Adam(net.parameters(), lr=learn_rate)
+    
+            loss_history = []
+            num_examples = train_loader.__len__()
+            for epoch in range(num_epoch):  # loop over the dataset multiple times
+                running_loss = 0.0
+                if epoch == 100:
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = param_group['lr'] * 0.1
+    
+                for i, (inputs, labels) in enumerate(train_loader, 0):
+                    print(i)
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
+    
+                    # forward + backward + optimize
+                    if torch.cuda.is_available():
+                        outputs = net(inputs.cuda())
+                    else:
+                        outputs = net(inputs)
+                    loss = criterion(outputs, labels)
+                    loss.backward()
+                    optimizer.step()
+    
+                    # print statistics
+                    running_loss += loss.item()
+                    if i == num_examples - 1:
+                        log_loss = running_loss / num_examples
+                        loss_history.append(log_loss)
+                        if logger is not None:
+                            print("start validating")
+                            logger.update_loss(log_loss, epoch + 1)
+                            val_loss = validate(net, val_loader, optimizer, criterion)
+                            if test_set is not None and log_acc:
+                                acc = accuracy(net, test_set, batch_size)
+                                logger.log('[%d, %5d] loss: %.3f val_loss: %.3f acc: %.3f' % (epoch + 1, i + 1, log_loss, val_loss, acc),
+                                           console=True)
+                                logger.update_acc(acc, epoch + 1)
                             else:
-                                outputs = net(inputs)
-                            loss = criterion(outputs, labels)
-                            loss.backward()
-                            optimizer.step()
+                                logger.log('[%d, %5d] loss: %.3f val_loss: %.3f' % (epoch + 1, i + 1, log_loss, val_loss), console=True)
+                        running_loss = 0.0
+    
+                if epoch % 5 == 0 or epoch == num_epoch - 1:
+                    logger.save_model(epoch)
+                    logger.save_optimizer(optimizer, epoch)
 
-                            # print statistics
-                            running_loss += loss.item()
-                            if i == num_examples - 1:
-                                log_loss = running_loss / num_examples
-                                loss_history.append(log_loss)
-                                if logger is not None:
-                                    logger.update_loss(log_loss, epoch + 1)
-                                    if test_set is not None:
-                                        acc = accuracy(net, test_set, batch_size)
-                                        logger.log('[%d, %5d] loss: %.3f acc: %.3f' % (epoch + 1, i + 1, log_loss, acc),
-                                                   console=True)
-                                        logger.update_acc(acc, epoch + 1)
-                                    else:
-                                        logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=True)
-                                running_loss = 0.0
-
-                        if epoch % 5 == 0 or epoch == num_epoch - 1:
-                            logger.save_model(epoch)
-                            logger.save_optimizer(optimizer, epoch)
-
-                    model_loss = 0.0
-                    # check validation loss to decide which model we keep
-                    for i, (inputs, labels) in enumerate(val_loader, 0):
-                        # zero the parameter gradients
-                        optimizer.zero_grad()
-
-                        # forward + backward + optimize
-                        if torch.cuda.is_available():
-                            outputs = net(inputs.cuda())
-                        else:
-                            outputs = net(inputs)
-                        loss = criterion(outputs, labels)
-                        model_loss += loss.item()
-                    if best_loss > model_loss:
-                        best_loss = model_loss
-                        # save the model
-                        logger.save_model(num_epoch, best=True)
-                        best_net = net
+            end_acc = accuracy(net, test_set, batch_size)
+            logger.log(f"acc: {end_acc}")
 
     return best_net
 
@@ -194,11 +241,14 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, learn_rate=0.01, test
 if __name__ == "__main__":
     batch_size = 128
     l_rate = 0.001
-    train_loader, valid_loader = get_train_valid_loaders("../data/cifar10/", batch_size)
-    hp_opt(num_epoch=10,
+    train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size)
+    hp_opt(num_epoch=0,
            train_loader=train_loader,
            val_loader=valid_loader,
            criterion=nn.CrossEntropyLoss(),
-           learn_rate=0.001
+           learn_rate=0.001,
+           test_set=test_set,
+           samples=1,
+           log_acc=False
            )
 

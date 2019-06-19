@@ -91,15 +91,14 @@ class ConvNet18(nn.Module):
 
 class ConvNet11(nn.Module):
 
-    def __init__(self, scope, width, damp, logdir=None, inhibition_strategy: str = "once", learn_weights=True,
+    def __init__(self, scope, width, damp, logdir=None, inhibition_strategy: str = "once",
                  inhibit_start=1, inhibition_depth=0):
         super().__init__()
         counter = inhibit_start
         self.logdir = logdir
         self.inhibition_strategy = inhibition_strategy
-        self.learn_weights = learn_weights
 
-        assert self.inhibition_strategy in ["once", "converged", "toeplitz"]
+        assert self.inhibition_strategy in ["once", "once_learned", "converged", "toeplitz"]
 
         self.features = nn.Sequential()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2)
@@ -136,10 +135,13 @@ class ConvNet11(nn.Module):
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
                                      SingleShotInhibition(scope=scope[counter-1], ricker_width=width, damp=damp,
-                                                          learn_weights=self.learn_weights)
+                                                          learn_weights=False)
                                      if self.inhibition_strategy == "once"
+                                     else SingleShotInhibition(scope=scope[counter-1], ricker_width=width, damp=damp,
+                                                          learn_weights=True)
+                                     if self.inhibition_strategy == "once_learned"
                                      else ConvergedInhibition(scope=scope[counter-1], ricker_width=width, damp=damp,
-                                                              learn_weights=self.learn_weights, in_channels=32)
+                                                              in_channels=32)
                                      if self.inhibition_strategy == "converged"
                                      else ConvergedToeplitzFrozenInhibition(scope=scope[counter-1],
                                                                             ricker_width=width, damp=damp,
