@@ -141,7 +141,7 @@ class ConvNet11(nn.Module):
                                                           learn_weights=True)
                                      if self.inhibition_strategy == "once_learned"
                                      else ConvergedInhibition(scope=scope[counter-1], ricker_width=width, damp=damp,
-                                                              in_channels=32)
+                                                              in_channels=64)
                                      if self.inhibition_strategy == "converged"
                                      else ConvergedToeplitzFrozenInhibition(scope=scope[counter-1],
                                                                             ricker_width=width, damp=damp,
@@ -157,7 +157,7 @@ class ConvNet11(nn.Module):
                                                           learn_weights=self.learn_weights)
                                      if self.inhibition_strategy == "once"
                                      else ConvergedInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                              learn_weights=self.learn_weights, in_channels=32)
+                                                              learn_weights=self.learn_weights, in_channels=64)
                                      if self.inhibition_strategy == "converged"
                                      else ConvergedToeplitzFrozenInhibition(scope=scope[counter - 1],
                                                                             ricker_width=width, damp=damp,
@@ -173,7 +173,7 @@ class ConvNet11(nn.Module):
                                                           learn_weights=self.learn_weights)
                                      if self.inhibition_strategy == "once"
                                      else ConvergedInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                              learn_weights=self.learn_weights, in_channels=32)
+                                                              learn_weights=self.learn_weights, in_channels=64)
                                      if self.inhibition_strategy == "converged"
                                      else ConvergedToeplitzFrozenInhibition(scope=scope[counter - 1],
                                                                             ricker_width=width, damp=damp,

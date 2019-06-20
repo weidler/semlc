@@ -87,7 +87,7 @@ def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, 
 
     test_dataset = datasets.CIFAR10(
         root=data_dir, train=False,
-        download=True, transform=valid_transform,
+        download=True, transform=train_transform,
     )
 
     num_train = len(train_dataset)
@@ -155,12 +155,12 @@ def validate(net, val_loader, optimizer, criterion):
 
 
 def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None, optimizer=None, log_acc=True):
-    strategies = ["toeplitz", "once", "once_learned", "converged"]
+    strategies = ["converged", "toeplitz", "once", "once_learned"]
     # scope is specific to each layer
-    range_scope = np.array([[9, 19, 31],
-                            [9, 35, 37],
-                            [33, 35, 37],
-                            [33, 35, 37],
+    range_scope = np.array([[9, 27, 45, 63],
+                            [9, 27, 45, 63],
+                            [9, 27, 45, 63],
+                            [7, 17, 25, 31],
                             ])
     range_ricker_width = [3, 4, 6, 8, 10]
     range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
@@ -168,8 +168,8 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rat
     best_loss = np.Infinity
     best_net = None
     for strategy in strategies:
-        print("starting", strategy)
         for scope, ricker_width, damp in configurations:
+            print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
             #fix scope when applying depth > 1
             net = ConvNet11(scope=[scope],
                             width=ricker_width,
@@ -197,7 +197,6 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rat
                         param_group['lr'] = param_group['lr'] * 0.1
     
                 for i, (inputs, labels) in enumerate(train_loader, 0):
-                    print(i)
                     # zero the parameter gradients
                     optimizer.zero_grad()
     
@@ -242,13 +241,14 @@ if __name__ == "__main__":
     batch_size = 128
     l_rate = 0.001
     train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size)
-    hp_opt(num_epoch=0,
+
+    hp_opt(num_epoch=30,
            train_loader=train_loader,
            val_loader=valid_loader,
            criterion=nn.CrossEntropyLoss(),
            learn_rate=0.001,
            test_set=test_set,
-           samples=1,
+           samples=30,
            log_acc=False
            )
 
