@@ -159,7 +159,7 @@ def validate(net, val_loader, optimizer, criterion):
 
 
 def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None, optimizer=None, log_acc=True):
-    strategies = ["converged", "toeplitz"]#, "once", "once_learned"]
+    strategies = ["once", "once_learned"]
     # scope is specific to each layer
     range_scope = np.array([[9, 27, 45, 63],
                             [9, 27, 45, 63],
