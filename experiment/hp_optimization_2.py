@@ -238,6 +238,7 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rat
 
             end_acc = accuracy(net, test_set, batch_size)
             logger.log(f"acc: {end_acc}")
+            optimizer = None
 
     return best_net
 
