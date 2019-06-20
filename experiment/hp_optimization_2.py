@@ -150,6 +150,7 @@ def validate(net, val_loader, optimizer, criterion):
             outputs = net(inputs)
         loss = criterion(outputs, labels)
         model_loss += loss.item()
+    net.train()
     return model_loss / val_size
     # if best_loss > model_loss:
     #    best_loss = model_loss
