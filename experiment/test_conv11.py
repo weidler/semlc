@@ -10,7 +10,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import ConvNet11
+from model.network.alexnet_paper import InhibitionNetwork
 from experiment.train import train
 from experiment.eval import accuracy
 
@@ -36,7 +36,7 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-conv11 = ConvNet11(logdir="nearpaper_bnorm")
+conv11 = InhibitionNetwork(logdir="nearpaper_bnorm")
 
 network = conv11
 

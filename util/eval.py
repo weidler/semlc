@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader, Dataset
 
 
 def accuracy(net, data_set, batch_size):
+    net.eval()
     data_loader = DataLoader(data_set, batch_size=batch_size,
                              shuffle=False, num_workers=0)
     correct = 0
@@ -25,6 +26,7 @@ def accuracy(net, data_set, batch_size):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
+    net.train()
     return 100 * correct / total
 
 

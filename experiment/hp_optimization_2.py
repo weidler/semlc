@@ -12,7 +12,7 @@ from torchvision import transforms, datasets
 from experiment.eval import accuracy
 from experiment.train import custom_optimizer_conv11
 from util.ourlogging import Logger
-from model.network.alexnet_paper import ConvNet11
+from model.network.alexnet_paper import InhibitionNetwork
 
 torch.random.manual_seed(12311)
 np.random.seed(12311)
@@ -176,13 +176,13 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rat
         for scope, ricker_width, damp in configurations:
             print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
             #fix scope when applying depth > 1
-            net = ConvNet11(scope=[scope],
-                            width=ricker_width,
-                            damp=damp,
-                            inhibition_depth=1,
-                            inhibition_strategy=strategy,
-                            logdir=f"{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
-                            )
+            net = InhibitionNetwork(scope=[scope],
+                                    width=ricker_width,
+                                    damp=damp,
+                                    inhibition_depth=1,
+                                    inhibition_strategy=strategy,
+                                    logdir=f"{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
+                                    )
 
             if use_cuda:
                 net.cuda()

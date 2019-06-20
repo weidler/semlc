@@ -14,7 +14,7 @@ from torch.nn.functional import mse_loss
 from tqdm import tqdm
 
 from model.inhibition_layer import SingleShotInhibition, RecurrentInhibition, ConvergedInhibition, \
-    ConvergedToeplitzInhibition
+    ConvergedToeplitzInhibition, ConvergedFrozenInhibition, ConvergedToeplitzFrozenInhibition
 
 
 def make_passes(layer, n):
@@ -34,16 +34,66 @@ def make_passes(layer, n):
 
 
 # SETTINGS
+batches = 1
 n_forward_passes = 100
 depth_x = [16, 32, 64, 128, 256, 512]
 width = 14
 height = 14
 wavelet_width = 6
-
+damping = 0.12
 
 # BENCHMARK
 results_adaptive_scope = {}
 results_constant_scope = {}
+
+depth = depth_x[3]
+scope = depth - 1
+
+tensor_in = torch.zeros((batches, depth, width, height))
+for b in range(batches):
+    for i in range(tensor_in.shape[-1]):
+        for j in range(tensor_in.shape[-2]):
+            tensor_in[b, :, i, j] = torch.from_numpy(gaussian(depth, 6))
+
+simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
+inhibitor = SingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+inhibitor_conv_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+inhibitor_tpl_freeze = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+
+results = []
+for test_layer in tqdm([simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
+                        inhibitor_tpl_freeze]):
+    optimizer = None
+    has_parameters = len(list(test_layer.parameters())) > 0
+    if has_parameters:
+        optimizer = optim.SGD(test_layer.parameters(), 0.01)
+
+    start_time = time.time()
+    for i in range(100):
+        # print(f"BEFORE: {test_layer.inhibition_filter}")
+        if has_parameters:
+            optimizer.zero_grad()
+
+        out = test_layer(tensor_in)
+        target = out * random.random()
+
+        loss = mse_loss(out, target)
+
+        if has_parameters:
+            loss.backward()
+            optimizer.step()
+        # print(f"AFTER: {test_layer.inhibition_filter}")
+
+    execution_time = round(time.time() - start_time, 2)
+    results.append((test_layer.__class__.__name__, execution_time))
+
+print()
+ranked_performance = sorted(results, key=lambda x: x[1])
+for i, (name, t) in enumerate(ranked_performance, 1):
+    print(f"{i}.\t{name} with {t}s.")
 
 # Adaptive depth
 for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
@@ -55,10 +105,10 @@ for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
             tensor_in[0, :, i, j] = torch.from_numpy(gaussian(depth, 4))
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-    inhibitor = SingleShotInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
-    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
-    inhibitor_conv = ConvergedInhibition(scope, wavelet_width, in_channels=depth)
-    inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
+    inhibitor = SingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+    inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
 
     for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
         execution_time = make_passes(test_layer, n_forward_passes)
@@ -77,10 +127,10 @@ for depth in tqdm(depth_x, desc="Constant Depth Benchmark"):
             tensor_in[0, :, i, j] = torch.from_numpy(gaussian(depth, 4))
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-    inhibitor = SingleShotInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
-    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, padding="zeros", learn_weights=True)
-    inhibitor_conv = ConvergedInhibition(scope, wavelet_width, in_channels=depth)
-    inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, in_channels=depth)
+    inhibitor = SingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+    inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
 
     for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
         execution_time = make_passes(test_layer, n_forward_passes)

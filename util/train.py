@@ -1,8 +1,9 @@
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from experiment.eval import accuracy
+from util.eval import accuracy
 
 
 def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, test_set=None, optimizer=None, logger=None):
@@ -14,7 +15,7 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, tes
 
     loss_history = []
     num_examples = train_loader.__len__()
-    for epoch in range(num_epoch):  # loop over the dataset multiple times
+    for epoch in tqdm(range(num_epoch), disable=True):  # loop over the dataset multiple times
         running_loss = 0.0
         if epoch == 100:
             for param_group in optimizer.param_groups:
@@ -53,49 +54,6 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, tes
             logger.save_optimizer(optimizer, epoch)
 
 
-def custom_optimizer_conv18(model):
-    # optim.SGD()
-    optimizer = optim.SGD(
-        [
-            {"params": model.conv1.weight},
-            {"params": model.conv2.weight},
-            {"params": model.conv3.weight},
-            {"params": model.fc.weight, "weight_decay": 1},
-            {"params": model.conv1.bias, "lr": 2e-3},
-            {"params": model.conv2.bias, "lr": 2e-3},
-            {"params": model.conv3.bias, "lr": 2e-3},
-            {"params": model.fc.bias, "lr": 2e-3, "weight_decay": 1},
-        ],
-        lr=1e-3, momentum=0.9, weight_decay=4e-3
-    )
-    return optimizer
-
-
-def custom_optimizer_conv11(model):
-    # optim.SGD()
-    optimizer = optim.SGD(
-        [
-            {"params": model.conv1.weight, "weight_decay": 0},
-            {"params": model.conv2.weight, "weight_decay": 0},
-            {"params": model.conv3.weight, "weight_decay": 4e-3},
-            {"params": model.conv4.weight, "weight_decay": 4e-3},
-            {"params": model.fc.weight, "weight_decay": 1e-2},
-            {"params": model.conv1.bias, "lr": 2e-3, "weight_decay": 0},
-            {"params": model.conv2.bias, "lr": 2e-3, "weight_decay": 0},
-            {"params": model.conv3.bias, "lr": 2e-3, "weight_decay": 4e-3},
-            {"params": model.conv4.bias, "lr": 2e-3, "weight_decay": 4e-3},
-            {"params": model.fc.bias, "lr": 2e-3, "weight_decay": 1e-2},
-        ],
-        lr=1e-3, momentum=0.9
-    )
-    return optimizer
-
-
 if __name__ == "__main__":
-    from model.network.alexnet_paper import ConvNet18, ConvNet11
-    model = ConvNet11()
-    model2 = ConvNet18()
-    opt = custom_optimizer_conv11(model)
-    print(opt)
-    opt = custom_optimizer_conv18(model2)
-    print(opt)
+    from model.network.alexnet_paper import InhibitionNetwork
+    model = InhibitionNetwork()

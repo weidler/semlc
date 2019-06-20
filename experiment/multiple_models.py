@@ -7,9 +7,9 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import ConvNet11
-from experiment.train import train
-from experiment.eval import accuracy
+from model.network.alexnet_paper import InhibitionNetwork, Baseline
+from util.train import train
+from util.eval import accuracy
 
 from util.ourlogging import Logger
 
@@ -30,9 +30,9 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-iterations = 10
+iterations = 1
 for i in range(0, iterations):
-    network = ConvNet11(logdir=f"baseline_{i+1}")
+    network = Baseline(logdir=f"baseline_{i+1}")
 
     if use_cuda:
         network.cuda()
