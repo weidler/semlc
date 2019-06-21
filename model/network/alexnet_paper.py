@@ -17,12 +17,12 @@ class Baseline(nn.Module):
         torch.nn.init.normal_(self.conv1.weight, 0, 0.0001)
         self.relu1 = nn.ReLU(inplace=True)
         self.pool1 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.rnorm1 = nn.BatchNorm2d(64)
+        self.rnorm1 = nn.LocalResponseNorm(9)
 
         self.conv2 = nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2)
         torch.nn.init.normal_(self.conv2.weight, 0, 0.01)
         self.relu2 = nn.ReLU(inplace=True)
-        self.rnorm2 = nn.BatchNorm2d(64)
+        self.rnorm2 = nn.LocalResponseNorm(9)
         self.pool2 = nn.AvgPool2d(kernel_size=3, stride=2)
 
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
