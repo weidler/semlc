@@ -6,7 +6,7 @@ sys.path.append("../")
 
 import torch
 import torchvision
-from torch import nn
+from torch import nn, optim
 from torchvision import transforms
 
 from model.network.alexnet_paper import Baseline
@@ -17,6 +17,27 @@ from util.train import train
 torch.random.manual_seed(12311)
 numpy.random.seed(12311)
 random.seed(12311)
+
+
+def custom_optimizer_conv13(model):
+    # optim.SGD()
+    optimizer = optim.SGD(
+        [
+            {"params": model.conv1.weight, "weight_decay": 0},
+            {"params": model.conv2.weight, "weight_decay": 0},
+            {"params": model.conv3.weight, "weight_decay": 4e-3},
+            {"params": model.conv4.weight, "weight_decay": 4e-3},
+            {"params": model.classifier.weight, "weight_decay": 1e-2},
+            {"params": model.conv1.bias, "lr": 2e-3, "weight_decay": 0},
+            {"params": model.conv2.bias, "lr": 2e-3, "weight_decay": 0},
+            {"params": model.conv3.bias, "lr": 2e-3, "weight_decay": 4e-3},
+            {"params": model.conv4.bias, "lr": 2e-3, "weight_decay": 4e-3},
+            {"params": model.classifier.bias, "lr": 2e-3, "weight_decay": 1e-2},
+        ],
+        lr=1e-3, momentum=0.9
+    )
+    return optimizer
+
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -49,7 +70,8 @@ train(net=network,
       criterion=nn.CrossEntropyLoss(),
       logger=logger,
       test_set=test_set,
-      learn_rate=0.001)
+      optimizer=custom_optimizer_conv13(network)
+      )
 
 print(f"{round(time.time() - start, 2)}s")
 print(accuracy(network, train_set, 128))
