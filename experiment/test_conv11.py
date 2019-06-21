@@ -11,8 +11,8 @@ from torch import nn
 from torchvision import transforms
 
 from model.network.alexnet_paper import InhibitionNetwork
-from experiment.train import train
-from experiment.eval import accuracy
+from util.train import train
+from util.eval import accuracy
 
 from util.ourlogging import Logger
 
@@ -36,7 +36,12 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-conv11 = InhibitionNetwork(logdir="nearpaper_bnorm")
+conv11 = InhibitionNetwork(scope=[63],
+                          width=6,
+                          damp=0.12,
+                          inhibition_depth=0,
+                          inhibition_strategy="once_learned",
+                          logdir="test")
 
 network = conv11
 
