@@ -10,7 +10,7 @@ from torchvision import transforms, datasets
 
 import pandas as pd
 
-from util.eval import accuracy
+from util.eval import accuracy, accuracy_loader
 from model.network.alexnet_paper import InhibitionNetwork
 
 torch.random.manual_seed(12311)
@@ -135,7 +135,7 @@ def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
 
 if __name__ == "__main__":
     batch_size = 128
-    _, _, test_set, valid_set = get_train_valid_loaders("../data/cifar10/", batch_size)
+    _, valid_loader, test_set, valid_set = get_train_valid_loaders("../data/cifar10/", batch_size)
     strategies = ["converged", "toeplitz", "once", "once_learned"]
     # strategies = ["once"]
     # scope is specific to each layer
@@ -150,9 +150,7 @@ if __name__ == "__main__":
     configurations = get_random_samples(samples, range_scope, range_ricker_width, range_damp)
     # configurations = [[27, 3, 0.1]]
 
-    df = pd.DataFrame(columns=["val_acc", "test_acc", "scope", "width", "damp"])
-    df = df.append({'val_acc': 30, 'test_acc': 30, 'scope': 0, 'width': 0, 'damp': 0}, ignore_index=True)
-    df = df.append({'val_acc': 40, 'test_acc': 45, 'scope': 1, 'width': 1, 'damp': 1}, ignore_index=True)
+    df = pd.DataFrame(columns=["val_acc", "test_acc", "strategy", "scope", "width", "damp"])
 
 
     for strategy in strategies:
@@ -168,9 +166,9 @@ if __name__ == "__main__":
                                     )
 
             net.load_state_dict(torch.load(f"../saved_models/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/ConvNet11_{strategy}_39.model"))
-            val_acc = accuracy(net, valid_set, batch_size=batch_size)
+            val_acc = accuracy_loader(net, valid_loader, batch_size=batch_size)
             test_acc = accuracy(net, test_set, batch_size=batch_size)
-            df = df.append({'val_acc': val_acc, 'test_acc': test_acc, 'scope': scope, 'width': ricker_width, 'damp': damp}, ignore_index=True)
+            df = df.append({'val_acc': val_acc, 'test_acc': test_acc, 'strategy': strategy, 'scope': scope, 'width': ricker_width, 'damp': damp}, ignore_index=True)
 
-    df = df.sort_values(by='val_acc', ascending=False)
-    df.to_csv(path_or_buf="../results/hpopt.csv", index=False)
+            df = df.sort_values(by='val_acc', ascending=False)
+            df.to_csv(path_or_buf="../results/hpopt.csv", index=False)

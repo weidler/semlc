@@ -30,6 +30,26 @@ def accuracy(net, data_set, batch_size):
     return 100 * correct / total
 
 
+def accuracy_loader(net, data_loader, batch_size):
+    net.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in data_loader:
+            images, labels = data
+            if torch.cuda.is_available():
+                outputs = net(images.cuda())
+            else:
+                outputs = net(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    net.train()
+    return 100 * correct / total
+
+
+
 def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize: int, confidence: float=0.95) \
         -> Tuple[List[float], Tuple[float, float]]:
     """Determine the mean accuracy of a given list of networks, alongside the confidence interval of this mean.
