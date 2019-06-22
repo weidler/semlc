@@ -31,7 +31,7 @@ def accuracy(net, data_set, batch_size):
 
 
 def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize: int, confidence: float=0.95) \
-        -> Tuple[List[float], Tuple[float, float]]:
+        -> Tuple[float, float, Tuple[float, float]]:
     """Determine the mean accuracy of a given list of networks, alongside the confidence interval of this mean.
     This way, for multiple training runs with random initialization of on architecture, the resulting networks can be
     evaluated for accuracy with more confidence about the true power of the architecture.
@@ -54,4 +54,4 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     h = error * t.ppf((1 + confidence) / 2., len(accuracies) - 1)
     interval = (mean - h, mean + h)
 
-    return mean, interval
+    return mean, h, interval

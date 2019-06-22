@@ -1,4 +1,4 @@
-saved_models/*.model
+saved_models/*
 results/*.loss
 results/*.acc
 results/*.txt
