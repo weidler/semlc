@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from pandas import DataFrame
 from scipy.signal import gaussian
 from torch import nn, optim
 from torch.nn.functional import mse_loss
@@ -18,25 +19,31 @@ from model.inhibition_layer import SingleShotInhibition, RecurrentInhibition, Co
 
 
 def make_passes(layer, n):
-    optimizer = optim.SGD(layer.parameters(), 0.01)
+    optimizer = None
+    has_parameters = len(list(test_layer.parameters())) > 0
+    if has_parameters:
+        optimizer = optim.SGD(test_layer.parameters(), 0.01)
     start_time = time.time()
+
     for i in range(n):
-        optimizer.zero_grad()
+        if has_parameters:
+            optimizer.zero_grad()
 
         out = layer(tensor_in)
         target = out * random.random()
 
         loss = mse_loss(out, target)
-        loss.backward()
 
-        optimizer.step()
+        if has_parameters:
+            loss.backward()
+            optimizer.step()
     return round(time.time() - start_time, 2)
 
 
 # SETTINGS
 batches = 1
 n_forward_passes = 100
-depth_x = [16, 32, 64, 128, 256, 512]
+depth_x = [16, 32, 64, 128, 256]
 width = 14
 height = 14
 wavelet_width = 6
@@ -66,34 +73,18 @@ inhibitor_tpl_freeze = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, d
 results = []
 for test_layer in tqdm([simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
                         inhibitor_tpl_freeze]):
-    optimizer = None
-    has_parameters = len(list(test_layer.parameters())) > 0
-    if has_parameters:
-        optimizer = optim.SGD(test_layer.parameters(), 0.01)
-
-    start_time = time.time()
-    for i in range(100):
-        # print(f"BEFORE: {test_layer.inhibition_filter}")
-        if has_parameters:
-            optimizer.zero_grad()
-
-        out = test_layer(tensor_in)
-        target = out * random.random()
-
-        loss = mse_loss(out, target)
-
-        if has_parameters:
-            loss.backward()
-            optimizer.step()
-        # print(f"AFTER: {test_layer.inhibition_filter}")
-
-    execution_time = round(time.time() - start_time, 2)
+    execution_time = make_passes(test_layer, n_forward_passes)
     results.append((test_layer.__class__.__name__, execution_time))
 
-print()
 ranked_performance = sorted(results, key=lambda x: x[1])
 for i, (name, t) in enumerate(ranked_performance, 1):
     print(f"{i}.\t{name} with {t}s.")
+
+df = DataFrame(ranked_performance)
+df.index += 1
+with open("../documentation/tables/efficiency.tex", "w") as f:
+    f.write(df.to_latex(header=["Strategy", "Time (s)"]))
+
 
 # Adaptive depth
 for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
@@ -109,8 +100,9 @@ for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
     inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-
-    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
+    inhibitor_conv_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    inhibitor_tpl_freeze = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl, inhibitor_conv_freeze, inhibitor_tpl_freeze]:
         execution_time = make_passes(test_layer, n_forward_passes)
         layer_name = test_layer.__class__.__name__
         if layer_name not in results_adaptive_scope:
@@ -131,8 +123,9 @@ for depth in tqdm(depth_x, desc="Constant Depth Benchmark"):
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
     inhibitor_tpl = ConvergedToeplitzInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-
-    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl]:
+    inhibitor_conv_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    inhibitor_tpl_freeze = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_tpl, inhibitor_conv_freeze, inhibitor_tpl_freeze]:
         execution_time = make_passes(test_layer, n_forward_passes)
         layer_name = test_layer.__class__.__name__
         if layer_name not in results_constant_scope:
@@ -163,7 +156,7 @@ axs[1].set_xticks(depth_x)
 
 handles, labels = axs[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc="lower center", ncol=2)
-fig.subplots_adjust(hspace=0.35, bottom=0.15)
+fig.subplots_adjust(hspace=0.35, bottom=0.2)
 
 plt.savefig('../documentation/figures/layer_efficiency.pdf', format="pdf", bbox_inches='tight')
 plt.show()

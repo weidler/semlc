@@ -15,7 +15,7 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, tes
 
     loss_history = []
     num_examples = train_loader.__len__()
-    for epoch in tqdm(range(num_epoch), disable=True):  # loop over the dataset multiple times
+    for epoch in tqdm(range(num_epoch), disable=False):  # loop over the dataset multiple times
         running_loss = 0.0
         if epoch == 100:
             for param_group in optimizer.param_groups:

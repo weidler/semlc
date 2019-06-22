@@ -9,13 +9,15 @@ class Logger:
 
     def __init__(self, model: nn.Module):
         self.model = model
-        inhibition_strategy = '_' + self.model.inhibition_strategy if hasattr(self.model, 'inhibition_strategy') else ''
+        self.mode = ""
+        if hasattr(self.model, 'freeze'):
+            self.mode = '_freeze' if self.model.freeze else ''
         self.logdir = f"{self.model.logdir}/" if hasattr(self.model, 'logdir') and self.model.logdir is not None else ''
-        self.loss_filename = f"../results/{self.logdir}{model.__class__.__name__}{inhibition_strategy}.loss"
-        self.acc_filename = f"../results/{self.logdir}{model.__class__.__name__}{inhibition_strategy}.acc"
-        self.log_filename = f"../logs/{self.logdir}{model.__class__.__name__}{inhibition_strategy}.log"
-        self.model_filename = f"../saved_models/{self.logdir}{model.__class__.__name__}{inhibition_strategy}_n.model"
-        self.opt_filename = f"../saved_models/opt/{self.logdir}{model.__class__.__name__}{inhibition_strategy}_n.opt"
+        self.loss_filename = f"../results/{self.logdir}{model.__class__.__name__}{self.mode}.loss"
+        self.acc_filename = f"../results/{self.logdir}{model.__class__.__name__}{self.mode}.acc"
+        self.log_filename = f"../logs/{self.logdir}{model.__class__.__name__}{self.mode}.log"
+        self.model_filename = f"../saved_models/{self.logdir}{model.__class__.__name__}{self.mode}_n.model"
+        self.opt_filename = f"../saved_models/opt/{self.logdir}{model.__class__.__name__}{self.mode}_n.opt"
 
         self.loss_history = []
         self.acc_history = []
@@ -52,3 +54,7 @@ class Logger:
             f.write(f"{data}\n")
         if console:
             print(data)
+
+    def describe_network(self):
+        print(f"{self.logdir}-{self.model.__class__.__name__}-{self.mode}")
+

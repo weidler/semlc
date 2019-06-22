@@ -188,7 +188,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool=True):
+    def __init__(self, scope: int, ricker_width: float, damp: float, in_channels: int, learn_weights: bool=True):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
@@ -314,7 +314,7 @@ class ConvergedToeplitzFrozenInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int, damp: float = 0.12):
+    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels

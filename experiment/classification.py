@@ -1,18 +1,24 @@
+import random
 import time
 
+import numpy
 import torch
 import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import Baseline
+from model.network.alexnet_paper import Baseline, ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, ConvNet13, \
+    BaselineCMap
 from util.eval import accuracy
 from util.ourlogging import Logger
 from util.train import train
 
-# torch.random.manual_seed(12311)
-# numpy.random.seed(12311)
-# random.seed(12311)
+torch.manual_seed(12311)
+numpy.random.seed(12311)
+random.seed(12311)
+
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -30,12 +36,17 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-network = Baseline(logdir="test")
+# network = Baseline(logdir="test")
+# network = ConvergedInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1, inhibition_end=1, logdir="test")
+# network = ConvNet13(logdir="ConvNet13")
+network = BaselineCMap(logdir="test")
 
 if use_cuda:
     network.cuda()
 
 logger = Logger(network)
+
+logger.describe_network()
 
 start = time.time()
 train(net=network,
