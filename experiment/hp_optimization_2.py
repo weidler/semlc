@@ -133,7 +133,7 @@ def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
 
 
 def get_samples_from_disk():
-    df = pd.read_csv("../data/hp_config.csv", dtype={'scope': int})  # , 'width': int, 'damp': float})
+    df = pd.read_csv("../data/hp_config.csv", dtype={'scope': int, 'width': int, 'damp': float})
     configurations = df.values
     return configurations
 
