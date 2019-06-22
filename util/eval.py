@@ -10,9 +10,13 @@ from torch.utils.data import DataLoader, Dataset
 
 
 def accuracy(net, data_set, batch_size):
-    net.eval()
     data_loader = DataLoader(data_set, batch_size=batch_size,
                              shuffle=False, num_workers=0)
+    return accuracy_from_data_loader(net, data_loader)
+
+
+def accuracy_from_data_loader(net, data_loader):
+    net.eval()
     correct = 0
     total = 0
     with torch.no_grad():

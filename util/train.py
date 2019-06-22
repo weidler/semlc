@@ -6,7 +6,8 @@ from tqdm import tqdm
 from util.eval import accuracy
 
 
-def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, test_set=None, optimizer=None, logger=None):
+def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, test_set=None, optimizer=None, logger=None,
+          verbose=False, save_freq=40):
     train_loader = DataLoader(train_set, batch_size=batch_size,
                               shuffle=True)
     # Adam optimizer by default
@@ -14,8 +15,9 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, tes
         optimizer = optim.Adam(net.parameters(), lr=learn_rate)
 
     loss_history = []
+    max_val_acc = 0
     num_examples = train_loader.__len__()
-    for epoch in tqdm(range(num_epoch), disable=True):  # loop over the dataset multiple times
+    for epoch in tqdm(range(num_epoch), disable=verbose):  # loop over the dataset multiple times
         running_loss = 0.0
         if epoch == 100:
             for param_group in optimizer.param_groups:
@@ -43,15 +45,23 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, tes
                     logger.update_loss(log_loss, epoch + 1)
                     if test_set is not None:
                         acc = accuracy(net, test_set, batch_size)
-                        logger.log('[%d, %5d] loss: %.3f acc: %.3f' % (epoch + 1, i + 1, log_loss, acc), console=True)
+                        if acc > max_val_acc:
+                            max_val_acc = acc
+                            if epoch >= 100:
+                                logger.save_model(epoch)
+                                logger.save_optimizer(optimizer, epoch)
+                        logger.log('[%d, %5d] loss: %.3f acc: %.3f' % (epoch + 1, i + 1, log_loss, acc), console=verbose)
                         logger.update_acc(acc, epoch + 1)
                     else:
-                        logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=True)
+                        logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=verbose)
                 running_loss = 0.0
 
-        if epoch % 5 == 0 or epoch == num_epoch - 1:
+        if epoch > 0 and epoch % save_freq == 0:
             logger.save_model(epoch)
             logger.save_optimizer(optimizer, epoch)
+
+    logger.save_model('final')
+    logger.save_optimizer(optimizer, 'final')
 
 
 if __name__ == "__main__":

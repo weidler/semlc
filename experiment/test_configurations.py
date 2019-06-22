@@ -1,23 +1,24 @@
+import sys
+sys.path.append("../")
+
 import random
-import time
 
 import numpy
 import torch
+
 import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import Baseline, ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, BaselineCMap
-from util.eval import accuracy
-from util.ourlogging import Logger
+from model.network.alexnet_paper import InhibitionNetwork
 from util.train import train
+from util.eval import accuracy
 
-torch.manual_seed(12311)
+from util.ourlogging import Logger
+
+torch.random.manual_seed(12311)
 numpy.random.seed(12311)
 random.seed(12311)
-
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -35,21 +36,27 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-# network = Baseline(logdir="test")
-# network = ConvergedInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1, inhibition_end=1, logdir="test")
-# network = ConvNet13(logdir="ConvNet13")
-network = BaselineCMap(logdir="test")
+strategy = "toeplitz"
+scope = 27
+ricker_width = 3
+damp = 0.1
+net = InhibitionNetwork(logdir=f"{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}",
+                           scope=[scope],
+                           width=ricker_width,
+                           damp=0.1,
+                           inhibition_depth=1,
+                           inhibition_strategy=strategy,
+                           )
+
+network = net
 
 if use_cuda:
     network.cuda()
 
 logger = Logger(network)
 
-logger.describe_network()
-
-start = time.time()
 train(net=network,
-      num_epoch=160,
+      num_epoch=180,
       train_set=train_set,
       batch_size=128,
       criterion=nn.CrossEntropyLoss(),
@@ -57,6 +64,5 @@ train(net=network,
       test_set=test_set,
       learn_rate=0.001)
 
-print(f"{round(time.time() - start, 2)}s")
-print(accuracy(network, train_set, 128))
+network.eval()
 print(accuracy(network, test_set, 128))
