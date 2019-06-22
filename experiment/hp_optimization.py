@@ -1,4 +1,7 @@
 import sys
+
+import pandas as pd
+
 sys.path.append("../")
 
 import random
@@ -9,14 +12,9 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 import numpy as np
 from torchvision import transforms, datasets
 
-from experiment.eval import accuracy
-from experiment.train import custom_optimizer_conv11
+from util.eval import accuracy
 from util.ourlogging import Logger
-from model.network.alexnet_paper import InhibitionNetwork
-
-torch.random.manual_seed(12311)
-np.random.seed(12311)
-random.seed(12311)
+from model.network.alexnet_paper import ConvergedInhibitionNetwork
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -134,6 +132,12 @@ def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
     return configurations
 
 
+def get_samples_from_disk():
+    df = pd.read_csv("../data/hp_config.csv", dtype={'scope': int})#, 'width': int, 'damp': float})
+    configurations = df.values
+    return configurations
+
+
 def validate(net, val_loader, optimizer, criterion):
     model_loss = 0.0
     val_size = val_loader.__len__()
@@ -159,8 +163,9 @@ def validate(net, val_loader, optimizer, criterion):
     #    best_net = net
 
 
-def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None, optimizer=None, log_acc=True):
-    strategies = ["converged", "toeplitz"]#, "once", "once_learned"]
+def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None, optimizer=None,
+           log_acc=True):
+    strategies = ["converged", "toeplitz"]  #, "once", "once_learned"]
     # scope is specific to each layer
     range_scope = np.array([[9, 27, 45, 63],
                             [9, 27, 45, 63],
@@ -169,20 +174,17 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rat
                             ])
     range_ricker_width = [3, 4, 6, 8, 10]
     range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
-    configurations = get_random_samples(samples, range_scope, range_ricker_width, range_damp)
-    best_loss = np.Infinity
-    best_net = None
+    configurations = get_samples_from_disk()
     for strategy in strategies:
         for scope, ricker_width, damp in configurations:
-            print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
-            #fix scope when applying depth > 1
-            net = InhibitionNetwork(scope=[scope],
-                                    width=ricker_width,
-                                    damp=damp,
-                                    inhibition_depth=1,
-                                    inhibition_strategy=strategy,
-                                    logdir=f"{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
-                                    )
+            print("starting", f"str: {strategy} freeze: {strategy == 'toeplitz'} sc: {int(scope)} w: {int(ricker_width)} d: {damp}")
+            # fix scope when applying depth > 1
+            net = ConvergedInhibitionNetwork(scopes=[int(scope)],
+                                             width=int(ricker_width),
+                                             damp=damp,
+                                             freeze=strategy == 'toeplitz',
+                                             logdir=f"0{rep}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
+                                             )
 
             if use_cuda:
                 net.cuda()
@@ -220,7 +222,6 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rat
                         log_loss = running_loss / num_examples
                         loss_history.append(log_loss)
                         if logger is not None:
-                            print("start validating")
                             logger.update_loss(log_loss, epoch + 1)
                             val_loss = validate(net, val_loader, optimizer, criterion)
                             if test_set is not None and log_acc:
@@ -236,19 +237,20 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, samples=30, learn_rat
                     logger.save_model(epoch)
                     logger.save_optimizer(optimizer, epoch)
 
+            logger.save_model('final')
+            logger.save_optimizer(optimizer, 'final')
             end_acc = accuracy(net, test_set, batch_size)
             logger.log(f"acc: {end_acc}")
             optimizer = None
-
-    return best_net
 
 
 if __name__ == "__main__":
     batch_size = 128
     l_rate = 0.001
-    train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size)
-
-    hp_opt(num_epoch=40,
+    train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size,
+                                                                   pin_memory=torch.cuda.is_available())
+    hp_opt(rep=1,
+           num_epoch=40,
            train_loader=train_loader,
            val_loader=valid_loader,
            criterion=nn.CrossEntropyLoss(),
