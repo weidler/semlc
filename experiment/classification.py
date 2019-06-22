@@ -7,8 +7,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import Baseline, ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, ConvNet13, \
-    BaselineCMap
+from model.network.alexnet_paper import Baseline, ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, BaselineCMap
 from util.eval import accuracy
 from util.ourlogging import Logger
 from util.train import train
