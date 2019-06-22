@@ -232,10 +232,6 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
                             else:
                                 logger.log('[%d, %5d] loss: %.3f val_loss: %.3f' % (epoch + 1, i + 1, log_loss, val_loss), console=True)
                         running_loss = 0.0
-    
-                if epoch % 5 == 0 or epoch == num_epoch - 1:
-                    logger.save_model(epoch)
-                    logger.save_optimizer(optimizer, epoch)
 
             logger.save_model('final')
             logger.save_optimizer(optimizer, 'final')

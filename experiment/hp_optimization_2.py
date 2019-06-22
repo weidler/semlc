@@ -238,10 +238,6 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
                                     console=True)
                         running_loss = 0.0
 
-                if epoch % 5 == 0 or epoch == num_epoch - 1:
-                    logger.save_model(epoch)
-                    logger.save_optimizer(optimizer, epoch)
-
             logger.save_model('final')
             logger.save_optimizer(optimizer, 'final')
             end_acc = accuracy(net, test_set, batch_size)
