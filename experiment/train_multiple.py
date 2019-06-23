@@ -40,7 +40,7 @@ train_set, validation_set = torch.utils.data.random_split(trainval_set, [n_train
 #               0          1      2        3            4               5
 strategy = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze"][3]
 iterations = 10
-for i in range(0, iterations):
+for i in range(5, iterations):
     logdir = f"{strategy}_{i+1}"
     network = None
     if strategy == "baseline":

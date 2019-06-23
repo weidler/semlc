@@ -296,6 +296,6 @@ class InhibitionNetwork(nn.Module):
 
 
 if __name__ == "__main__":
-    net = ConvergedInhibitionNetwork(scopes=[27, 33], width=3, damp=0.1, freeze=True, inhibition_start=1,
-                                     inhibition_end=2, logdir="test")
+    net = SingleShotInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1,
+                                     inhibition_end=1, logdir="test")
     print(net.features)
