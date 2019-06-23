@@ -8,7 +8,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import BaselineCMap, Baseline, SingleShotInhibitionNetwork
+from model.network.alexnet_paper import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork
 from util.train import train
 from util.eval import accuracy
 
@@ -38,7 +38,7 @@ n_validation = len(trainval_set) - n_train
 train_set, validation_set = torch.utils.data.random_split(trainval_set, [n_train, n_validation])
 
 #               0          1      2        3            4               5
-strategy = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze"][3]
+strategy = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze"][4]
 iterations = 10
 for i in range(0, iterations):
     logdir = f"{strategy}_{i+1}"
@@ -52,9 +52,9 @@ for i in range(0, iterations):
     elif strategy == "ss_freeze":
         network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, logdir=logdir)
     elif strategy == "converged":
-        raise NotImplementedError("No valid HPOPTIM data.")
+        network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, logdir=logdir)
     elif strategy == "converged_freeze":
-        raise NotImplementedError("No valid HPOPTIM data.")
+        network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, logdir=logdir)  # toeplitz
 
     print(f"{network.__class__.__name__}_{i+1}")
 
