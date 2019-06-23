@@ -243,9 +243,8 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
 if __name__ == "__main__":
     batch_size = 128
     l_rate = 0.001
-    train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size,
-                                                                   pin_memory=torch.cuda.is_available())
-    hp_opt(rep=1,
+    train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size)
+    hp_opt(rep=3,
            num_epoch=40,
            train_loader=train_loader,
            val_loader=valid_loader,
