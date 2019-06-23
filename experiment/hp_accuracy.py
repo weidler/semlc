@@ -10,12 +10,12 @@ from torchvision import transforms, datasets
 
 import pandas as pd
 
-from util.eval import accuracy, accuracy_loader
-from model.network.alexnet_paper import InhibitionNetwork
+from util.eval import accuracy, accuracy_from_data_loader
+from model.network.alexnet_paper import ConvergedInhibitionNetwork
 
-torch.random.manual_seed(12311)
-np.random.seed(12311)
-random.seed(12311)
+#torch.random.manual_seed(12311)
+#np.random.seed(12311)
+#random.seed(12311)
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -133,10 +133,16 @@ def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
     return configurations
 
 
+def get_samples_from_disk():
+    df = pd.read_csv("../data/hp_config.csv", dtype={'scope': int, 'width': int, 'damp': float})
+    configurations = df.values
+    return configurations
+
+
 if __name__ == "__main__":
     batch_size = 128
     _, valid_loader, test_set, valid_set = get_train_valid_loaders("../data/cifar10/", batch_size)
-    strategies = ["converged", "toeplitz", "once", "once_learned"]
+    strategies = ["converged", "toeplitz"]# "once", "once_learned"]
     # strategies = ["once"]
     # scope is specific to each layer
     range_scope = np.array([[9, 27, 45, 63],
@@ -147,28 +153,30 @@ if __name__ == "__main__":
     range_ricker_width = [3, 4, 6, 8, 10]
     range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
     samples = 30
-    configurations = get_random_samples(samples, range_scope, range_ricker_width, range_damp)
+    # configurations = get_random_samples(samples, range_scope, range_ricker_width, range_damp)
     # configurations = [[27, 3, 0.1]]
+    configurations = get_samples_from_disk()
 
-    df = pd.DataFrame(columns=["val_acc", "test_acc", "strategy", "scope", "width", "damp"])
+    # df = pd.DataFrame(columns=["val_acc", "test_acc", "strategy", "scope", "width", "damp"])
 
+    for i in range(1,3):
+        df = pd.DataFrame(columns=["val_acc", "test_acc", "strategy", "scope", "width", "damp"])
+        for strategy in strategies:
+            for scope, ricker_width, damp in configurations:
+                print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
+                # fix scope when applying depth > 1
+                net = ConvergedInhibitionNetwork(scopes=[int(scope)],
+                                                 width=int(ricker_width),
+                                                 damp=damp,
+ 	                                         freeze=strategy=='toeplitz',
+                                                 logdir=f"0{i}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
+                                                 )
 
-    for strategy in strategies:
-        for scope, ricker_width, damp in configurations:
-            print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
-            # fix scope when applying depth > 1
-            net = InhibitionNetwork(scope=[scope],
-                                    width=ricker_width,
-                                    damp=damp,
-                                    inhibition_depth=1,
-                                    inhibition_strategy=strategy,
-                                    logdir=f"{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
-                                    )
+                freeze='_freeze' if strategy=='toeplitz' else ''
+                net.load_state_dict(torch.load(f"../saved_models/0{i}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/ConvergedInhibitionNetwork{freeze}_final.model"))
+                val_acc = accuracy_from_data_loader(net, valid_loader)
+                test_acc = accuracy(net, test_set, batch_size=batch_size)
+                df = df.append({'val_acc': val_acc, 'test_acc': test_acc, 'strategy': strategy, 'scope': scope, 'width': ricker_width, 'damp': damp}, ignore_index=True)
 
-            net.load_state_dict(torch.load(f"../saved_models/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/ConvNet11_{strategy}_39.model"))
-            val_acc = accuracy_loader(net, valid_loader, batch_size=batch_size)
-            test_acc = accuracy(net, test_set, batch_size=batch_size)
-            df = df.append({'val_acc': val_acc, 'test_acc': test_acc, 'strategy': strategy, 'scope': scope, 'width': ricker_width, 'damp': damp}, ignore_index=True)
-
-            df = df.sort_values(by='val_acc', ascending=False)
-            df.to_csv(path_or_buf="../results/hpopt.csv", index=False)
+                df = df.sort_values(by='val_acc', ascending=False)
+                df.to_csv(path_or_buf=f"../results/0{i}/hpopt_0{i}.csv", index=False)
