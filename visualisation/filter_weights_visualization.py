@@ -1,14 +1,11 @@
-from statistics import mean
-
-import torch
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import List
+import torch
 from torch import Tensor
 
 from model.network.alexnet_paper import InhibitionNetwork, Baseline
-from model.network.classification import InhibitionClassificationCNN
 from util.filter_ordering import mse
 
 
@@ -80,13 +77,13 @@ def get_dim_for_plot(n):
     solution = False
     val = nsqrt
     while not solution:
-        val2 = int(n/val)
+        val2 = int(n / val)
         if val2 * val == float(n):
             solution = True
         else:
             val -= 1
     if val == 1:
-        return get_dim_for_plot(n+1)
+        return get_dim_for_plot(n + 1)
     if val <= val2:
         return val, val2
     else:
@@ -100,14 +97,15 @@ if __name__ == "__main__":
     ricker_width = 3
     damp = 0.1
     model = InhibitionNetwork(logdir=f"{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}",
-                           scope=[scope],
-                           width=ricker_width,
-                           damp=0.1,
-                           inhibition_depth=1,
-                           inhibition_strategy=strategy,
-                           )
+                              scope=[scope],
+                              width=ricker_width,
+                              damp=0.1,
+                              inhibition_depth=1,
+                              inhibition_strategy=strategy,
+                              )
 
-    model.load_state_dict(torch.load(f"../saved_models/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/InhibitionNetwork_{strategy}_155.model"))
+    model.load_state_dict(torch.load(
+        f"../saved_models/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/InhibitionNetwork_{strategy}_155.model"))
     base = network = Baseline(logdir="test")
     base.load_state_dict(torch.load("../saved_models/test/Baseline_155.model"))
     nets = [model, base]
@@ -115,12 +113,11 @@ if __name__ == "__main__":
         differences = []
         filters = net.features[0].weight.data.numpy()
         for i in range(len(filters) - 1):
-            diff = mse(filters[i+1], filters[i])
+            diff = mse(filters[i + 1], filters[i])
             differences.append(diff)
         print(sum(differences) / len(differences))
         from util.filter_ordering import two_opt
+
         sorted_filters: List[Tensor] = two_opt(filters)
         show_ordering_difference(filters, sorted_filters)
         # plot_unsorted_and_sorted_filters(filters, sorted_filters)
-
-
