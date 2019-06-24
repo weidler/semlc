@@ -7,7 +7,7 @@ import torchvision
 from torchvision import transforms
 
 from util.eval import accuracy_with_confidence, accuracy
-from model.network.alexnet_paper import InhibitionNetwork, Baseline, BaselineCMap
+from model.network.alexnet_paper import InhibitionNetwork, Baseline, BaselineCMap, SingleShotInhibitionNetwork
 
 # Random seeding is very important, since without the random cropping may be different
 torch.manual_seed(12311)
@@ -31,10 +31,10 @@ transform = transforms.Compose([transforms.RandomCrop(24),
 
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-nets = [BaselineCMap() for i in range(1, 11)]
+nets = [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, 11)]
 
 for i, net in enumerate(nets, 1):
-    net.load_state_dict(torch.load(f"../saved_models/cmapbaseline_{i}/BaselineCMap_159.model"))
+    net.load_state_dict(torch.load(f"../saved_models/ss_freeze_{i}/SingleShotInhibitionNetwork_freeze_final.model"))
 
 print(accuracy_with_confidence(nets, test_set, 128, 0.95))
 
