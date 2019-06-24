@@ -142,9 +142,9 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
                  logdir=None):
         super().__init__(logdir=logdir)
 
-        if len(scopes) != inhibition_end - inhibition_start + 1:
-            raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
-                             f"({inhibition_start}/{inhibition_end}).")
+        #if len(scopes) != inhibition_end - inhibition_start + 1:
+        #    raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
+        #                     f"({inhibition_start}/{inhibition_end}).")
 
         self.scopes = scopes
         self.width = width
@@ -296,6 +296,6 @@ class InhibitionNetwork(nn.Module):
 
 
 if __name__ == "__main__":
-    net = SingleShotInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1,
-                                     inhibition_end=1, logdir="test")
+    net = ConvergedInhibitionNetwork(scopes=[27, 27, 27], width=3, damp=0.1, freeze=True, inhibition_start=2,
+                                     inhibition_end=2, logdir="test")
     print(net.features)

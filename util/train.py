@@ -48,8 +48,8 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, tes
                         if acc > max_val_acc:
                             max_val_acc = acc
                             if epoch >= 100:
-                                logger.save_model(epoch)
-                                logger.save_optimizer(optimizer, epoch)
+                                logger.save_model('best')
+                                logger.save_optimizer(optimizer, 'best')
                         logger.log('[%d, %5d] loss: %.3f acc: %.3f' % (epoch + 1, i + 1, log_loss, acc), console=verbose)
                         logger.update_acc(acc, epoch + 1)
                     else:
