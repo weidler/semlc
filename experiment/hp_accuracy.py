@@ -168,7 +168,7 @@ if __name__ == "__main__":
                 net = ConvergedInhibitionNetwork(scopes=[int(scope)],
                                                  width=int(ricker_width),
                                                  damp=damp,
- 	                                         freeze=strategy=='toeplitz',
+                                                 freeze=strategy=='toeplitz',
                                                  logdir=f"0{i}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
                                                  )
 
