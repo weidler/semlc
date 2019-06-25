@@ -12,13 +12,14 @@ from scipy.signal import ricker, gaussian
 from scipy.fftpack import fft, ifft
 # %%
 
-n_points = 101
+n_points = 5
 w_ricker = 7
 w_input = 4
 
 x = np.linspace(-10,10,101)
 k = np.roll(ricker(n_points, w_ricker), int(n_points / 2)+1) * .12  # Ricker kernel
-W = toeplitz(k)                                                     # kernel -> Toeplitz
+W = toeplitz(k)                               # kernel -> Toeplitz
+print(W)
 z = gaussian(n_points, w_input)                                     # input
 
 """

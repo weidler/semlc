@@ -51,5 +51,5 @@ def toeplitz1d(k: torch.Tensor, m: int, mode: str="circular") -> torch.Tensor:
 
 
 if __name__ == "__main__":
-    kernel = torch.tensor([1, 2, 3, 0, 0, 0])
-    print(toeplitz1d(kernel, 6))
+    kernel = torch.tensor([1, 2, 3, 2, 1])
+    print(toeplitz1d(kernel, 5))
