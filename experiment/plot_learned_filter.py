@@ -6,7 +6,7 @@ from matplotlib import gridspec
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from model.network.alexnet_paper import ConvergedInhibitionNetwork
+from model.network.alexnet_paper import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork
 
 import matplotlib.pyplot as plt
 
@@ -22,23 +22,23 @@ fig.set_size_inches(12, 7)
 gs = fig.add_gridspec(3, 5, height_ratios=[1, 1, 2])
 
 # net = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, inhibition_start=1, inhibition_end=1)
-net = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, inhibition_start=1, inhibition_end=1)
+net = SingleShotInhibitionNetwork([63], 3, 0.1, freeze=False, inhibition_start=1, inhibition_end=1)
 parameters = list(net.named_parameters())
 filter_before = None
 for p in parameters:
-    if p[0] == "features.inhib_1.inhibition_filter":
+    if p[0] == "features.inhib_1.convolver.weight":
         filter_before = p[1].data.cpu().view(-1).numpy()
         break
 
 filters_after = []
 for i in range(1, 11):
-    filename = f"../final_results/converged/converged_{i}/{net.__class__.__name__}_best.model"
+    filename = f"../final_results/ss/ss_{i}/{net.__class__.__name__}_best.model"
     net.load_state_dict(torch.load(filename))
 
     parameters = list(net.named_parameters())
     filter_after = None
     for p in parameters:
-        if p[0] == "features.inhib_1.inhibition_filter":
+        if p[0] == "features.inhib_1.convolver.weight":
             filter_after = p[1].data.cpu().view(-1).numpy()
             break
 
@@ -70,5 +70,5 @@ fig.suptitle("\n\nAdaptions of 10 Independent Trainings")
 ax_left.plot(filter_before, color="royalblue")
 ax_right.plot(mean_filter_after, color="maroon")
 
-plt.savefig("../documentation/figures/adapted_filters.pdf", format="pdf", bbox_inches="tight")
+plt.savefig("../documentation/figures/adapted_filters_ss.pdf", format="pdf", bbox_inches="tight")
 plt.show()
