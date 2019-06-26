@@ -1,1 +1,1 @@
-# improved-octo-brain
+# Modeling Lateral Inhibition in Convolutional Neural Networks
