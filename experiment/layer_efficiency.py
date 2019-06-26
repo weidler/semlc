@@ -89,7 +89,7 @@ def make_input():
 
 
 # SETTINGS
-n_forward_passes = 10
+n_forward_passes = 1
 depth_x = [16, 32, 64, 128]
 width = 28
 height = 28
@@ -156,14 +156,22 @@ for depth in tqdm(depth_x, desc="Constant Depth Benchmark"):
         results_constant_scope[layer_name].append(execution_time)
 
 
+name_map = {
+    'Conv2d': 'Conv2d',
+    'SingleShotInhibition': 'Single Shot',
+    'ConvergedInhibition': 'Converged Adaptive',
+    'ConvergedFrozenInhibition': 'Converged Frozen',
+    'ConvergedToeplitzInhibition': 'Converged Toeplitz',
+    'ConvergedToeplitzFrozenInhibition': 'Converged Frozen Toeplitz'
+}
 # PLOT RESULTS
 axs: List[Axes]
 fig: Figure
 fig, axs = plt.subplots(2, 1)
 fig.set_size_inches(5, 9)
 for layer_name in results_adaptive_scope.keys():
-    axs[0].plot(depth_x, results_adaptive_scope[layer_name], label=layer_name)
-    axs[1].plot(depth_x, results_constant_scope[layer_name], label=layer_name)
+    axs[0].plot(depth_x, results_adaptive_scope[layer_name], label=name_map[layer_name])
+    axs[1].plot(depth_x, results_constant_scope[layer_name], label=name_map[layer_name])
 
 subtitle_font = {"style": "oblique", "size": 11}
 axs[0].set_title("Adaptive Scope", subtitle_font)
