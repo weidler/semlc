@@ -79,6 +79,42 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
         return inhibitions.squeeze_(dim=1)
 
 
+class ToeplitzSingleShotInhibition(nn.Module, InhibitionModule):
+    """Nice Inhibition Layer. """
+
+    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights=False, analyzer=None):
+        super().__init__()
+
+        self.learn_weights = learn_weights
+        self.in_channels = in_channels
+        self.scope = scope
+        self.analyzer = analyzer
+        self.damp = damp
+
+        inhibition_filter = weight_initialization.mexican_hat(scope, damping=damp, std=ricker_width)
+        self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
+        self.inhibition_filter.requires_grad = learn_weights
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # pad roll the filter;
+        # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
+        kernel = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
+
+        # construct filter toeplitz
+        tpl = toeplitz1d(kernel.squeeze(), self.in_channels)
+
+        # stack activation depth-columns for depth-wise convolution
+        stacked_activations = activations.unbind(dim=2)
+        stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
+
+        # convolve by multiplying with tpl
+        convoluted = stacked_activations.matmul(tpl)
+        convoluted = convoluted.permute((0, 2, 1))
+
+        # recover original shape
+        return convoluted.view_as(activations)
+
+
 class RecurrentInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
     axs_convergence: List[Axes]
@@ -116,13 +152,7 @@ class RecurrentInhibition(nn.Module, InhibitionModule):
             for param in self.W_rec.parameters():
                 param.requires_grad = False
 
-        # # figures for visualization
-        # self.fig_convergence, self.axs_convergence = plt.subplots(1, 2)
-        # self.fig_convergence.set_size_inches(12, 5)
-        # self.fig_convergence.suptitle("Convergence of Single Recursive Inhibition Process", )
-
     def forward(self, activations: torch.Tensor, plot_convergence=False) -> torch.Tensor:
-
         # augment channel dimension
         activations = activations.unsqueeze(dim=1)
 
@@ -137,46 +167,17 @@ class RecurrentInhibition(nn.Module, InhibitionModule):
         steps = 0
         dt = 1
         step_difference = math.inf
-        step_differences = []
         converged_inhibition: torch.Tensor = activations.clone()
 
         while steps < self.max_steps and step_difference > self.convergence_threshold:
             inhib_rec = self.W_rec(converged_inhibition)
             phi = activations + inhib_rec
 
-            previous_converged_inhibition = converged_inhibition
-            # Old method which gave training improvement
-            # converged_inhibition = (1 - self.decay) * converged_inhibition + self.decay * phi
-            # new method
             converged_inhibition = dt * phi
             steps += 1
-            step_difference = nn.functional.mse_loss(previous_converged_inhibition, converged_inhibition).item()
-            step_differences.append(step_difference)
-
-            # if plot_convergence:
-            #     self._plot_inhibition_convergence(activations, converged_inhibition, step_differences)
 
         # return inhibited activations without augmented channel dimension
         return converged_inhibition.squeeze_(dim=1)
-
-    def _plot_inhibition_convergence(self, signal_in: torch.Tensor, signal_rec: torch.Tensor,
-                                     step_differences: List[float]) -> None:
-
-        self.axs_convergence[0].cla(), self.axs_convergence[1].cla()
-        self.axs_convergence[0].set_ylim(top=10)
-        self.axs_convergence[1].set_xlim(0, self.max_steps), self.axs_convergence[1].set_ylim(0, 0.03)
-
-        x = list(range(self.scope))
-        self.axs_convergence[0].plot(x, [f.item() for f in signal_in[0, 0, :, 0, 0]], label="Original")
-        self.axs_convergence[0].plot(x, [f.item() for f in signal_rec[0, 0, :, 0, 0]], label="Recurrent")
-
-        self.axs_convergence[1].plot(step_differences, label="Difference to last step")
-        self.axs_convergence[1].plot([self.convergence_threshold for _ in list(range(self.max_steps))],
-                                     label="Convergence Threshold", color="red")
-
-        self.axs_convergence[0].legend(), self.axs_convergence[1].legend()
-
-        plt.pause(0.001)
 
 
 class ConvergedInhibition(nn.Module, InhibitionModule):
@@ -368,6 +369,7 @@ if __name__ == "__main__":
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
     inhibitor = SingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+    inhibitor_ssi_tpl = ToeplitzSingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth, learn_weights=True)
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
     inhibitor_conv_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
@@ -379,6 +381,9 @@ if __name__ == "__main__":
 
     tensor_out = inhibitor(tensor_in)
     plt.plot(tensor_out[0, :, 4, 7].detach().cpu().numpy(), "-.", label="Single Shot")
+
+    tensor_out_tpl_ssi = inhibitor_ssi_tpl(tensor_in)
+    plt.plot(tensor_out[0, :, 4, 7].detach().cpu().numpy(), "--.", label="Single Shot Tpl")
 
     tensor_out_rec = inhibitor_rec(tensor_in)
     plt.plot(tensor_out_rec[0, :, 4, 7].detach().cpu().numpy(), label="Recurrent")
