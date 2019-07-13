@@ -1,14 +1,11 @@
 import math
-import random
-import time
 from typing import List
 
 import matplotlib.pyplot as plt
+import numpy
 import torch
 from matplotlib.axes import Axes
-from torch import nn, optim
-from torch.nn.functional import pad, mse_loss
-from tqdm import tqdm
+from torch import nn
 
 from model.inhibition_module import InhibitionModule
 from util import weight_initialization
@@ -40,7 +37,8 @@ def toeplitz_convolution_3d(tpl_matrix: torch.Tensor, signal_tensor: torch.Tenso
 class SingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
-    def __init__(self, scope: int, ricker_width: int, damp: float, padding: str = "zeros", learn_weights=False, analyzer=None):
+    def __init__(self, scope: int, ricker_width: int, damp: float, padding: str = "zeros", learn_weights=False,
+                 analyzer=None):
         super().__init__()
 
         assert scope % 2 == 1
@@ -95,7 +93,8 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
 class ToeplitzSingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
-    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights=False, analyzer=None):
+    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights=False,
+                 analyzer=None):
         super().__init__()
 
         self.learn_weights = learn_weights
@@ -125,7 +124,8 @@ class RecurrentInhibition(nn.Module, InhibitionModule):
     axs_convergence: List[Axes]
     fig_convergence: plt.Figure
 
-    def __init__(self, scope: int, ricker_width: int, damp: float = 0.12, padding: str = "zeros", learn_weights: bool = False,
+    def __init__(self, scope: int, ricker_width: int, damp: float = 0.12, padding: str = "zeros",
+                 learn_weights: bool = False,
                  decay: float = 0.05, max_steps: int = 10, convergence_threshold: float = 0.00):
         super().__init__()
 
@@ -194,7 +194,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: float, damp: float, in_channels: int, learn_weights: bool=True):
+    def __init__(self, scope: int, ricker_width: float, damp: float, in_channels: int, learn_weights: bool = True):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
@@ -279,7 +279,7 @@ class ConvergedToeplitzInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool=True):
+    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool = True):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
@@ -353,11 +353,18 @@ if __name__ == "__main__":
     for b in range(batches):
         for i in range(tensor_in.shape[-1]):
             for j in range(tensor_in.shape[-2]):
-                tensor_in[b, :, i, j] = torch.from_numpy(gaussian(depth, 6))
+                tensor_in[b, :, i, j] = torch.from_numpy(
+                    gaussian(depth, 6)
+                    + numpy.roll(gaussian(depth, 6), -(scope // 4)) * 0.5
+                    + numpy.roll(gaussian(depth, 6), (scope // 4)) * 0.5
+                    + numpy.roll(gaussian(depth, 6), -(scope // 2)) * 0.2
+                    + numpy.roll(gaussian(depth, 6), (scope // 2)) * 0.2
+                )
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
     inhibitor = SingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
-    inhibitor_ssi_tpl = ToeplitzSingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth, learn_weights=True)
+    inhibitor_ssi_tpl = ToeplitzSingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                     learn_weights=True)
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
     inhibitor_conv_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
