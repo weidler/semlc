@@ -24,6 +24,19 @@ def pad_roll(k, in_channels, scope):
     return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
 
 
+def toeplitz_convolution_3d(tpl_matrix: torch.Tensor, signal_tensor: torch.Tensor):
+    # stack activation depth-columns for depth-wise convolution
+    stacked_activations = signal_tensor.unbind(dim=2)
+    stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
+
+    # convolve by multiplying with tpl
+    convoluted = stacked_activations.matmul(tpl_matrix)
+    convoluted = convoluted.permute((0, 2, 1))
+
+    # recover original shape
+    return convoluted.view_as(signal_tensor)
+
+
 class SingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
@@ -103,16 +116,8 @@ class ToeplitzSingleShotInhibition(nn.Module, InhibitionModule):
         # construct filter toeplitz
         tpl = toeplitz1d(kernel.squeeze(), self.in_channels)
 
-        # stack activation depth-columns for depth-wise convolution
-        stacked_activations = activations.unbind(dim=2)
-        stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
-
-        # convolve by multiplying with tpl
-        convoluted = stacked_activations.matmul(tpl)
-        convoluted = convoluted.permute((0, 2, 1))
-
-        # recover original shape
-        return convoluted.view_as(activations)
+        # convolve by toeplitz
+        return toeplitz_convolution_3d(tpl, activations)
 
 
 class RecurrentInhibition(nn.Module, InhibitionModule):
@@ -294,16 +299,8 @@ class ConvergedToeplitzInhibition(nn.Module, InhibitionModule):
         tpl = toeplitz1d(kernel.squeeze(), self.in_channels)
         tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
-        # stack activation depth-columns for depth-wise convolution with tpl_inv
-        stacked_activations = activations.unbind(dim=2)
-        stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
-
-        # convolve by multiplying with tpl
-        convoluted = stacked_activations.matmul(tpl_inv)
-        convoluted = convoluted.permute((0, 2, 1))
-
-        # recover original shape
-        return convoluted.view_as(activations)
+        # convolve by toeplitz
+        return toeplitz_convolution_3d(tpl_inv, activations)
 
 
 class ConvergedToeplitzFrozenInhibition(nn.Module, InhibitionModule):
@@ -330,16 +327,7 @@ class ConvergedToeplitzFrozenInhibition(nn.Module, InhibitionModule):
         self.tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        # stack activation depth-columns for depth-wise convolution with tpl_inv
-        stacked_activations = activations.unbind(dim=2)
-        stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
-
-        # convolve by multiplying with tpl
-        convoluted = stacked_activations.matmul(self.tpl_inv)
-        convoluted = convoluted.permute((0, 2, 1))
-
-        # recover original shape
-        return convoluted.view_as(activations)
+        return toeplitz_convolution_3d(self.tpl_inv, activations)
 
 
 if __name__ == "__main__":
