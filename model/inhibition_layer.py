@@ -21,17 +21,34 @@ def pad_roll(k, in_channels, scope):
     return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
 
 
-def toeplitz_convolution_3d(tpl_matrix: torch.Tensor, signal_tensor: torch.Tensor):
+def convolve_3d_toeplitz(tpl_matrix: torch.Tensor, signal_tensor: torch.Tensor):
     # stack activation depth-columns for depth-wise convolution
     stacked_activations = signal_tensor.unbind(dim=2)
     stacked_activations = torch.cat(stacked_activations, dim=2).permute((0, 2, 1))
 
     # convolve by multiplying with tpl
-    convoluted = stacked_activations.matmul(tpl_matrix)
-    convoluted = convoluted.permute((0, 2, 1))
+    convolved_tensor = stacked_activations.matmul(tpl_matrix)
+    convolved_tensor = convolved_tensor.permute((0, 2, 1))
 
     # recover original shape
-    return convoluted.view_as(signal_tensor)
+    return convolved_tensor.view_as(signal_tensor)
+
+
+def convolve_3d_fourier(filter: torch.Tensor, signal: torch.Tensor, delta: torch.Tensor):
+    # bring the dimension that needs to be fourier transformed to the end
+    signal = signal.permute((0, 2, 3, 1))
+
+    # fourier transform
+    fourier_activations = torch.rfft(signal, 1, onesided=False)
+    fourier_filter = torch.rfft(delta - filter, 1, onesided=False)
+
+    # divide in frequency domain, then bring back to time domain
+    convolved_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
+
+    # restore original shape
+    convolved_tensor = convolved_tensor.permute((0, 3, 1, 2))
+
+    return convolved_tensor
 
 
 class SingleShotInhibition(nn.Module, InhibitionModule):
@@ -116,7 +133,7 @@ class ToeplitzSingleShotInhibition(nn.Module, InhibitionModule):
         tpl = toeplitz1d(kernel.squeeze(), self.in_channels)
 
         # convolve by toeplitz
-        return toeplitz_convolution_3d(tpl, activations)
+        return convolve_3d_toeplitz(tpl, activations)
 
 
 class RecurrentInhibition(nn.Module, InhibitionModule):
@@ -210,25 +227,12 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         self.kronecker_delta = self.kronecker_delta.view((1, 1, 1, -1))
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        # bring the dimension that needs to be fourier transformed to the end
-        activations = activations.permute((0, 2, 3, 1))
-
         # pad roll the filter;
         # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
         kernel = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
         kernel = kernel.view((1, 1, 1, -1))
 
-        # fourier transform
-        fourier_activations = torch.rfft(activations, 1, onesided=False)
-        fourier_filter = torch.rfft(self.kronecker_delta - kernel, 1, onesided=False)
-
-        # divide in frequency domain, then bring back to time domain
-        inhibited_tensor = torch.irfft(div_complex(fourier_activations, fourier_filter), 1, onesided=False)
-
-        # restore original shape
-        inhibited_tensor = inhibited_tensor.permute((0, 3, 1, 2))
-
-        return inhibited_tensor
+        return convolve_3d_fourier(kernel, activations, self.kronecker_delta)
 
 
 class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
@@ -300,7 +304,7 @@ class ConvergedToeplitzInhibition(nn.Module, InhibitionModule):
         tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
         # convolve by toeplitz
-        return toeplitz_convolution_3d(tpl_inv, activations)
+        return convolve_3d_toeplitz(tpl_inv, activations)
 
 
 class ConvergedToeplitzFrozenInhibition(nn.Module, InhibitionModule):
@@ -327,7 +331,7 @@ class ConvergedToeplitzFrozenInhibition(nn.Module, InhibitionModule):
         self.tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        return toeplitz_convolution_3d(self.tpl_inv, activations)
+        return convolve_3d_toeplitz(self.tpl_inv, activations)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,8 @@ from torch.nn.functional import mse_loss
 from tqdm import tqdm
 
 from model.inhibition_layer import SingleShotInhibition, RecurrentInhibition, ConvergedInhibition, \
-    ConvergedToeplitzInhibition, ConvergedFrozenInhibition, ConvergedToeplitzFrozenInhibition
+    ConvergedToeplitzInhibition, ConvergedFrozenInhibition, ConvergedToeplitzFrozenInhibition, \
+    ToeplitzSingleShotInhibition
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -49,6 +50,7 @@ def make_passes(layer, n):
 def make_layers(depth, scope, recurrent=True):
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
     inhibitor = SingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+    inhibitor_ssi_tpl = ToeplitzSingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth, learn_weights=True)
     inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True,
                                         max_steps=5)
 
@@ -58,10 +60,10 @@ def make_layers(depth, scope, recurrent=True):
     inhibitor_tpl_freeze = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
 
     if recurrent:
-        return [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
+        return [simple_conv, inhibitor, inhibitor_ssi_tpl, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
                 inhibitor_tpl_freeze]
     else:
-        return [simple_conv, inhibitor, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
+        return [simple_conv, inhibitor, inhibitor_ssi_tpl, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
                 inhibitor_tpl_freeze]
 
 
@@ -98,9 +100,8 @@ damping = 0.12
 
 tensor_in = make_input()
 
-
 # RANKED LAYERS
-print("Caclulating Layer Ranking")
+print("Calculating Layer Ranking")
 results_adaptive_scope = {}
 results_constant_scope = {}
 
@@ -125,7 +126,6 @@ df.index += 1
 with open("../documentation/tables/efficiency.tex", "w") as f:
     f.write(df.to_latex(header=["Strategy", "Time (s)"]))
 
-
 # ADAPTIVE DEPTH
 print("Calculating Adaptive Depth Times")
 for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
@@ -139,7 +139,6 @@ for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
         if layer_name not in results_adaptive_scope:
             results_adaptive_scope.update({layer_name: []})
         results_adaptive_scope[layer_name].append(execution_time)
-
 
 # FIXED DEPTH
 print("\nCalculating Fixed Depth Times")
@@ -155,14 +154,14 @@ for depth in tqdm(depth_x, desc="Constant Depth Benchmark"):
             results_constant_scope.update({layer_name: []})
         results_constant_scope[layer_name].append(execution_time)
 
-
 name_map = {
     'Conv2d': 'Conv2d',
     'SingleShotInhibition': 'Single Shot',
     'ConvergedInhibition': 'Converged Adaptive (FFT)',
     'ConvergedFrozenInhibition': 'Converged Frozen (FFT)',
     'ConvergedToeplitzInhibition': 'Converged Adaptive (Toeplitz)',
-    'ConvergedToeplitzFrozenInhibition': 'Converged Frozen (Toeplitz)'
+    'ConvergedToeplitzFrozenInhibition': 'Converged Frozen (Toeplitz)',
+    'ToeplitzSingleShotInhibition': 'Single Shot (Toeplitz)'
 }
 # PLOT RESULTS
 axs: List[Axes]
