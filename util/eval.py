@@ -59,3 +59,20 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     interval = (mean - h, mean + h)
 
     return mean, h, interval
+
+
+def validate(net, val_loader, optimizer, criterion):
+    model_loss = 0.0
+    val_size = val_loader.__len__()
+    net.eval()
+    for i, (inputs, labels) in enumerate(val_loader, 0):
+        optimizer.zero_grad()
+
+        if torch.cuda.is_available():
+            outputs = net(inputs.cuda())
+        else:
+            outputs = net(inputs)
+        loss = criterion(outputs, labels)
+        model_loss += loss.item()
+    net.train()
+    return model_loss / val_size

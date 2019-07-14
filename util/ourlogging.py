@@ -9,15 +9,13 @@ class Logger:
 
     def __init__(self, model: nn.Module):
         self.model = model
-        self.mode = ""
-        if hasattr(self.model, 'freeze'):
-            self.mode = '_freeze' if self.model.freeze else ''
         self.logdir = f"{self.model.logdir}/" if hasattr(self.model, 'logdir') and self.model.logdir is not None else ''
-        self.loss_filename = f"../results/{self.logdir}{model.__class__.__name__}{self.mode}.loss"
-        self.acc_filename = f"../results/{self.logdir}{model.__class__.__name__}{self.mode}.acc"
-        self.log_filename = f"../logs/{self.logdir}{model.__class__.__name__}{self.mode}.log"
-        self.model_filename = f"../saved_models/{self.logdir}{model.__class__.__name__}{self.mode}_n.model"
-        self.opt_filename = f"../saved_models/opt/{self.logdir}{model.__class__.__name__}{self.mode}_n.opt"
+        self.loss_filename = f"../results/{self.logdir}{model}.loss"
+        self.acc_filename = f"../results/{self.logdir}{model}.acc"
+        self.log_filename = f"../logs/{self.logdir}{model}.log"
+        self.model_filename = f"../saved_models/{self.logdir}{model}_n.model"
+        self.best_model_filename = f"../final_results/{self.logdir}{model}_n.model"
+        self.opt_filename = f"../saved_models/opt/{self.logdir}{model}_n.opt"
 
         self.loss_history = []
         self.acc_history = []
@@ -35,12 +33,7 @@ class Logger:
             f.write("\n".join([f"{e}\t{a}" for e, a in self.acc_history]))
 
     def save_model(self, epoch, best=False):
-        if not best:
-            path = re.sub("_n", f"_{epoch}", self.model_filename)
-        else:
-            # hard coded length 16 of "../saved_models/"
-            path = self.model_filename[:16] + "best/" + self.model_filename[16:]
-            path = re.sub("_n", f"_{epoch}", path)
+        path = re.sub("_n", f"_{epoch}", self.model_filename if not best else self.best_model_filename)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.model.state_dict(), path)
 

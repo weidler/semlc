@@ -7,7 +7,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import InhibitionNetwork, Baseline
+from model.network.alexnet_paper import Baseline
 from util.train import train
 from util.eval import accuracy
 
@@ -45,7 +45,6 @@ for i in range(0, iterations):
           batch_size=128,
           criterion=nn.CrossEntropyLoss(),
           logger=logger,
-          test_set=test_set,
           learn_rate=0.001)
 
     network.eval()

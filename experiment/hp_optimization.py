@@ -2,6 +2,8 @@ import sys
 
 import pandas as pd
 
+from util.train import train_model
+
 sys.path.append("../")
 
 import random
@@ -22,6 +24,16 @@ if torch.cuda.is_available():
     torch.set_default_tensor_type(torch.cuda.FloatTensor)
 
 print(f"USE CUDA: {use_cuda}.")
+
+strategies = ["converged", "toeplitz", "once", "once_learned"]
+# scope is specific to each layer
+range_scope = np.array([[9, 27, 45, 63],
+                        [9, 27, 45, 63],
+                        [9, 27, 45, 63],
+                        [7, 17, 25, 31],
+                        ])
+range_ricker_width = [3, 4, 6, 8, 10]
+range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
 
 
 def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, shuffle=True, pin_memory=False):
@@ -60,8 +72,8 @@ def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, 
 
     # define transforms
     valid_transform = transforms.Compose([
-            transforms.ToTensor(),
-            normalize,
+        transforms.ToTensor(),
+        normalize,
     ])
     if augment:
         valid_transform = train_transform = transforms.Compose([
@@ -138,51 +150,18 @@ def get_samples_from_disk():
     return configurations
 
 
-def validate(net, val_loader, optimizer, criterion):
-    model_loss = 0.0
-    val_size = val_loader.__len__()
-    net.eval()
-    # check validation loss to decide which model we keep
-    for i, (inputs, labels) in enumerate(val_loader, 0):
-        # zero the parameter gradients
-        optimizer.zero_grad()
-
-        # forward + backward + optimize
-        if torch.cuda.is_available():
-            outputs = net(inputs.cuda())
-        else:
-            outputs = net(inputs)
-        loss = criterion(outputs, labels)
-        model_loss += loss.item()
-    net.train()
-    return model_loss / val_size
-    # if best_loss > model_loss:
-    #    best_loss = model_loss
-    #    # save the model
-    #    logger.save_model(num_epoch, best=True)
-    #    best_net = net
-
-
-def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None, optimizer=None,
-           log_acc=True):
-    strategies = ["converged", "toeplitz"]  #, "once", "once_learned"]
-    # scope is specific to each layer
-    range_scope = np.array([[9, 27, 45, 63],
-                            [9, 27, 45, 63],
-                            [9, 27, 45, 63],
-                            [7, 17, 25, 31],
-                            ])
-    range_ricker_width = [3, 4, 6, 8, 10]
-    range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
+def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None,
+           optimizer=None, verbose=True):
     configurations = get_samples_from_disk()
-    for strategy in strategies:
+    for strategy in strategies[1:2]:
         for scope, ricker_width, damp in configurations:
-            print("starting", f"str: {strategy} freeze: {strategy == 'toeplitz'} sc: {int(scope)} w: {int(ricker_width)} d: {damp}")
+            print("starting",
+                  f"str: {strategy} freeze: {strategy == 'toeplitz'} sc: {int(scope)} w: {int(ricker_width)} d: {damp}")
             # fix scope when applying depth > 1
             net = ConvergedInhibitionNetwork(scopes=[int(scope)],
                                              width=int(ricker_width),
                                              damp=damp,
-                                             freeze=strategy == 'toeplitz',
+                                             freeze=strategy == 'toeplitz' or strategy == 'once',
                                              logdir=f"0{rep}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
                                              )
 
@@ -194,64 +173,34 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
             # Adam optimizer by default
             if optimizer is None:
                 optimizer = optim.Adam(net.parameters(), lr=learn_rate)
-    
-            loss_history = []
-            num_examples = train_loader.__len__()
-            for epoch in range(num_epoch):  # loop over the dataset multiple times
-                running_loss = 0.0
-                if epoch == 100:
-                    for param_group in optimizer.param_groups:
-                        param_group['lr'] = param_group['lr'] * 0.1
-    
-                for i, (inputs, labels) in enumerate(train_loader, 0):
-                    # zero the parameter gradients
-                    optimizer.zero_grad()
-    
-                    # forward + backward + optimize
-                    if torch.cuda.is_available():
-                        outputs = net(inputs.cuda())
-                    else:
-                        outputs = net(inputs)
-                    loss = criterion(outputs, labels)
-                    loss.backward()
-                    optimizer.step()
-    
-                    # print statistics
-                    running_loss += loss.item()
-                    if i == num_examples - 1:
-                        log_loss = running_loss / num_examples
-                        loss_history.append(log_loss)
-                        if logger is not None:
-                            logger.update_loss(log_loss, epoch + 1)
-                            val_loss = validate(net, val_loader, optimizer, criterion)
-                            if test_set is not None and log_acc:
-                                acc = accuracy(net, test_set, batch_size)
-                                logger.log('[%d, %5d] loss: %.3f val_loss: %.3f acc: %.3f' % (epoch + 1, i + 1, log_loss, val_loss, acc),
-                                           console=True)
-                                logger.update_acc(acc, epoch + 1)
-                            else:
-                                logger.log('[%d, %5d] loss: %.3f val_loss: %.3f' % (epoch + 1, i + 1, log_loss, val_loss), console=True)
-                        running_loss = 0.0
 
-            logger.save_model('final')
-            logger.save_optimizer(optimizer, 'final')
+            train_model(net=net,
+                        num_epoch=num_epoch,
+                        train_loader=train_loader,
+                        batch_size=batch_size,
+                        criterion=criterion,
+                        logger=logger,
+                        val_loader=val_loader,
+                        optimizer=optimizer,
+                        learn_rate=learn_rate,
+                        verbose=verbose)
+
             end_acc = accuracy(net, test_set, batch_size)
-            logger.log(f"acc: {end_acc}")
+            logger.log(f"test acc: {end_acc}")
             optimizer = None
 
 
 if __name__ == "__main__":
+    print(strategies[1:2])
     batch_size = 128
     l_rate = 0.001
     train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size)
-    hp_opt(rep=3,
-           num_epoch=40,
+    hp_opt(rep=1,
+           num_epoch=1,
            train_loader=train_loader,
            val_loader=valid_loader,
            criterion=nn.CrossEntropyLoss(),
-           learn_rate=0.001,
+           learn_rate=l_rate,
            test_set=test_set,
            samples=30,
-           log_acc=False
-           )
-
+           verbose=True)
