@@ -153,7 +153,7 @@ def get_samples_from_disk():
 def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None,
            optimizer=None, verbose=True):
     configurations = get_samples_from_disk()
-    for strategy in strategies[1:2]:
+    for strategy in strategies:
         for scope, ricker_width, damp in configurations:
             print("starting",
                   f"str: {strategy} freeze: {strategy == 'toeplitz'} sc: {int(scope)} w: {int(ricker_width)} d: {damp}")
@@ -191,7 +191,6 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
 
 
 if __name__ == "__main__":
-    print(strategies[1:2])
     batch_size = 128
     l_rate = 0.001
     train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size)
