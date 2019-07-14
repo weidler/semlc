@@ -74,6 +74,12 @@ class _AlexNetBase(nn.Module):
             self.features.add_module("inhib_4", inhibition_layers["inhib_4"])
         self.features.add_module("relu_4", self.relu4)
 
+    def __str__(self):
+        name = self.__class__.__name__
+        if hasattr(self, 'freeze'):
+            name += '_frozen' if self.freeze else ''
+        return name
+
 
 class Baseline(_AlexNetBase):
 
@@ -293,6 +299,12 @@ class InhibitionNetwork(nn.Module):
         x = self.classifier(x)
 
         return x
+
+    def __str__(self):
+        name = f"{self.__class__.__name__}_{self.inhibition_strategy}"
+        if hasattr(self, 'freeze'):
+            name += '_frozen' if self.freeze else ''
+        return name
 
 
 if __name__ == "__main__":
