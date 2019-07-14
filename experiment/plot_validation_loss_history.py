@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-compared_models = ["baseline", "cmapbaseline", "ss_freeze", "converged", "converged_freeze"]
+compared_models = ["baseline", "cmap", "ss_freeze", "ss", "converged_freeze", "converged"]
+model_names = ["Baseline", "Baseline + LRN", "Single Shot Frozen",
+               "Single Shot Adaptive", "Converged Frozen", "Converged Adaptive"]
 # compared_models = ["baseline", "converged_freeze"]
 
 axs: List[Axes]
@@ -31,8 +33,8 @@ for model_name in compared_models:
                 print("[WARNING]: Unexpected number of epochs.")
     print(len(histories[model_name]))
     mean_histories.update({model_name: numpy.mean(numpy.array(histories[model_name]), axis=0)})
-    axs[0].plot(mean_histories[model_name], label=model_name)
-    axs[1].plot(mean_histories[model_name], label=model_name)
+    axs[0].plot(mean_histories[model_name], label=model_names[compared_models.index(model_name)])
+    axs[1].plot(mean_histories[model_name], label=model_names[compared_models.index(model_name)])
 
 axs[1].set_ylim(78, 84)
 axs[1].set_xlim(80, 160)
