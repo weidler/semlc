@@ -1,8 +1,8 @@
 saved_models/*
-results/*.loss
-results/*.acc
-results/*.txt
-results/*.png
+results/**/*.loss
+results/**/*.acc
+results/**/*.txt
+results/**/*.png
 data/cifar10/*
 generated/
 logs/
