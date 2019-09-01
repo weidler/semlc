@@ -1,12 +1,16 @@
-saved_models/*
-results/**/*.loss
-results/**/*.acc
-results/**/*.txt
-results/**/*.png
+_deprecated/saved_models
+_deprecated/results/**/*.loss
+_deprecated/results/**/*.acc
+_deprecated/results/**/*.txt
+_deprecated/results/**/*.png
 data/cifar10/*
 generated/
-logs/
+_deprecated/logs/
 .idea/
+
+output/*.txt
+output/*.loss
+output/*.model
 
 # Created by https://www.gitignore.io/api/python,pycharm
 # Edit at https://www.gitignore.io/?templates=python,pycharm
