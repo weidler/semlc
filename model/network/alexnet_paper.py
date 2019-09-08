@@ -4,13 +4,13 @@ import torch
 from torch import nn
 
 from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition, ConvergedToeplitzFrozenInhibition
+from model.network.base import _BaseNetwork
 
 
-class _AlexNetBase(nn.Module):
+class _AlexNetBase(_BaseNetwork, nn.Module):
 
-    def __init__(self, logdir=None):
+    def __init__(self):
         super().__init__()
-        self.logdir = logdir
 
         self.features = nn.Sequential()
 
@@ -83,15 +83,15 @@ class _AlexNetBase(nn.Module):
 
 class Baseline(_AlexNetBase):
 
-    def __init__(self, logdir=None):
-        super().__init__(logdir=logdir)
+    def __init__(self):
+        super().__init__()
         self.build_module({})
 
 
 class BaselineCMap(_AlexNetBase):
 
-    def __init__(self, logdir=None):
-        super().__init__(logdir=logdir)
+    def __init__(self):
+        super().__init__()
 
         self.cnorm1 = nn.CrossMapLRN2d(9, k=2, alpha=10e-4, beta=0.75)
         self.cnorm2 = nn.CrossMapLRN2d(9, k=2, alpha=10e-4, beta=0.75)
@@ -117,9 +117,8 @@ class BaselineCMap(_AlexNetBase):
 
 class SingleShotInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1,
-                 logdir=None):
-        super().__init__(logdir=logdir)
+    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1):
+        super().__init__()
 
         if len(scopes) != inhibition_end - inhibition_start + 1:
             raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
@@ -144,9 +143,8 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
 
 class ConvergedInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1,
-                 logdir=None):
-        super().__init__(logdir=logdir)
+    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1):
+        super().__init__()
 
         #if len(scopes) != inhibition_end - inhibition_start + 1:
         #    raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
@@ -179,135 +177,7 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
         return x
 
 
-class InhibitionNetwork(nn.Module):
-
-    def __init__(self, scope, width, damp, logdir=None, inhibition_strategy: str = "once",
-                 inhibit_start=1, inhibition_depth=0):
-        super().__init__()
-
-        counter = inhibit_start
-        self.logdir = logdir
-        self.inhibition_strategy = inhibition_strategy
-
-        assert self.inhibition_strategy in ["once", "once_learned", "converged", "toeplitz"]
-
-        self.features = nn.Sequential()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2)
-        torch.nn.init.normal_(self.conv1.weight, 0, 0.0001)
-
-        self.relu1 = nn.ReLU(inplace=True)
-
-        self.pool1 = nn.MaxPool2d(kernel_size=3, stride=2)
-
-        bnorm1 = nn.BatchNorm2d(64)
-
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2)
-        torch.nn.init.normal_(self.conv2.weight, 0, 0.01)
-
-        self.relu2 = nn.ReLU(inplace=True)
-
-        bnorm2 = nn.BatchNorm2d(64)
-
-        self.pool2 = nn.AvgPool2d(kernel_size=3, stride=2)
-
-        # this should be a locally connected layer
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
-        torch.nn.init.normal_(self.conv3.weight, 0, 0.04)
-
-        self.relu3 = nn.ReLU(inplace=True)
-
-        # this should be a locally connected layer
-        self.conv4 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
-        torch.nn.init.normal_(self.conv4.weight, 0, 0.04)
-
-        self.relu4 = nn.ReLU(inplace=True)
-
-        self.features.add_module("conv_1", self.conv1)
-        if counter <= inhibition_depth:
-            self.features.add_module("inhib_{}".format(counter),
-                                     SingleShotInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                          learn_weights=False)
-                                     if self.inhibition_strategy == "once"
-                                     else SingleShotInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                               learn_weights=True)
-                                     if self.inhibition_strategy == "once_learned"
-                                     else ConvergedInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                              in_channels=64)
-                                     if self.inhibition_strategy == "converged"
-                                     else ConvergedToeplitzFrozenInhibition(scope=scope[counter - 1],
-                                                                            ricker_width=width, damp=damp,
-                                                                            in_channels=64))
-            counter += 1
-        self.features.add_module("relu_1", self.relu1)
-        self.features.add_module("pool_1", self.pool1)
-        self.features.add_module("bnorm_1", bnorm1)
-        self.features.add_module("conv_2", self.conv2)
-        if counter <= inhibition_depth:
-            self.features.add_module("inhib_{}".format(counter),
-                                     SingleShotInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                          learn_weights=self.learn_weights)
-                                     if self.inhibition_strategy == "once"
-                                     else ConvergedInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                              learn_weights=self.learn_weights, in_channels=64)
-                                     if self.inhibition_strategy == "converged"
-                                     else ConvergedToeplitzFrozenInhibition(scope=scope[counter - 1],
-                                                                            ricker_width=width, damp=damp,
-                                                                            in_channels=64))
-            counter += 1
-        self.features.add_module("relu_2", self.relu2)
-        self.features.add_module("bnorm_2", bnorm2)
-        self.features.add_module("pool_2", self.pool2)
-        self.features.add_module("conv_3", self.conv3)
-        if counter <= inhibition_depth:
-            self.features.add_module("inhib_{}".format(counter),
-                                     SingleShotInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                          learn_weights=self.learn_weights)
-                                     if self.inhibition_strategy == "once"
-                                     else ConvergedInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                              learn_weights=self.learn_weights, in_channels=64)
-                                     if self.inhibition_strategy == "converged"
-                                     else ConvergedToeplitzFrozenInhibition(scope=scope[counter - 1],
-                                                                            ricker_width=width, damp=damp,
-                                                                            in_channels=64))
-            counter += 1
-        self.features.add_module("relu_3", self.relu3)
-        self.features.add_module("conv_4", self.conv4)
-        if counter <= inhibition_depth:
-            self.features.add_module("inhib_{}".format(counter),
-                                     SingleShotInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                          learn_weights=self.learn_weights)
-                                     if self.inhibition_strategy == "once"
-                                     else ConvergedInhibition(scope=scope[counter - 1], ricker_width=width, damp=damp,
-                                                              learn_weights=self.learn_weights, in_channels=32)
-                                     if self.inhibition_strategy == "converged"
-                                     else ConvergedToeplitzFrozenInhibition(scope=scope[counter - 1],
-                                                                            ricker_width=width, damp=damp,
-                                                                            in_channels=32))
-            counter += 1
-        self.features.add_module("relu_4", self.relu4)
-
-        self.fc = nn.Linear(32 * 5 * 5, 10)
-        torch.nn.init.normal_(self.fc.weight, 0, 0.01)
-
-        self.classifier = nn.Sequential(
-            self.fc
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), 32 * 5 * 5)
-        x = self.classifier(x)
-
-        return x
-
-    def __str__(self):
-        name = f"{self.__class__.__name__}_{self.inhibition_strategy}"
-        if hasattr(self, 'freeze'):
-            name += '_frozen' if self.freeze else ''
-        return name
-
-
 if __name__ == "__main__":
     net = ConvergedInhibitionNetwork(scopes=[27, 27, 27], width=3, damp=0.1, freeze=True, inhibition_start=2,
-                                     inhibition_end=2, logdir="test")
+                                     inhibition_end=2)
     print(net.features)

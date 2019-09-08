@@ -38,7 +38,7 @@ test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, downloa
 # network = Baseline(logdir="test")
 # network = ConvergedInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1, inhibition_end=1, logdir="test")
 # network = ConvNet13(logdir="ConvNet13")
-network = BaselineCMap(logdir="test")
+network = BaselineCMap()
 
 if use_cuda:
     network.cuda()
@@ -54,7 +54,7 @@ train(net=network,
       batch_size=128,
       criterion=nn.CrossEntropyLoss(),
       logger=logger,
-      test_set=test_set,
+      val_set=test_set,
       learn_rate=0.001)
 
 print(f"{round(time.time() - start, 2)}s")

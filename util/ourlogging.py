@@ -1,21 +1,31 @@
+import datetime
+import random
 import re
 import os
 import torch
+import time
+
 
 from torch import nn
+
+from model.inhibition_layer import SingleShotInhibition
+from model.network.alexnet_paper import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, Baseline
 
 
 class Logger:
 
     def __init__(self, model: nn.Module):
         self.model = model
-        self.logdir = f"{self.model.logdir}/" if hasattr(self.model, 'logdir') and self.model.logdir is not None else ''
-        self.loss_filename = f"../results/{self.logdir}{model}.loss"
-        self.acc_filename = f"../results/{self.logdir}{model}.acc"
-        self.log_filename = f"../logs/{self.logdir}{model}.log"
-        self.model_filename = f"../saved_models/{self.logdir}{model}_n.model"
-        self.best_model_filename = f"../final_results/{self.logdir}{model}_n.model"
-        self.opt_filename = f"../saved_models/opt/{self.logdir}{model}_n.opt"
+        self.process_id = str(int(time.time() * 10000)) + str(random.randint(100000, 999999))
+        self.loss_filename = f"../output/{self.process_id}.loss"
+        self.log_filename = f"../output/{self.process_id}.log"
+        self.model_filename = f"../output/{self.process_id}_n.model"
+        self.best_model_filename = f"../output/{self.process_id}_best.model"
+
+        with open("../output/keychain.txt", "a") as f:
+            f.write(
+                f"{self.process_id}\t{repr(model)}\t{datetime.datetime.now()}\n"
+            )
 
         self.loss_history = []
         self.acc_history = []
@@ -37,10 +47,6 @@ class Logger:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.model.state_dict(), path)
 
-    def save_optimizer(self, optimizer, epoch):
-        os.makedirs(os.path.dirname(self.opt_filename), exist_ok=True)
-        torch.save(optimizer.state_dict(), re.sub("_n", f"_{epoch}", self.opt_filename))
-
     def log(self, data, console=False):
         os.makedirs(os.path.dirname(self.log_filename), exist_ok=True)
         with open(self.log_filename, "a") as f:
@@ -49,5 +55,15 @@ class Logger:
             print(data)
 
     def describe_network(self):
-        print(f"{self.logdir}-{self.model.__class__.__name__}-{self.mode}")
+        print(repr(self.model))
 
+
+if __name__ == "__main__":
+    net = SingleShotInhibitionNetwork(scopes=[9],
+                                     width=int(4),
+                                     damp=0.1,
+                                     freeze=True)
+    base = Baseline()
+
+    logger = Logger(base)
+    print(logger.process_id)
