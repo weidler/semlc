@@ -3,7 +3,9 @@ from typing import List, Dict
 import torch
 from torch import nn
 
-from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition, ConvergedToeplitzFrozenInhibition
+from model.inhibition_layer import ConvergedToeplitzFrozenInhibition
+from model.fft_inhibition_layer import ConvergedInhibition
+from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition
 from model.network.base import _BaseNetwork
 
 
@@ -135,8 +137,8 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(inhibition_start, inhibition_end + 1):
             inhibition_layers.update(
-                {f"inhib_{i}": SingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
-                                                    learn_weights=not freeze)})
+                {f"inhib_{i}": Conv3DSingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
+                                                          learn_weights=not freeze)})
 
         self.build_module(inhibition_layers)
 
