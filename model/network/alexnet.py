@@ -2,7 +2,7 @@ from torch import nn
 import torch
 #from torchvision.models import AlexNet
 
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
+from model.inhibition_layer import SingleShotInhibition, RecurrentInhibition
 
 
 class AlexNetInhibition(nn.Module):
@@ -19,43 +19,43 @@ class AlexNetInhibition(nn.Module):
         self.features.add_module("conv_1", nn.Conv2d(3, 96, kernel_size=11, stride=4, padding=2))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Conv3DSingleShotInhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
-                                     else Conv3DRecurrentInhibition(5, learn_weights=learn_inhibition_weights))
+                                     else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter+=1
         self.features.add_module("relu_1",nn.ReLU(inplace=True))
         self.features.add_module("maxpool_1", nn.MaxPool2d(kernel_size=3, stride=2))
         self.features.add_module("conv_2", nn.Conv2d(96, 256, kernel_size=5, padding=2))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Conv3DSingleShotInhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
-                                     else Conv3DRecurrentInhibition(5, learn_weights=learn_inhibition_weights))
+                                     else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1
         self.features.add_module("relu_2", nn.ReLU(inplace=True))
         self.features.add_module("maxpool_2", nn.MaxPool2d(kernel_size=3, stride=2))
         self.features.add_module("conv_3", nn.Conv2d(256, 384, kernel_size=3, padding=1))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Conv3DSingleShotInhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
-                                     else Conv3DRecurrentInhibition(5, learn_weights=learn_inhibition_weights))
+                                     else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1
         self.features.add_module("relu_3", nn.ReLU(inplace=True))
         self.features.add_module("conv_4", nn.Conv2d(384, 384, kernel_size=3, padding=1))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Conv3DSingleShotInhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
-                                     else Conv3DRecurrentInhibition(5, learn_weights=learn_inhibition_weights))
+                                     else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1
         self.features.add_module("relu_4", nn.ReLU(inplace=True))
         self.features.add_module("conv_5", nn.Conv2d(384, 256, kernel_size=3, padding=1))
         if counter <= inhibition_depth:
             self.features.add_module("inhib_{}".format(counter),
-                                     Conv3DSingleShotInhibition(5, learn_weights=learn_inhibition_weights)
+                                     SingleShotInhibition(5, learn_weights=learn_inhibition_weights)
                                      if self.inhibition_strategy == "once"
-                                     else Conv3DRecurrentInhibition(5, learn_weights=learn_inhibition_weights))
+                                     else RecurrentInhibition(5, learn_weights=learn_inhibition_weights))
             counter += 1
         self.features.add_module("relu_5", nn.ReLU(inplace=True))
         self.features.add_module("maxpool_3", nn.MaxPool2d(kernel_size=3, stride=2))
