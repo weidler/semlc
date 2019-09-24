@@ -13,9 +13,10 @@ from torch import nn, optim
 from torch.nn.functional import mse_loss
 from tqdm import tqdm
 
-from model.inhibition_layer import SingleShotInhibition, RecurrentInhibition, ConvergedInhibition, \
-    ConvergedToeplitzInhibition, ConvergedFrozenInhibition, ConvergedToeplitzFrozenInhibition, \
+from model.inhibition_layer import ConvergedToeplitzInhibition, ConvergedToeplitzFrozenInhibition, \
     ToeplitzSingleShotInhibition
+from model.fft_inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
+from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -49,10 +50,10 @@ def make_passes(layer, n):
 
 def make_layers(depth, scope, recurrent=True):
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-    inhibitor = SingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
+    inhibitor = Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
     inhibitor_ssi_tpl = ToeplitzSingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth, learn_weights=True)
-    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True,
-                                        max_steps=5)
+    inhibitor_rec = Conv3DRecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True,
+                                              max_steps=5)
 
     inhibitor_conv = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
     inhibitor_conv_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
