@@ -37,6 +37,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # pad roll the filter;
         # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
+        # cannot think of anything better, will probably do for now, see how it performs
         kernel = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
         kernel = kernel.view((1, 1, 1, -1))
 

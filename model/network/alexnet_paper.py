@@ -1,10 +1,8 @@
 from typing import List, Dict
 
-import torch
 from torch import nn
 
-from model.inhibition_layer import ConvergedToeplitzFrozenInhibition
-from model.fft_inhibition_layer import ConvergedInhibition
+from model.fft_inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
 from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition
 from model.network.base import _BaseNetwork
 
@@ -165,7 +163,7 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
             inhibition_layers.update(
                 {f"inhib_{i}": ConvergedInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
                                                    in_channels=64) if not self.freeze else
-                ConvergedToeplitzFrozenInhibition(scope=scopes[i - 1],
+                ConvergedFrozenInhibition(scope=scopes[i - 1],
                                                   ricker_width=width, damp=damp,
                                                   in_channels=64)})
 
