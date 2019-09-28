@@ -2,8 +2,7 @@ from typing import List, Dict
 
 from torch import nn
 
-from model.fft_inhibition_layer import FFTConvergedInhibition, FFTConvergedFrozenInhibition
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition
+from model.inhibition_layer import SingleShotInhibition, ConvergedFrozenInhibition, ConvergedInhibition
 from model.network.base import _BaseNetwork
 
 
@@ -135,8 +134,8 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(inhibition_start, inhibition_end + 1):
             inhibition_layers.update(
-                {f"inhib_{i}": Conv3DSingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
-                                                          learn_weights=not freeze)})
+                {f"inhib_{i}": SingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
+                                                    learn_weights=not freeze)})
 
         self.build_module(inhibition_layers)
 
@@ -146,7 +145,7 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
     def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1):
         super().__init__()
 
-        #if len(scopes) != inhibition_end - inhibition_start + 1:
+        # if len(scopes) != inhibition_end - inhibition_start + 1:
         #    raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
         #                     f"({inhibition_start}/{inhibition_end}).")
 
@@ -161,11 +160,11 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(inhibition_start, inhibition_end + 1):
             inhibition_layers.update(
-                {f"inhib_{i}": FFTConvergedInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
-                                                      in_channels=64) if not self.freeze else
-                FFTConvergedFrozenInhibition(scope=scopes[i - 1],
-                                             ricker_width=width, damp=damp,
-                                             in_channels=64)})
+                {f"inhib_{i}": ConvergedInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
+                                                   in_channels=64) if not self.freeze else
+                ConvergedFrozenInhibition(scope=scopes[i - 1],
+                                          ricker_width=width, damp=damp,
+                                          in_channels=64)})
 
         self.build_module(inhibition_layers)
 
