@@ -10,7 +10,8 @@ from util import weight_initialization
 from util.complex import div_complex
 
 
-class ConvergedInhibition(nn.Module, InhibitionModule):
+@DeprecationWarning
+class FFTConvergedInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms.
 
@@ -44,7 +45,8 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         return convolve_3d_fourier(kernel, activations, self.kronecker_delta)
 
 
-class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
+@DeprecationWarning
+class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms. Filter is frozen, implementation is optimized
     towards speed taking this into account.

@@ -12,6 +12,8 @@ from util import weight_initialization
 
 import torch
 
+
+@DeprecationWarning
 class Conv3DSingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
@@ -68,6 +70,7 @@ class Conv3DSingleShotInhibition(nn.Module, InhibitionModule):
         return inhibitions.squeeze_(dim=1)
 
 
+@DeprecationWarning
 class Conv3DRecurrentInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
     axs_convergence: List[Axes]

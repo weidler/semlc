@@ -9,7 +9,7 @@ from util import weight_initialization
 from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
 
 
-class ToeplitzSingleShotInhibition(nn.Module, InhibitionModule):
+class SingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
     def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights=False,
@@ -41,7 +41,7 @@ class ToeplitzSingleShotInhibition(nn.Module, InhibitionModule):
         return convolve_3d_toeplitz(tpl, activations)
 
 
-class ConvergedToeplitzInhibition(nn.Module, InhibitionModule):
+class ConvergedInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
@@ -76,7 +76,7 @@ class ConvergedToeplitzInhibition(nn.Module, InhibitionModule):
         return convolve_3d_toeplitz(tpl_inv, activations)
 
 
-class ConvergedToeplitzFrozenInhibition(nn.Module, InhibitionModule):
+class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
@@ -140,25 +140,20 @@ if __name__ == "__main__":
                 )
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-    inhibitor = Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
-    inhibitor_ssi_tpl_zero = ToeplitzSingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
-                                                          pad="zeros",
-                                                          learn_weights=True)
-    inhibitor_ssi_tpl_circ = ToeplitzSingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
-                                                          pad="circular",
-                                                          learn_weights=True)
-    inhibitor_rec = Conv3DRecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
-    inhibitor_tpl_circ = ConvergedToeplitzInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-    inhibitor_tpl_freeze_circ = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-    inhibitor_tpl_zero = ConvergedToeplitzInhibition(scope, wavelet_width, damp=damping, in_channels=depth, pad="zeros")
-    inhibitor_tpl_freeze_zero = ConvergedToeplitzFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
-                                                                  pad="zeros")
+    inhibitor_ssi_tpl_zero = SingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                  pad="zeros",
+                                                  learn_weights=True)
+    inhibitor_ssi_tpl_circ = SingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                  pad="circular",
+                                                  learn_weights=True)
+    inhibitor_tpl_circ = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    inhibitor_tpl_freeze_circ = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+    inhibitor_tpl_zero = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth, pad="zeros")
+    inhibitor_tpl_freeze_zero = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                          pad="zeros")
 
     plt.clf()
     plt.plot(tensor_in[0, :, 4, 7].cpu().numpy(), label="Input")
-
-    tensor_out = inhibitor(tensor_in)
-    plt.plot(tensor_out[0, :, 4, 7].detach().cpu().numpy(), "-", label="Single Shot Conv3D Zeroed")
 
     tensor_out_tpl_ssi_zero = inhibitor_ssi_tpl_zero(tensor_in)
     plt.plot(tensor_out_tpl_ssi_zero[0, :, 4, 7].detach().cpu().numpy(), ".", label="Single Shot Tpl Zeroed")
