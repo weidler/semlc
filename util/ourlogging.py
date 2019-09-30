@@ -8,7 +8,7 @@ import time
 
 from torch import nn
 
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition
+from model.inhibition_layer import SingleShotInhibition
 from model.network.alexnet_paper import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, Baseline
 
 
