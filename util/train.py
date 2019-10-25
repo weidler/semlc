@@ -54,7 +54,6 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
                                 logger.save_optimizer(optimizer, f'{epoch + 1}_best')
                         logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, log_loss, val_acc),
                                    console=verbose)
-                        logger.update_acc(val_acc, epoch + 1)
                     logger.update_loss(log_loss, epoch + 1)
                 running_loss = 0.0
 

@@ -18,6 +18,7 @@ class Logger:
         self.model = model
         self.process_id = str(int(time.time() * 10000)) + str(random.randint(100000, 999999))
         self.loss_filename = f"../output/{self.process_id}.loss"
+        self.acc_filename = f"../output/{self.process_id}.acc"
         self.log_filename = f"../output/{self.process_id}.log"
         self.model_filename = f"../output/{self.process_id}_n.model"
         self.best_model_filename = f"../output/{self.process_id}_best.model"

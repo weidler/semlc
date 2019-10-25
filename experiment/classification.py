@@ -7,6 +7,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
+from model.network.VGG import vgg16
 from model.network.alexnet_paper import Baseline, ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, BaselineCMap
 from util.eval import accuracy
 from util.ourlogging import Logger
@@ -39,6 +40,7 @@ test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, downloa
 # network = ConvergedInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1, inhibition_end=1, logdir="test")
 # network = ConvNet13(logdir="ConvNet13")
 network = BaselineCMap()
+# network = vgg16()
 
 if use_cuda:
     network.cuda()
