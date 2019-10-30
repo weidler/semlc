@@ -7,7 +7,7 @@ from util.eval import accuracy, accuracy_from_data_loader
 
 
 def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=0.01, val_loader=None, optimizer=None,
-                logger=None, verbose=False, save_freq=40):
+                logger=None, verbose=False, save_freq=80):
     # Adam optimizer by default
     if optimizer is None:
         optimizer = optim.Adam(net.parameters(), lr=learn_rate)
@@ -51,7 +51,6 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
                             max_val_acc = val_acc
                             if epoch >= 100:
                                 logger.save_model(f'{epoch + 1}_best', best=True)
-                                logger.save_optimizer(optimizer, f'{epoch + 1}_best')
                         logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, log_loss, val_acc),
                                    console=verbose)
                     logger.update_loss(log_loss, epoch + 1)
@@ -59,7 +58,6 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
 
         if epoch > 0 and epoch % save_freq == 0:
             logger.save_model(epoch + 1)
-            logger.save_optimizer(optimizer, epoch + 1)
 
 
 def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, val_set=None, optimizer=None, logger=None,

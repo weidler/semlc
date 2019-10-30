@@ -52,13 +52,13 @@ logger.describe_network()
 
 start = time.time()
 train(net=network,
-      num_epoch=160,
+      num_epoch=300,
       train_set=train_set,
       batch_size=128,
       criterion=nn.CrossEntropyLoss(),
       logger=logger,
       val_set=test_set,
-      learn_rate=0.001)
+      learn_rate=0.01)
 
 print(f"{round(time.time() - start, 2)}s")
 print(accuracy(network, train_set, 128))
