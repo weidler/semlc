@@ -93,10 +93,10 @@ cfgs = {
 }
 
 
-def _vgg(arch, cfg, batch_norm, pretrained, progress, **kwargs):
+def _vgg(arch, cfg, batch_norm, pretrained, progress, num_classes, **kwargs):
     if pretrained:
         kwargs['init_weights'] = False
-    model = VGG(make_layers(cfgs[cfg], batch_norm=batch_norm), **kwargs)
+    model = VGG(make_layers(cfgs[cfg], batch_norm=batch_norm), num_classes=num_classes, **kwargs)
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch],
                                               progress=progress)
@@ -104,10 +104,10 @@ def _vgg(arch, cfg, batch_norm, pretrained, progress, **kwargs):
     return model
 
 
-def _vgg_inhib(arch, cfg, batch_norm, pretrained, progress, inhibition_layers: List[nn.Module], **kwargs):
+def _vgg_inhib(arch, cfg, batch_norm, pretrained, progress, num_classes, inhibition_layers: List[nn.Module], **kwargs):
     if pretrained:
         kwargs['init_weights'] = False
-    model = VGG(make_layers(cfgs[cfg], inhibition_layers, batch_norm=batch_norm), **kwargs)
+    model = VGG(make_layers(cfgs[cfg], inhibition_layers, batch_norm=batch_norm), num_classes=num_classes, **kwargs)
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch],
                                               progress=progress)
@@ -155,17 +155,17 @@ def vgg13_bn(pretrained=False, progress=True, **kwargs):
     return _vgg('vgg13_bn', 'B', True, pretrained, progress, **kwargs)
 
 
-def vgg16(pretrained=False, progress=True, **kwargs):
+def vgg16(pretrained=False, progress=True, num_classes=10, **kwargs):
     r"""VGG 16-layer model (configuration "D")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    return _vgg('vgg16', 'D', False, pretrained, progress, **kwargs)
+    return _vgg('vgg16', 'D', False, pretrained, progress, num_classes, **kwargs)
 
 
-def vgg16_inhib(pretrained=False, progress=True, **kwargs):
+def vgg16_inhib(pretrained=False, progress=True, num_classes=10, **kwargs):
     r"""VGG 16-layer model (configuration "D")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     Args:
@@ -175,7 +175,7 @@ def vgg16_inhib(pretrained=False, progress=True, **kwargs):
     inhib_layers = [ConvergedToeplitzFrozenInhibition(scope=27,
                                       ricker_width=4, damp=0.12,
                                       in_channels=64)]
-    return _vgg_inhib('vgg16', 'DI', False, pretrained, progress, inhib_layers, **kwargs)
+    return _vgg_inhib('vgg16', 'DI', False, pretrained, progress, inhib_layers, num_classes=num_classes, **kwargs)
 
 
 def vgg16_bn(pretrained=False, progress=True, **kwargs):
