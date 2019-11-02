@@ -27,7 +27,7 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
-transform = transforms.Compose([transforms.RandomCrop(24),
+transform = transforms.Compose([transforms.RandomCrop(32, 4),
                                 transforms.RandomHorizontalFlip(),
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
