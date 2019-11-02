@@ -5,7 +5,7 @@ class _BaseNetwork():
 
     def __repr__(self):
         ret = ""
-        for p in ["inhibition_start", "inhibition_end", "freeze", "scopes", "width", "damp"]:
+        for p in ["inhibition_start", "inhibition_end", "freeze", "scopes", "width", "damp", "is_circular", "self_connection"]:
             if p in self.__dict__.keys():
                 ret += str(self.__dict__[p])
             ret += ","

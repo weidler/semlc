@@ -1,9 +1,15 @@
+"""
+Source: https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/vgg.py
+
+"""
+
 from typing import List
 
 import torch
 import torch.nn as nn
 
-from model.inhibition_layer import ConvergedToeplitzFrozenInhibition
+from model.inhibition_layer import ConvergedFrozenInhibition
+from .base import _BaseNetwork
 from .utils import load_state_dict_from_url
 
 
@@ -12,6 +18,7 @@ __all__ = [
     'vgg19_bn', 'vgg19',
 ]
 
+from ..inhibition_module import InhibitionModule
 
 model_urls = {
     'vgg11': 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth',
@@ -25,11 +32,17 @@ model_urls = {
 }
 
 
-class VGG(nn.Module):
+class VGG(_BaseNetwork, nn.Module):
 
     def __init__(self, features, num_classes=1000, init_weights=True):
         super(VGG, self).__init__()
         self.features = features
+        inhibition_layers = [layer for layer in self.features.children() if isinstance(layer, InhibitionModule)]
+        self.is_circular = [layer.is_circular for layer in inhibition_layers]
+        self.self_connection = [layer.self_connection for layer in inhibition_layers]
+        self.damp = [layer.damp for layer in inhibition_layers]
+        self.width = [layer.width for layer in inhibition_layers]
+        self.scopes = [layer.scope for layer in inhibition_layers]
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Dropout(),
@@ -92,6 +105,7 @@ cfgs = {
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'DI': [64, 'I', 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    'EI': [64, 'I', 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
 
@@ -167,17 +181,17 @@ def vgg16(pretrained=False, progress=True, num_classes=10, **kwargs):
     return _vgg('vgg16', 'D', False, pretrained, progress, num_classes, **kwargs)
 
 
-def vgg16_inhib(pretrained=False, progress=True, num_classes=10, **kwargs):
+def vgg16_inhib(pretrained=False, progress=True, num_classes=10, padding='circular', self_connection=False, **kwargs):
     r"""VGG 16-layer model (configuration "D")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    inhib_layers = [ConvergedToeplitzFrozenInhibition(scope=27,
+    inhib_layers = [ConvergedFrozenInhibition(scope=27,
                                       ricker_width=4, damp=0.12,
-                                      in_channels=64)]
-    return _vgg_inhib('vgg16', 'DI', False, pretrained, progress, inhib_layers, num_classes=num_classes, **kwargs)
+                                      in_channels=64, pad=padding, self_connection=self_connection)]
+    return _vgg_inhib('vgg16', 'DI', False, pretrained, progress, num_classes, inhib_layers, **kwargs)
 
 
 def vgg16_bn(pretrained=False, progress=True, **kwargs):
@@ -198,6 +212,19 @@ def vgg19(pretrained=False, progress=True, **kwargs):
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     return _vgg('vgg19', 'E', False, pretrained, progress, **kwargs)
+
+
+def vgg19_inhib(pretrained=False, progress=True, num_classes=10, padding='circular', self_connection=False, **kwargs):
+    r"""VGG 16-layer model (configuration "D")
+    `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        progress (bool): If True, displays a progress bar of the download to stderr
+    """
+    inhib_layers = [ConvergedFrozenInhibition(scope=27,
+                                      ricker_width=3, damp=0.1,
+                                      in_channels=64, pad=padding, self_connection=self_connection)]
+    return _vgg_inhib('vgg19', 'EI', False, pretrained, progress, num_classes, inhib_layers, **kwargs)
 
 
 def vgg19_bn(pretrained=False, progress=True, **kwargs):

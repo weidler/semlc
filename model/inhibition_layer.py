@@ -24,6 +24,7 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
         self.damp = damp
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
+        self.width = ricker_width
 
         inhibition_filter = weight_initialization.mexican_hat(scope, damping=damp, std=ricker_width,
                                                               self_connect=self_connection)
@@ -59,6 +60,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
+        self.width = ricker_width
 
         # inhibition filter
         inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp,
@@ -97,6 +99,7 @@ class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
+        self.width = ricker_width
 
         # inhibition filter
         self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp,

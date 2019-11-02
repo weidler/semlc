@@ -1,5 +1,8 @@
 import math
 import sys
+
+from model.network.VGG import vgg19, vgg19_inhib
+
 sys.path.append("../")
 
 import torch
@@ -37,8 +40,8 @@ n_train = math.ceil(0.9 * len(trainval_set))
 n_validation = len(trainval_set) - n_train
 train_set, validation_set = torch.utils.data.random_split(trainval_set, [n_train, n_validation])
 
-#               0          1      2        3            4               5
-strategy = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze"][4]
+#               0          1      2        3            4               5               6           7               8
+strategy = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze", "vgg19", "vgg19_inhib", "vgg19_inhib_self"][7]
 iterations = 10
 for i in range(0, iterations):
     logdir = f"{strategy}_{i+1}"
@@ -55,6 +58,12 @@ for i in range(0, iterations):
         network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False)
     elif strategy == "converged_freeze":
         network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True)  # toeplitz
+    elif strategy == "vgg19":
+        network = vgg19()
+    elif strategy == "vgg19_inhib":
+        network = vgg19_inhib()
+    elif strategy == "vgg19_inhib_self":
+        network = vgg19_inhib(self_connection=True)
 
     print(f"{network.__class__.__name__}_{i+1}")
 
