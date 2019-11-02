@@ -1,9 +1,8 @@
 from typing import List, Dict
 
-import torch
 from torch import nn
 
-from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition, ConvergedToeplitzFrozenInhibition
+from model.inhibition_layer import SingleShotInhibition, ConvergedFrozenInhibition, ConvergedInhibition
 from model.network.base import _BaseNetwork
 
 
@@ -146,7 +145,7 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
     def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1):
         super().__init__()
 
-        #if len(scopes) != inhibition_end - inhibition_start + 1:
+        # if len(scopes) != inhibition_end - inhibition_start + 1:
         #    raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
         #                     f"({inhibition_start}/{inhibition_end}).")
 
@@ -163,9 +162,9 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
             inhibition_layers.update(
                 {f"inhib_{i}": ConvergedInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
                                                    in_channels=64) if not self.freeze else
-                ConvergedToeplitzFrozenInhibition(scope=scopes[i - 1],
-                                                  ricker_width=width, damp=damp,
-                                                  in_channels=64)})
+                ConvergedFrozenInhibition(scope=scopes[i - 1],
+                                          ricker_width=width, damp=damp,
+                                          in_channels=64)})
 
         self.build_module(inhibition_layers)
 
