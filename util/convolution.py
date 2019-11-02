@@ -26,7 +26,8 @@ def toeplitz1d_circular(k: torch.Tensor, m: int) -> torch.Tensor:
     :param m:       the size of the signal s, specifying the height of the Toeplitz matrix
     :return:        the toeplitz matrix as a Tensor
     """
-    assert len(k.shape) == 1
+    assert len(k.shape) == 1, f"Filter needs to be a vector to be converted to a Toeplitz matrix for 1D convolution. " \
+                              f"Given filter k is a tensor with {len(k.shape)} domains."
 
     k = pad_roll(k.view(1, 1, -1), in_channels=m, scope=k.shape[0]).view(1, -1)
     rows = []
@@ -49,8 +50,10 @@ def toeplitz1d_zero(k: torch.Tensor, m: int) -> torch.Tensor:
     :param m:       the size of the signal s, specifying the height of the Toeplitz matrix
     :return:        the toeplitz matrix as a Tensor
     """
-    assert len(k.shape) == 1
-    assert k.shape[0] % 2 != 0
+    assert len(k.shape) == 1, f"Filter needs to be a vector to be converted to a Toeplitz matrix for 1D convolution. " \
+                              f"Given filter k is a tensor with {len(k.shape)} domains."
+    assert k.shape[0] % 2 != 0, f"Given filter is of size {k.shape[0]}, but centering requires the filter to have an " \
+                                f"odd number of dimensions."
 
     n = k.shape[0]
     k = k.view(1, -1)

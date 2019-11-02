@@ -3,7 +3,6 @@ import numpy
 import torch
 from torch import nn
 
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 from model.inhibition_module import InhibitionModule
 from util import weight_initialization
 from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
@@ -50,7 +49,8 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool = True, pad="circular"):
+    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool = True,
+                 pad="circular"):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
