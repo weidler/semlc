@@ -70,7 +70,7 @@ for i in range(0, iterations):
     if use_cuda:
         network.cuda()
 
-    logger = Logger(network)
+    logger = Logger(network, experiment_code=f"{strategy}_{i}")
 
     train(net=network,
           num_epoch=160,
