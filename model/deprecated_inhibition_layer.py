@@ -39,7 +39,7 @@ class Conv3DSingleShotInhibition(nn.Module, InhibitionModule):
         )
 
         # apply gaussian
-        self.convolver.weight.data = weight_initialization.mexican_hat(scope, damping=damp, std=ricker_width)
+        self.convolver.weight.data = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
         self.convolver.weight.data = self.convolver.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure

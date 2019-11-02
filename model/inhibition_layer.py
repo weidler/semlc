@@ -12,8 +12,7 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
     def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights=False,
-                 pad="circular",
-                 analyzer=None):
+                 pad="circular", self_connection: bool = False, analyzer=None):
         super().__init__()
 
         assert pad in ["circular", "zeros"]
@@ -24,8 +23,10 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
         self.analyzer = analyzer
         self.damp = damp
         self.is_circular = pad == "circular"
+        self.self_connection = self_connection
 
-        inhibition_filter = weight_initialization.mexican_hat(scope, damping=damp, std=ricker_width)
+        inhibition_filter = weight_initialization.mexican_hat(scope, damping=damp, std=ricker_width,
+                                                              self_connect=self_connection)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
         self.inhibition_filter.requires_grad = learn_weights
 
@@ -37,7 +38,7 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
             tpl = toeplitz1d_zero(self.inhibition_filter, self.in_channels)
 
         # convolve by toeplitz
-        return convolve_3d_toeplitz(tpl, activations)
+        return (0 if self.self_connection else activations) + convolve_3d_toeplitz(tpl, activations)
 
 
 class ConvergedInhibition(nn.Module, InhibitionModule):
@@ -50,16 +51,18 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
     """
 
     def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool = True,
-                 pad="circular"):
+                 pad="circular", self_connection: bool = False):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
         self.damp = damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
+        self.self_connection = self_connection
 
         # inhibition filter
-        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
+        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp,
+                                                              self_connect=self_connection)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
         self.inhibition_filter.requires_grad = learn_weights
 
@@ -85,16 +88,19 @@ class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular"):
+    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular",
+                 self_connection: bool = False):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
         self.damp = damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
+        self.self_connection = self_connection
 
         # inhibition filter
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp,
+                                                                   self_connect=self_connection)
 
         # construct filter toeplitz
         if self.is_circular:
@@ -126,6 +132,7 @@ if __name__ == "__main__":
     height = 14
     wavelet_width = 6
     damping = 0.12
+    self_connect = True
 
     tensor_in = torch.zeros((batches, depth, width, height))
     for b in range(batches):
@@ -141,16 +148,18 @@ if __name__ == "__main__":
 
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
     inhibitor_ssi_tpl_zero = SingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
-                                                  pad="zeros",
-                                                  learn_weights=True)
+                                                  pad="zeros", learn_weights=True, self_connection=self_connect)
     inhibitor_ssi_tpl_circ = SingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
                                                   pad="circular",
-                                                  learn_weights=True)
-    inhibitor_tpl_circ = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-    inhibitor_tpl_freeze_circ = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-    inhibitor_tpl_zero = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth, pad="zeros")
+                                                  learn_weights=True, self_connection=self_connect)
+    inhibitor_tpl_circ = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                             self_connection=self_connect)
+    inhibitor_tpl_freeze_circ = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                          self_connection=self_connect)
+    inhibitor_tpl_zero = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth, pad="zeros",
+                                             self_connection=self_connect)
     inhibitor_tpl_freeze_zero = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
-                                                          pad="zeros")
+                                                          pad="zeros", self_connection=self_connect)
 
     plt.clf()
     plt.plot(tensor_in[0, :, 4, 7].cpu().numpy(), label="Input")
@@ -175,6 +184,7 @@ if __name__ == "__main__":
     plt.plot(tensor_out_tpl_freeze_zero[0, :, 4, 7].detach().cpu().numpy(), ".",
              label="Converged Toeplitz Frozen Zeroed")
 
-    plt.title("Effects of Single Shot and Converged Inhibition for Different Padding Strategies")
+    plt.title(f"Effects of Single Shot and Converged Inhibition for Different Padding Strategies "
+              f"(with{'out' if not self_connect else ''} self connection).")
     plt.legend()
-    plt.show()
+    plt.savefig(f"../documentation/figures/layer_effects_with{'out' if not self_connect else ''}.pdf", format="pdf")
