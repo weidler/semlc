@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../")
 import random
 import time
 
@@ -7,7 +9,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.VGG import vgg16, vgg19_inhib
+from model.network.VGG import vgg19, vgg19_inhib
 from model.network.alexnet_paper import Baseline, ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, BaselineCMap
 from util.eval import accuracy
 from util.ourlogging import Logger
@@ -41,7 +43,7 @@ test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, downloa
 # network = ConvNet13(logdir="ConvNet13")
 # network = BaselineCMap()
 # network = vgg16_inhib()
-network = vgg19_inhib()
+network = vgg19()
 
 if use_cuda:
     network.cuda()

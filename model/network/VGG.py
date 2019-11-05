@@ -204,14 +204,14 @@ def vgg16_bn(pretrained=False, progress=True, **kwargs):
     return _vgg('vgg16_bn', 'D', True, pretrained, progress, **kwargs)
 
 
-def vgg19(pretrained=False, progress=True, **kwargs):
+def vgg19(pretrained=False, progress=True, num_classes=10, **kwargs):
     r"""VGG 19-layer model (configuration "E")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    return _vgg('vgg19', 'E', False, pretrained, progress, **kwargs)
+    return _vgg('vgg19', 'E', False, pretrained, progress, num_classes, **kwargs)
 
 
 def vgg19_inhib(pretrained=False, progress=True, num_classes=10, padding='circular', self_connection=False, **kwargs):
