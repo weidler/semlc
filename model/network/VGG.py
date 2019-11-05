@@ -10,12 +10,10 @@ import torch.nn as nn
 
 from model.inhibition_layer import ConvergedFrozenInhibition
 from model.network.base import _BaseNetwork
-from .utils import load_state_dict_from_url
 
 
 __all__ = [
-    'VGG', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn',
-    'vgg19_bn', 'vgg19',
+    'VGG', 'vgg11', 'vgg13', 'vgg16', 'vgg19',
 ]
 
 from ..inhibition_module import InhibitionModule
@@ -37,13 +35,15 @@ class VGG(_BaseNetwork, nn.Module):
     def __init__(self, features, num_classes=10, init_weights=True):
         super(VGG, self).__init__()
         self.features = features
+        '''
         inhibition_layers = [layer for layer in self.features.children() if isinstance(layer, InhibitionModule)]
         self.is_circular = [layer.is_circular for layer in inhibition_layers]
         self.self_connection = [layer.self_connection for layer in inhibition_layers]
         self.damp = [layer.damp for layer in inhibition_layers]
         self.width = [layer.width for layer in inhibition_layers]
         self.scopes = [layer.scope for layer in inhibition_layers]
-        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+        # self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+        '''
         self.classifier = nn.Sequential(
             nn.Dropout(),
             nn.Linear(512, 512),
@@ -58,6 +58,7 @@ class VGG(_BaseNetwork, nn.Module):
 
     def forward(self, x):
         x = self.features(x)
+        # comment back in and replace with x.view for ImageNet
         # x = self.avgpool(x)
         # x = torch.flatten(x, 1)
         x = x.view(x.size(0), -1)
@@ -108,31 +109,31 @@ cfgs = {
 }
 
 
-def vgg11(batch_norm=False, **kwargs):
-    return VGG(make_layers(cfgs['A'], batch_norm=batch_norm), **kwargs)
+def vgg11(batch_norm=False):
+    return VGG(make_layers(cfgs['A'], batch_norm=batch_norm))
 
 
-def vgg13(batch_norm=False, **kwargs):
-    return VGG(make_layers(cfgs['B'], batch_norm=batch_norm), **kwargs)
+def vgg13(batch_norm=False):
+    return VGG(make_layers(cfgs['B'], batch_norm=batch_norm))
 
 
-def vgg16(batch_norm=False, **kwargs):
-    return VGG(make_layers(cfgs['D'], batch_norm=batch_norm), **kwargs)
+def vgg16(batch_norm=False):
+    return VGG(make_layers(cfgs['D'], batch_norm=batch_norm))
 
 
-def vgg16_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False, **kwargs):
+def vgg16_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False):
     inhib_layers = [ConvergedFrozenInhibition(scope=27,
                                               ricker_width=4, damp=0.12,
                                               in_channels=64, pad=padding, self_connection=self_connection)]
-    return VGG(make_layers(cfgs['DI'], batch_norm=batch_norm, inhibition_layers=inhib_layers), num_classes=num_classes, **kwargs)
+    return VGG(make_layers(cfgs['DI'], batch_norm=batch_norm, inhibition_layers=inhib_layers), num_classes=num_classes)
 
 
-def vgg19(batch_norm=False, num_classes=10, **kwargs):
-    return VGG(make_layers(cfgs['E'], batch_norm=batch_norm), num_classes=num_classes, **kwargs)
+def vgg19(batch_norm=False, num_classes=10):
+    return VGG(make_layers(cfgs['E'], batch_norm=batch_norm), num_classes=num_classes)
 
 
-def vgg19_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False, **kwargs):
+def vgg19_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False):
     inhib_layers = [ConvergedFrozenInhibition(scope=27,
                                               ricker_width=4, damp=0.12,
                                               in_channels=64, pad=padding, self_connection=self_connection)]
-    return VGG(make_layers(cfgs['EI'], batch_norm=batch_norm, inhibition_layers=inhib_layers), num_classes=num_classes, **kwargs)
+    return VGG(make_layers(cfgs['EI'], batch_norm=batch_norm, inhibition_layers=inhib_layers), num_classes=num_classes)
