@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 
 from model.inhibition_layer import ConvergedFrozenInhibition
-from .base import _BaseNetwork
+from model.network.base import _BaseNetwork
 from .utils import load_state_dict_from_url
 
 
@@ -51,7 +51,6 @@ class VGG(_BaseNetwork, nn.Module):
             nn.Dropout(),
             nn.Linear(512, 512),
             nn.ReLU(True),
-            nn.Dropout(),
             nn.Linear(512, num_classes),
         )
         if init_weights:

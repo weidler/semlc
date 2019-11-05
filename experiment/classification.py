@@ -8,9 +8,9 @@ import torch
 import torchvision
 from torch import nn
 from torchvision import transforms
+from torchsummary import summary
 
 from model.network.VGG import vgg19, vgg19_inhib
-from model.network.alexnet_paper import Baseline, ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, BaselineCMap
 from util.eval import accuracy
 from util.ourlogging import Logger
 from util.train import train
@@ -49,6 +49,10 @@ if use_cuda:
     network.cuda()
 
 logger = Logger(network)
+
+print(network.features)
+
+print(summary(network, input_size=(3, 32, 32)))
 
 logger.describe_network()
 

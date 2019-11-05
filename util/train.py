@@ -3,10 +3,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from util.eval import accuracy, accuracy_from_data_loader
+from util.eval import accuracy_from_data_loader
 
 
-def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=0.01, val_loader=None, optimizer=None,
+def train_model(net, num_epoch, train_loader, criterion, learn_rate=0.01, val_loader=None, optimizer=None,
                 logger=None, verbose=False, save_freq=80):
     # Adam optimizer by default
     if optimizer is None:
@@ -27,6 +27,7 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
             optimizer.zero_grad()
 
             # forward + backward + optimize
+            # TODO probably unnecessary
             if torch.cuda.is_available():
                 outputs = net(inputs.cuda())
             else:
@@ -61,7 +62,7 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
 
 
 def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, val_set=None, optimizer=None, logger=None,
-          verbose=False, save_freq=40):
+          verbose=False, save_freq=80):
     train_loader = DataLoader(train_set,
                               batch_size=batch_size,
                               shuffle=True)
@@ -71,7 +72,7 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, val
                                 batch_size=batch_size,
                                 shuffle=False)
 
-    train_model(net, num_epoch, train_loader, batch_size, criterion,
+    train_model(net, num_epoch, train_loader, criterion,
                 learn_rate=learn_rate,
                 val_loader=val_loader,
                 optimizer=optimizer,
