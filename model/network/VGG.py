@@ -42,16 +42,16 @@ class VGG(_BaseNetwork, nn.Module):
         self.damp = [layer.damp for layer in inhibition_layers]
         self.width = [layer.width for layer in inhibition_layers]
         self.scopes = [layer.scope for layer in inhibition_layers]
-        # self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         '''
+        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(512, 512),
+            nn.Linear(512 * 7 * 7, 4096),
             nn.ReLU(True),
             nn.Dropout(),
-            nn.Linear(512, 512),
+            nn.Linear(4096, 4096),
             nn.ReLU(True),
-            nn.Linear(512, num_classes),
+            nn.Linear(4096, num_classes),
         )
         if init_weights:
             self._initialize_weights()
@@ -59,9 +59,9 @@ class VGG(_BaseNetwork, nn.Module):
     def forward(self, x):
         x = self.features(x)
         # comment back in and replace with x.view for ImageNet
-        # x = self.avgpool(x)
-        # x = torch.flatten(x, 1)
-        x = x.view(x.size(0), -1)
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        # x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
 

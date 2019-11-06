@@ -35,8 +35,14 @@ transform = transforms.Compose([transforms.RandomCrop(32, 4),
                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                 ])
 
+test_transform = transforms.Compose([
+    transforms.Pad(2),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+])
+
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
-test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=test_transform)
 
 # network = Baseline(logdir="test")
 # network = ConvergedInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1, inhibition_end=1, logdir="test")
@@ -57,6 +63,7 @@ print(summary(network, input_size=(3, 32, 32)))
 logger.describe_network()
 
 start = time.time()
+'''
 train(net=network,
       num_epoch=300,
       train_set=train_set,
@@ -65,7 +72,7 @@ train(net=network,
       logger=logger,
       val_set=test_set,
       learn_rate=0.01)
-
+'''
 print(f"{round(time.time() - start, 2)}s")
-print(accuracy(network, train_set, 128))
+#print(accuracy(network, train_set, 128))
 print(accuracy(network, test_set, 128))
