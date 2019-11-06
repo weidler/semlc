@@ -1,10 +1,12 @@
 """
-Source: https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/vgg.py
+Modified from:  https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/vgg.py
+                https://github.com/pytorch/vision.git
 
 """
 
 from typing import List
 
+import math
 import torch
 import torch.nn as nn
 
@@ -13,21 +15,10 @@ from model.network.base import _BaseNetwork
 
 
 __all__ = [
-    'VGG', 'vgg11', 'vgg13', 'vgg16', 'vgg19',
+    'VGG', 'vgg11', 'vgg13', 'vgg16', 'vgg16_inhib', 'vgg19', 'vgg19_inhib',
 ]
 
 from ..inhibition_module import InhibitionModule
-
-model_urls = {
-    'vgg11': 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth',
-    'vgg13': 'https://download.pytorch.org/models/vgg13-c768596a.pth',
-    'vgg16': 'https://download.pytorch.org/models/vgg16-397923af.pth',
-    'vgg19': 'https://download.pytorch.org/models/vgg19-dcbb9e9d.pth',
-    'vgg11_bn': 'https://download.pytorch.org/models/vgg11_bn-6002323d.pth',
-    'vgg13_bn': 'https://download.pytorch.org/models/vgg13_bn-abd245e5.pth',
-    'vgg16_bn': 'https://download.pytorch.org/models/vgg16_bn-6c64b313.pth',
-    'vgg19_bn': 'https://download.pytorch.org/models/vgg19_bn-c79401a0.pth',
-}
 
 
 class VGG(_BaseNetwork, nn.Module):
@@ -46,12 +37,12 @@ class VGG(_BaseNetwork, nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(512 * 7 * 7, 4096),
+            nn.Linear(512, 512),
             nn.ReLU(True),
             nn.Dropout(),
-            nn.Linear(4096, 4096),
+            nn.Linear(512, 512),
             nn.ReLU(True),
-            nn.Linear(4096, num_classes),
+            nn.Linear(512, num_classes),
         )
         if init_weights:
             self._initialize_weights()
@@ -59,14 +50,19 @@ class VGG(_BaseNetwork, nn.Module):
     def forward(self, x):
         x = self.features(x)
         # comment back in and replace with x.view for ImageNet
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        # x = x.view(x.size(0), -1)
+        # x = self.avgpool(x)
+        # x = torch.flatten(x, 1)
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
     def _initialize_weights(self):
         for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.bias.data.zero_()
+            '''
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
@@ -77,7 +73,7 @@ class VGG(_BaseNetwork, nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
-
+            '''
 
 def make_layers(cfg, inhibition_layers: List[nn.Module]=None, batch_norm=False):
     layers = []
