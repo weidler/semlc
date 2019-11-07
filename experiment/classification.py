@@ -10,7 +10,8 @@ from torch import nn
 from torchvision import transforms
 from torchsummary import summary
 
-from model.network.VGG import vgg19, vgg19_inhib
+# from model.network.VGG import vgg19, vgg19_inhib
+from model.network.vgg_2 import vgg19
 from util.eval import accuracy
 from util.ourlogging import Logger
 from util.train import train
