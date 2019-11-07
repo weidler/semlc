@@ -116,11 +116,11 @@ def train(train_loader, model, criterion, optimizer, num_epochs, use_cpu=False, 
             # TODO other training and compare
             # print statistics
             running_loss += loss.item()
-            print("running loss", running_loss)
+            logger.log("running loss", running_loss)
 
             if i == num_batches - 1:
                 log_loss = running_loss / num_batches
-                print("log_loss", log_loss)
+                logger.log("log_loss", log_loss)
                 if logger is not None:
                     if val_loader is None:
                         logger.update_loss(log_loss, epoch + 1)
