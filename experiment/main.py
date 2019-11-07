@@ -127,7 +127,7 @@ def train(train_loader, model, criterion, optimizer, epoch, use_cpu=False, logge
                     logger.update_loss(log_loss, epoch + 1)
                     logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=verbose)
                 else:
-                    val_acc = validate(model, val_loader)[0]
+                    val_acc = validate(model, val_loader)
                     if val_acc > max_val_acc:
                         max_val_acc = val_acc
                         if epoch >= 100:
@@ -159,6 +159,7 @@ def validate(model, val_loader, use_cpu=False):
         prec = accuracy(output.data, target)[0]
         acc.append(prec)
 
+    model.train()
     return sum(acc)/len(acc)
 
 
