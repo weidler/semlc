@@ -28,9 +28,9 @@ from torchsummary import summary
 
 
 def main():
-    use_cpu = False
+    use_cpu = True
     batch_size = 128
-    learn_rate = 0.01
+    learn_rate = 0.05
     num_epochs = 300
 
     model = vgg_2.vgg19()
@@ -46,12 +46,10 @@ def main():
 
     cudnn.benchmark = True
 
-    '''
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
-    '''
 
-    normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    # normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     train_loader = torch.utils.data.DataLoader(
         datasets.CIFAR10(root='../data/cifar10/', train=True, transform=transforms.Compose([
             transforms.RandomHorizontalFlip(),
@@ -116,6 +114,7 @@ def train(train_loader, model, criterion, optimizer, epoch, use_cpu=False, logge
         loss.backward()
         optimizer.step()
 
+        # TODO other training and compare
         # print statistics
         running_loss += loss.item()
 
