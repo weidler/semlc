@@ -28,7 +28,7 @@ from torchsummary import summary
 
 
 def main():
-    use_cpu = True
+    use_cpu = False
     batch_size = 128
     learn_rate = 0.05
     num_epochs = 300
@@ -80,64 +80,62 @@ def main():
     '''
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
 
-    for epoch in tqdm(range(num_epochs)):
-        # adjust_learning_rate(optimizer, epoch)
 
-        # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, use_cpu=use_cpu, logger=logger, val_loader=val_loader)
+    # adjust_learning_rate(optimizer, epoch)
+
+    # train
+    train(train_loader, model, criterion, optimizer, num_epochs, use_cpu=use_cpu, logger=logger, val_loader=val_loader)
 
 
-def train(train_loader, model, criterion, optimizer, epoch, use_cpu=False, logger=None, val_loader=None, verbose=False,
+def train(train_loader, model, criterion, optimizer, num_epochs, use_cpu=False, logger=None, val_loader=None, verbose=False,
           save_freq=80):
+    num_batches = train_loader.__len__()
+    max_val_acc = 0
     """
         Run one train epoch
     """
+    for epoch in tqdm(range(num_epochs)):
+        # switch to train mode
+        model.train()
+        running_loss = 0.0
 
-    # switch to train mode
-    model.train()
-    running_loss = 0.0
-    num_batches = train_loader.__len__()
-    loss_history = []
-    max_val_acc = 0
+        for i, (input, target) in enumerate(train_loader):
+            if not use_cpu:
+                input = input.cuda()
+                target = target.cuda()
 
-    for i, (input, target) in enumerate(train_loader):
-        if not use_cpu:
-            input = input.cuda()
-            target = target.cuda()
+            # compute output
+            output = model(input)
+            loss = criterion(output, target)
 
-        # compute output
-        output = model(input)
-        loss = criterion(output, target)
+            # compute gradient and do SGD step
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-        # compute gradient and do SGD step
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            # TODO other training and compare
+            # print statistics
+            running_loss += loss.item()
 
-        # TODO other training and compare
-        # print statistics
-        running_loss += loss.item()
-
-        if i == num_batches - 1:
-            log_loss = running_loss / num_batches
-            loss_history.append(log_loss)
-            if logger is not None:
-                if val_loader is None:
+            if i == num_batches - 1:
+                log_loss = running_loss / num_batches
+                if logger is not None:
+                    if val_loader is None:
+                        logger.update_loss(log_loss, epoch + 1)
+                        logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=verbose)
+                    else:
+                        val_acc = accuracy_from_data_loader(model, val_loader)
+                        if val_acc > max_val_acc:
+                            max_val_acc = val_acc
+                            if epoch >= 100:
+                                logger.save_model(f'{epoch + 1}_best', best=True)
+                        logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, log_loss, val_acc),
+                                   console=verbose)
                     logger.update_loss(log_loss, epoch + 1)
-                    logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=verbose)
-                else:
-                    val_acc = validate(model, val_loader)
-                    if val_acc > max_val_acc:
-                        max_val_acc = val_acc
-                        if epoch >= 100:
-                            logger.save_model(f'{epoch + 1}_best', best=True)
-                    logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, log_loss, val_acc),
-                               console=verbose)
-                logger.update_loss(log_loss, epoch + 1)
-            running_loss = 0.0
+                running_loss = 0.0
 
-    if epoch > 0 and epoch % save_freq == 0:
-        logger.save_model(epoch + 1)
+        if epoch > 0 and epoch % save_freq == 0:
+            logger.save_model(epoch + 1)
 
 
 def validate(model, val_loader, use_cpu=False):
