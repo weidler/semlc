@@ -24,6 +24,7 @@ def accuracy_from_data_loader(net, data_loader):
             images, labels = data
             if torch.cuda.is_available():
                 outputs = net(images.cuda())
+                labels = labels.cuda()
             else:
                 outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)

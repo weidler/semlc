@@ -3,11 +3,13 @@ Modified from:  https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/v
 """
 
 import sys
+sys.path.append("../")
 
+from tqdm import tqdm
 from util.eval import accuracy_from_data_loader
 from util.ourlogging import Logger
 
-sys.path.append("../")
+
 import argparse
 import os
 import shutil
@@ -26,7 +28,7 @@ from torchsummary import summary
 
 
 def main():
-    use_cpu = True
+    use_cpu = False
     batch_size = 128
     learn_rate = 0.01
     num_epochs = 300
@@ -80,7 +82,7 @@ def main():
     '''
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
 
-    for epoch in range(num_epochs):
+    for epoch in tqdm(range(num_epochs)):
         # adjust_learning_rate(optimizer, epoch)
 
         # train for one epoch
@@ -125,7 +127,7 @@ def train(train_loader, model, criterion, optimizer, epoch, use_cpu=False, logge
                     logger.update_loss(log_loss, epoch + 1)
                     logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=verbose)
                 else:
-                    val_acc = accuracy_from_data_loader(model, val_loader)
+                    val_acc = validate(model, val_loader)[0]
                     if val_acc > max_val_acc:
                         max_val_acc = val_acc
                         if epoch >= 100:
@@ -137,6 +139,43 @@ def train(train_loader, model, criterion, optimizer, epoch, use_cpu=False, logge
 
     if epoch > 0 and epoch % save_freq == 0:
         logger.save_model(epoch + 1)
+
+
+def validate(model, val_loader, use_cpu=False):
+    # switch to evaluate mode
+    model.eval()
+    acc = []
+    for i, (input, target) in enumerate(val_loader):
+        if not use_cpu:
+            input = input.cuda()
+            target = target.cuda()
+
+        # compute output
+        with torch.no_grad():
+            output = model(input)
+
+        output = output.float()
+
+        prec = accuracy(output.data, target)[0]
+        acc.append(prec)
+
+    return sum(acc)/len(acc)
+
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
 
 
 '''
