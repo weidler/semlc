@@ -28,7 +28,7 @@ from torchsummary import summary
 
 
 def main():
-    use_cpu = False
+    use_cpu = not torch.cuda.is_available()
     batch_size = 128
     learn_rate = 0.05
     num_epochs = 300
@@ -89,11 +89,8 @@ def main():
 
 def train(train_loader, model, criterion, optimizer, num_epochs, use_cpu=False, logger=None, val_loader=None, verbose=False,
           save_freq=80):
-    num_batches = train_loader.__len__()
-    max_val_acc = 0
-    """
-        Run one train epoch
-    """
+    losses = AverageMeter()
+
     for epoch in tqdm(range(num_epochs)):
         # switch to train mode
         model.train()
@@ -116,28 +113,31 @@ def train(train_loader, model, criterion, optimizer, num_epochs, use_cpu=False, 
             # TODO other training and compare
             # print statistics
             running_loss += loss.item()
-            logger.log("running loss", running_loss)
 
-            if i == num_batches - 1:
-                log_loss = running_loss / num_batches
-                logger.log("log_loss", log_loss)
-                if logger is not None:
-                    if val_loader is None:
-                        logger.update_loss(log_loss, epoch + 1)
-                        logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, log_loss), console=verbose)
-                    else:
-                        val_acc = accuracy_from_data_loader(model, val_loader)
-                        if val_acc > max_val_acc:
-                            max_val_acc = val_acc
-                            if epoch >= 100:
-                                logger.save_model(f'{epoch + 1}_best', best=True)
-                        logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, log_loss, val_acc),
-                                   console=verbose)
-                    logger.update_loss(log_loss, epoch + 1)
-                running_loss = 0.0
+            loss = loss.float()
 
-        if epoch > 0 and epoch % save_freq == 0:
-            logger.save_model(epoch + 1)
+            losses.update(loss.item(), input.size(0))
+
+            if i % (input.size(0) - 1) == 0:
+                logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, losses.avg), console=verbose)
+
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
 
 
 def validate(model, val_loader, use_cpu=False):
