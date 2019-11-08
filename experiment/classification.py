@@ -13,8 +13,7 @@ from torch import nn
 from torchvision import transforms
 from torchsummary import summary
 
-# from model.network.VGG import vgg19, vgg19_inhib
-from model.network.vgg_2 import vgg19
+from model.network.VGG import vgg19, vgg19_inhib
 from util.eval import accuracy
 from util.ourlogging import Logger
 from util.train import train
@@ -47,7 +46,7 @@ test_transform = transforms.Compose([
 
 train_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
 # TODO change to test_transform when debugged
-test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=test_transform)
 
 # network = Baseline(logdir="test")
 # network = ConvergedInhibitionNetwork(scopes=[27], width=3, damp=0.1, freeze=True, inhibition_start=1, inhibition_end=1, logdir="test")

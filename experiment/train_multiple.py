@@ -1,6 +1,8 @@
 import math
 import sys
 
+from torch.optim import SGD
+
 from model.network.VGG import vgg19, vgg19_inhib
 
 sys.path.append("../")
@@ -41,7 +43,7 @@ n_validation = len(trainval_set) - n_train
 train_set, validation_set = torch.utils.data.random_split(trainval_set, [n_train, n_validation])
 
 #               0          1      2        3            4               5               6           7               8
-strategy = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze", "vgg19", "vgg19_inhib", "vgg19_inhib_self"][7]
+strategy = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze", "vgg19", "vgg19_inhib", "vgg19_inhib_self"][6]
 iterations = 10
 for i in range(0, iterations):
     logdir = f"{strategy}_{i+1}"
@@ -79,7 +81,8 @@ for i in range(0, iterations):
           criterion=nn.CrossEntropyLoss(),
           logger=logger,
           val_set=validation_set,
-          learn_rate=0.001,
+          optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),
+          learn_rate=0.05,
           verbose=False)
 
     network.eval()

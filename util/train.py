@@ -17,9 +17,7 @@ def train_model(net, num_epoch, train_loader, criterion, learn_rate=0.01, val_lo
     num_batches = train_loader.__len__()
     for epoch in tqdm(range(num_epoch), disable=verbose):  # loop over the dataset multiple times
         running_loss = 0.0
-        if epoch == 100:
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = param_group['lr'] * 0.1
+        # adjust_learning_rate(learn_rate, optimizer, epoch)
 
         for i, (inputs, labels) in enumerate(train_loader, 0):
             # zero the parameter gradients
@@ -79,6 +77,13 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, val
                 logger=logger,
                 verbose=verbose,
                 save_freq=save_freq)
+
+
+def adjust_learning_rate(l_rate, optimizer, epoch):
+    """Sets the learning rate to the initial LR decayed by 2 every 30 epochs"""
+    lr = l_rate * (0.5 ** (epoch // 30))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
 
 if __name__ == "__main__":
