@@ -66,20 +66,18 @@ def main():
         ])),
         batch_size=batch_size, shuffle=False)  # , pin_memory=True)
 
-    # define loss function (criterion) and opptimizer
+    # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss()
     if use_cpu:
         criterion = criterion.cpu()
     else:
         criterion = criterion.cuda()
 
-    '''
-    optimizer = torch.optim.SGD(model.parameters(), args.lr,
-                                momentum=args.momentum,
-                                weight_decay=args.weight_decay)
-    '''
-    optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
+    optimizer = torch.optim.SGD(model.parameters(), learn_rate,
+                                momentum=0.9,
+                                weight_decay=5e-4)
 
+    # optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
 
     # adjust_learning_rate(optimizer, epoch)
 
@@ -119,7 +117,9 @@ def train(train_loader, model, criterion, optimizer, num_epochs, use_cpu=False, 
             losses.update(loss.item(), input.size(0))
 
             if i % (input.size(0) - 1) == 0:
-                logger.log('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, losses.avg), console=verbose)
+                prec1 = validate(model, val_loader, criterion)
+                logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, losses.avg, prec1), console=verbose)
+
 
 
 class AverageMeter(object):
