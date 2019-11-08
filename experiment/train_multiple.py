@@ -1,11 +1,10 @@
 import math
 import sys
+sys.path.append("../")
 
 from torch.optim import SGD
 
 from model.network.VGG import vgg19, vgg19_inhib
-
-sys.path.append("../")
 
 import torch
 
@@ -19,6 +18,8 @@ from util.eval import accuracy
 
 from util.ourlogging import Logger
 
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 use_cuda = False
 if torch.cuda.is_available():
