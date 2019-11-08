@@ -117,8 +117,8 @@ def train(train_loader, model, criterion, optimizer, num_epochs, use_cpu=False, 
             losses.update(loss.item(), input.size(0))
 
             if i % (input.size(0) - 1) == 0:
-                prec1 = validate(model, val_loader, criterion)
-                logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, losses.avg, prec1), console=verbose)
+                prec1 = validate(model, val_loader)
+                logger.log('[%d, %5d/%5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, input.size(0), losses.avg, prec1), console=verbose)
 
 
 

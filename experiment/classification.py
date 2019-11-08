@@ -1,4 +1,7 @@
 import sys
+
+from torch.optim import SGD
+
 sys.path.append("../")
 import random
 import time
@@ -73,7 +76,8 @@ train(net=network,
       criterion=nn.CrossEntropyLoss(),
       logger=logger,
       val_set=test_set,
-      learn_rate=0.01)
+      optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4)
+      )
 
 print(f"{round(time.time() - start, 2)}s")
 print(accuracy(network, train_set, 128))
