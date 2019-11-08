@@ -26,14 +26,14 @@ class VGG(_BaseNetwork, nn.Module):
     def __init__(self, features, num_classes=10, init_weights=True):
         super(VGG, self).__init__()
         self.features = features
-        '''
+
         inhibition_layers = [layer for layer in self.features.children() if isinstance(layer, InhibitionModule)]
         self.is_circular = [layer.is_circular for layer in inhibition_layers]
         self.self_connection = [layer.self_connection for layer in inhibition_layers]
         self.damp = [layer.damp for layer in inhibition_layers]
         self.width = [layer.width for layer in inhibition_layers]
         self.scopes = [layer.scope for layer in inhibition_layers]
-        '''
+
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Dropout(),
@@ -59,11 +59,6 @@ class VGG(_BaseNetwork, nn.Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                m.bias.data.zero_()
-            '''
-            if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
@@ -73,7 +68,7 @@ class VGG(_BaseNetwork, nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
-            '''
+
 
 def make_layers(cfg, inhibition_layers: List[nn.Module]=None, batch_norm=False):
     layers = []
