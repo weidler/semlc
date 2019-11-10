@@ -8,8 +8,6 @@ from torch import nn, optim
 from torch.nn.functional import mse_loss
 
 from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition, ParametrizedInhibition
-from model.fft_inhibition_layer import FFTConvergedInhibition, FFTConvergedFrozenInhibition
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 
 use_cuda = False
 if torch.cuda.is_available():

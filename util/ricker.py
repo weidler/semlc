@@ -4,13 +4,18 @@ import matplotlib.pyplot as plt
 import torch
 
 
-def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int):
+def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int, self_connect: bool = True):
+    assert scope % 2 != 0, "Scope must have an odd number of dimensions."
+    assert scope > 0, "WHAT?"
     assert isinstance(width, torch.Tensor) and isinstance(damp, torch.Tensor), "Width and Damp must be tensors"
 
     A = 2 / (torch.sqrt(3 * width) * (math.pi ** 0.25))
     start = -(scope - 1.0) / 2
     vec = torch.tensor([start + 1 * i for i in range(scope)])
     wavelet = damp * A * (torch.exp(-vec ** 2 / (2 * width ** 2))) * (1 - vec ** 2 / width ** 2)
+
+    if not self_connect:
+        wavelet[wavelet.shape[-1] // 2] = 0
 
     return wavelet
 
@@ -33,7 +38,7 @@ def dif_of_gauss(width, std, scope):
 if __name__ == "__main__":
     from util.weight_initialization import mexican_hat
 
-    scope = 63
+    scope = 45
     width = 10
     damping = 0.1
 
@@ -45,5 +50,6 @@ if __name__ == "__main__":
     plt.plot(rickered.detach().cpu().numpy(), "--", label="Ricker")
     plt.plot(doggy.detach().cpu().numpy(), label="DoG")
     plt.legend()
+    plt.axhline(color="black", lw=1)
 
     plt.show()

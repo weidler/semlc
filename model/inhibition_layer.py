@@ -139,7 +139,8 @@ class ParametrizedInhibition(nn.Module, InhibitionModule):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        inhibition_filter = ricker.ricker(scope=self.scope, width=self.width, damp=self.damp)
+        inhibition_filter = ricker.ricker(scope=self.scope, width=self.width, damp=self.damp,
+                                          self_connect=self.self_connection)
 
         # construct filter toeplitz
         if self.is_circular:
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     height = 14
     wavelet_width = 6
     damping = 0.12
-    self_connect = True
+    self_connect = False
 
     tensor_in = torch.zeros((batches, depth, width, height))
     for b in range(batches):
@@ -201,7 +202,7 @@ if __name__ == "__main__":
                                                           pad="zeros", self_connection=self_connect)
 
     inhibitor_parametrized = ParametrizedInhibition(scope, wavelet_width, initial_damp=damping, in_channels=depth,
-                                                       self_connection=self_connect)
+                                                    self_connection=self_connect)
 
     plt.clf()
     plt.plot(tensor_in[0, :, 4, 7].cpu().numpy(), label="Input")
