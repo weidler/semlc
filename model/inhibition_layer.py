@@ -139,7 +139,7 @@ class ParametrizedInhibition(nn.Module, InhibitionModule):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        inhibition_filter = ricker.ricker(scope=scope, width=self.width)
+        inhibition_filter = ricker.ricker(scope=scope, width=self.width, damp=self.damp)
 
         # construct filter toeplitz
         if self.is_circular:
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     plt.plot(tensor_out_parametrized[0, :, 4, 7].detach().cpu().numpy(), "--",
              label="Parametrized Toeplitz Circular")
 
-    plt.title(f"Effects of Single Shot and Converged Inhibition for Different Padding Strategies "
-              f"(with{'out' if not self_connect else ''} self connection).")
+    plt.title(f"Effects of Different Inhibition Strategies ")
     plt.legend()
-    plt.savefig(f"../documentation/figures/layer_effects_with{'out' if not self_connect else ''}.pdf", format="pdf")
+    plt.savefig(f"../documentation/figures/strategy_effects.pdf", format="pdf")
+    plt.show()
