@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 import torch
 
 
-def ricker(width, scope):
-    A = 2 / (math.sqrt(3 * width) * (math.pi ** 0.25))
+def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int):
+    assert isinstance(width, torch.Tensor) and isinstance(damp, torch.Tensor), "Width and Damp must be tensors"
+
+    A = 2 / (torch.sqrt(3 * width) * (math.pi ** 0.25))
     start = -(scope - 1.0) / 2
     vec = [start + 1 * i for i in range(scope)]
-    wavelet = [A * (math.exp(-j ** 2 / (2 * width ** 2))) * (1 - j ** 2 / width ** 2) for j in vec]
+    wavelet = [A * (torch.exp(-j ** 2 / (2 * width ** 2))) * (1 - j ** 2 / width ** 2) for j in vec]
     ricked_tensor = torch.tensor(wavelet)
+
     return ricked_tensor
 
 
@@ -25,15 +28,23 @@ def dif_of_gauss(width, std, scope):
         [((1 / (stdb * (math.sqrt(2 * math.pi)))) * (math.e ** -(((j - width) / stdb) ** 2) / 2)) for j in vec])
     # dog = [(((1/(scope*(math.sqrt(2*math.pi))))*(math.e**-((j-width)**2)/(2*scope**2))))-(((1/(scopeb*(math.sqrt(2*math.pi))))*(math.e**-((j-width)**2)/(2*scopeb**2)))) for j in vec]
     dog = torch.sub(gaus1, gaus2)
-    dog = dog.tolist()
     return dog
 
 
 if __name__ == "__main__":
-    rickered = ricker(10, 20)
-    doggy = dif_of_gauss(5, 10, 20)
+    from util.weight_initialization import mexican_hat
 
-    plt.plot(rickered, label="Ricker")
-    plt.plot(doggy, label="DoG")
+    scope = 63
+    width = 10
+    damping = 0.1
 
-    plt.plot()
+    mh = mexican_hat(scope, width, damping)
+    rickered = ricker(torch.tensor(width, dtype=torch.float32), torch.tensor(damping, dtype=torch.float32), scope=scope)
+    doggy = dif_of_gauss(width=width, std=width, scope=scope)
+
+    plt.plot(mh.detach().cpu().numpy(), label="SciPy Ricker")
+    plt.plot(rickered.detach().cpu().numpy(), label="Ricker")
+    plt.plot(doggy.detach().cpu().numpy(), label="DoG")
+    plt.legend()
+
+    plt.show()
