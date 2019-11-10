@@ -7,7 +7,7 @@ from scipy.signal import gaussian
 from torch import nn, optim
 from torch.nn.functional import mse_loss
 
-from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
+from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition, ParametrizedInhibition
 from model.fft_inhibition_layer import FFTConvergedInhibition, FFTConvergedFrozenInhibition
 from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 
@@ -63,16 +63,11 @@ for b in range(batches):
             tensor_in[b, :, i, j] = torch.from_numpy(gaussian(3, 6))
 
 simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-inhibitor = Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
-inhibitor_rec = Conv3DRecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True,
-                                          max_steps=5)
-inhibitor_conv = FFTConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-inhibitor_conv_freeze = FFTConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
 inhibitor_tpl = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
 inhibitor_tpl_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
+inhibitor_parametrized = ParametrizedInhibition(scope, wavelet_width, initial_damp=damping, in_channels=depth)
 
-for test_layer in [simple_conv, inhibitor, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
-                   inhibitor_tpl_freeze]:
+for test_layer in [simple_conv, inhibitor_tpl, inhibitor_tpl_freeze, inhibitor_parametrized]:
     net = nn.Sequential(
         nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2),  # 0
         test_layer,  # 1

@@ -139,7 +139,7 @@ class ParametrizedInhibition(nn.Module, InhibitionModule):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        inhibition_filter = ricker.ricker(scope=scope, width=self.width, damp=self.damp)
+        inhibition_filter = ricker.ricker(scope=self.scope, width=self.width, damp=self.damp)
 
         # construct filter toeplitz
         if self.is_circular:
