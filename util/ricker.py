@@ -10,7 +10,7 @@ def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int):
     A = 2 / (torch.sqrt(3 * width) * (math.pi ** 0.25))
     start = -(scope - 1.0) / 2
     vec = torch.tensor([start + 1 * i for i in range(scope)])
-    wavelet = A * (torch.exp(-vec ** 2 / (2 * width ** 2))) * (1 - vec ** 2 / width ** 2)
+    wavelet = damp * A * (torch.exp(-vec ** 2 / (2 * width ** 2))) * (1 - vec ** 2 / width ** 2)
 
     return wavelet
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     doggy = dif_of_gauss(width=width, std=width, scope=scope)
 
     plt.plot(mh.detach().cpu().numpy(), label="SciPy Ricker")
-    plt.plot(rickered.detach().cpu().numpy(), label="Ricker")
+    plt.plot(rickered.detach().cpu().numpy(), "--", label="Ricker")
     plt.plot(doggy.detach().cpu().numpy(), label="DoG")
     plt.legend()
 
