@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 from model.inhibition_module import InhibitionModule
-from util import weight_initialization
+from util import weight_initialization, ricker
 from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
 
 
@@ -117,6 +117,42 @@ class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
         return convolve_3d_toeplitz(self.tpl_inv, activations)
 
 
+class ParametrizedInhibition(nn.Module, InhibitionModule):
+
+    def __init__(self, scope: int, initial_ricker_width: int, initial_damp: float, in_channels: int,
+                 pad="circular", self_connection: bool = False):
+        super().__init__()
+        self.scope = scope
+        self.in_channels = in_channels
+        assert pad in ["circular", "zeros"]
+        self.is_circular = pad == "circular"
+        self.self_connection = self_connection
+
+        # parameters
+        damp = torch.tensor(initial_damp, dtype=torch.float32)
+        width = torch.tensor(initial_ricker_width, dtype=torch.float32)
+
+        # inhibition filter
+        self.register_parameter("damp", nn.Parameter(damp))
+        self.register_parameter("width", nn.Parameter(width))
+        self.damp.requires_grad, self.width.requires_grad = True, True
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # make filter from current damp and width
+        inhibition_filter = ricker.ricker(scope=scope, width=self.width)
+
+        # construct filter toeplitz
+        if self.is_circular:
+            tpl = toeplitz1d_circular(inhibition_filter, self.in_channels)
+        else:
+            tpl = toeplitz1d_zero(inhibition_filter, self.in_channels)
+
+        tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
+
+        # convolve by toeplitz
+        return convolve_3d_toeplitz(tpl_inv, activations)
+
+
 if __name__ == "__main__":
     from scipy.signal import gaussian
 
@@ -164,6 +200,9 @@ if __name__ == "__main__":
     inhibitor_tpl_freeze_zero = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
                                                           pad="zeros", self_connection=self_connect)
 
+    inhibitor_parametrized = ParametrizedInhibition(scope, wavelet_width, initial_damp=damping, in_channels=depth,
+                                                       self_connection=self_connect)
+
     plt.clf()
     plt.plot(tensor_in[0, :, 4, 7].cpu().numpy(), label="Input")
 
@@ -186,6 +225,10 @@ if __name__ == "__main__":
     tensor_out_tpl_freeze_zero = inhibitor_tpl_freeze_zero(tensor_in)
     plt.plot(tensor_out_tpl_freeze_zero[0, :, 4, 7].detach().cpu().numpy(), ".",
              label="Converged Toeplitz Frozen Zeroed")
+
+    tensor_out_parametrized = inhibitor_parametrized(tensor_in)
+    plt.plot(tensor_out_parametrized[0, :, 4, 7].detach().cpu().numpy(), "--",
+             label="Parametrized Toeplitz Circular")
 
     plt.title(f"Effects of Single Shot and Converged Inhibition for Different Padding Strategies "
               f"(with{'out' if not self_connect else ''} self connection).")

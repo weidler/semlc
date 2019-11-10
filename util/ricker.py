@@ -15,10 +15,6 @@ def ricker(width, scope):
     return ricked_tensor
 
 
-ricked = ricker(1.0, 10)
-
-
-# print(ricked)
 def dif_of_gauss(width, std, scope):
     start = -(scope - 1.0) / 2
     stdb = std * 2
@@ -38,6 +34,3 @@ def dif_of_gauss(width, std, scope):
     plt.plot(vec, dog)
     plt.show()
     return
-
-# dif_of_gauss(torch.zeros(2), torch.eye(2))
-# dif_of_gauss(0, 20, 100)
