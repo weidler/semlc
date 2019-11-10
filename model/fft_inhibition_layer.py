@@ -27,7 +27,7 @@ class FFTConvergedInhibition(nn.Module, InhibitionModule):
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
+        inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
         self.inhibition_filter.requires_grad = learn_weights
 
@@ -63,7 +63,7 @@ class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp)
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp)
         self.inhibition_filter = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
         self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
 

@@ -12,7 +12,7 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
     def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights=False,
-                 pad="circular", self_connection: bool = False, analyzer=None):
+                 pad="circular", self_connection: bool = False):
         super().__init__()
 
         assert pad in ["circular", "zeros"]
@@ -20,16 +20,18 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
         self.learn_weights = learn_weights
         self.in_channels = in_channels
         self.scope = scope
-        self.analyzer = analyzer
         self.damp = damp
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
         self.width = ricker_width
 
-        inhibition_filter = weight_initialization.mexican_hat(scope, damping=damp, std=ricker_width,
-                                                              self_connect=self_connection)
+        inhibition_filter = self._make_filter()
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
         self.inhibition_filter.requires_grad = learn_weights
+
+    def _make_filter(self):
+        return weight_initialization.mexican_hat(scope, damping=self.damp, width=self.width,
+                                                 self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
@@ -40,6 +42,16 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
 
         # convolve by toeplitz
         return (0 if self.self_connection else activations) + convolve_3d_toeplitz(tpl, activations)
+
+
+class SingleShotGaussianChannelFilter(SingleShotInhibition):
+    def __init__(self, scope: int, width: int, damp: float, in_channels: int,
+                 pad="circular", self_connection: bool = False):
+        super().__init__(scope, width, damp, in_channels, False, pad, self_connection)
+
+    def _make_filter(self):
+        return weight_initialization.gaussian(scope, damping=self.damp, width=self.width,
+                                              self_connect=self.self_connection)
 
 
 class ConvergedInhibition(nn.Module, InhibitionModule):
@@ -63,7 +75,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         self.width = ricker_width
 
         # inhibition filter
-        inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp,
+        inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp,
                                                               self_connect=self_connection)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
         self.inhibition_filter.requires_grad = True
@@ -102,8 +114,7 @@ class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
         self.width = ricker_width
 
         # inhibition filter
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp,
-                                                                   self_connect=self_connection)
+        self.inhibition_filter = self._make_filter()
 
         # construct filter toeplitz
         if self.is_circular:
@@ -113,8 +124,23 @@ class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
 
         self.tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
+    def _make_filter(self) -> torch.Tensor:
+        return weight_initialization.mexican_hat(scope, width=self.width, damping=self.damp,
+                                                 self_connect=self.self_connection)
+
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         return convolve_3d_toeplitz(self.tpl_inv, activations)
+
+
+class ConvergedGaussianChannelFilter(ConvergedFrozenInhibition):
+
+    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular",
+                 self_connection: bool = False):
+        super().__init__(scope, ricker_width, in_channels, damp, pad, self_connection)
+
+    def _make_filter(self) -> torch.Tensor:
+        return weight_initialization.gaussian(scope, width=self.width, damping=self.damp,
+                                              self_connect=self.self_connection)
 
 
 class ParametrizedInhibition(nn.Module, InhibitionModule):
@@ -190,8 +216,9 @@ if __name__ == "__main__":
     inhibitor_ssi_tpl_zero = SingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
                                                   pad="zeros", learn_weights=True, self_connection=self_connect)
     inhibitor_ssi_tpl_circ = SingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
-                                                  pad="circular",
-                                                  learn_weights=True, self_connection=self_connect)
+                                                  pad="circular", learn_weights=True, self_connection=self_connect)
+    inhibitor_gaussian_ssi = SingleShotGaussianChannelFilter(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                             pad="circular", self_connection=self_connect)
     inhibitor_tpl_circ = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
                                              self_connection=self_connect)
     inhibitor_tpl_freeze_circ = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
@@ -200,6 +227,9 @@ if __name__ == "__main__":
                                              self_connection=self_connect)
     inhibitor_tpl_freeze_zero = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
                                                           pad="zeros", self_connection=self_connect)
+
+    inhibitor_gaussian = ConvergedGaussianChannelFilter(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                        self_connection=self_connect)
 
     inhibitor_parametrized = ParametrizedInhibition(scope, wavelet_width, initial_damp=damping, in_channels=depth,
                                                     self_connection=self_connect)
@@ -230,6 +260,15 @@ if __name__ == "__main__":
     tensor_out_parametrized = inhibitor_parametrized(tensor_in)
     plt.plot(tensor_out_parametrized[0, :, 4, 7].detach().cpu().numpy(), "--",
              label="Parametrized Toeplitz Circular")
+
+    # GAUSSIAN WAVELETS
+    tensor_out_gaussian = inhibitor_gaussian(tensor_in)
+    plt.plot(tensor_out_gaussian[0, :, 4, 7].detach().cpu().numpy(), "--",
+             label="Converged Gaussian Channel Filter")
+
+    tensor_out_gaussian_ssi = inhibitor_gaussian_ssi(tensor_in)
+    plt.plot(tensor_out_gaussian_ssi[0, :, 4, 7].detach().cpu().numpy(), "--",
+             label="Single Shot Gaussian Channel Filter")
 
     plt.title(f"Effects of Different Inhibition Strategies ")
     plt.legend()
