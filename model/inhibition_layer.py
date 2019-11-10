@@ -51,8 +51,8 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, learn_weights: bool = True,
-                 pad="circular", self_connection: bool = False):
+    def __init__(self, scope: int, ricker_width: int, damp: float, in_channels: int, pad="circular",
+                 self_connection: bool = False):
         super().__init__()
         self.scope = scope
         self.in_channels = in_channels
@@ -66,7 +66,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         inhibition_filter = weight_initialization.mexican_hat(scope, std=ricker_width, damping=damp,
                                                               self_connect=self_connection)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
-        self.inhibition_filter.requires_grad = learn_weights
+        self.inhibition_filter.requires_grad = True
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
