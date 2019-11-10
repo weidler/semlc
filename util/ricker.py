@@ -9,11 +9,10 @@ def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int):
 
     A = 2 / (torch.sqrt(3 * width) * (math.pi ** 0.25))
     start = -(scope - 1.0) / 2
-    vec = [start + 1 * i for i in range(scope)]
-    wavelet = [A * (torch.exp(-j ** 2 / (2 * width ** 2))) * (1 - j ** 2 / width ** 2) for j in vec]
-    ricked_tensor = torch.tensor(wavelet)
+    vec = torch.tensor([start + 1 * i for i in range(scope)])
+    wavelet = A * (torch.exp(-vec ** 2 / (2 * width ** 2))) * (1 - vec ** 2 / width ** 2)
 
-    return ricked_tensor
+    return wavelet
 
 
 def dif_of_gauss(width, std, scope):
