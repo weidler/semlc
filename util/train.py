@@ -3,10 +3,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from util.eval import accuracy, accuracy_from_data_loader
+from util.eval import accuracy_from_data_loader
 
 
-def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=0.01, val_loader=None, optimizer=None,
+def train_model(net, num_epoch, train_loader, criterion, learn_rate=0.01, val_loader=None, optimizer=None,
                 logger=None, verbose=False, save_freq=80):
     # Adam optimizer by default
     if optimizer is None:
@@ -17,9 +17,7 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
     num_batches = train_loader.__len__()
     for epoch in tqdm(range(num_epoch), disable=verbose):  # loop over the dataset multiple times
         running_loss = 0.0
-        if epoch == 100:
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = param_group['lr'] * 0.1
+        adjust_learning_rate(learn_rate, optimizer, epoch)
 
         for i, (inputs, labels) in enumerate(train_loader, 0):
             # zero the parameter gradients
@@ -27,6 +25,7 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
             optimizer.zero_grad()
 
             # forward + backward + optimize
+            # TODO probably unnecessary
             if torch.cuda.is_available():
                 outputs = net(inputs.cuda())
             else:
@@ -49,7 +48,7 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
                         val_acc = accuracy_from_data_loader(net, val_loader)
                         if val_acc > max_val_acc:
                             max_val_acc = val_acc
-                            if epoch >= 100:
+                            if epoch >= 30:
                                 logger.save_model(f'{epoch + 1}_best', best=True)
                         logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, log_loss, val_acc),
                                    console=verbose)
@@ -61,7 +60,7 @@ def train_model(net, num_epoch, train_loader, batch_size, criterion, learn_rate=
 
 
 def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, val_set=None, optimizer=None, logger=None,
-          verbose=False, save_freq=40):
+          verbose=False, save_freq=80):
     train_loader = DataLoader(train_set,
                               batch_size=batch_size,
                               shuffle=True)
@@ -71,13 +70,20 @@ def train(net, num_epoch, train_set, batch_size, criterion, learn_rate=0.01, val
                                 batch_size=batch_size,
                                 shuffle=False)
 
-    train_model(net, num_epoch, train_loader, batch_size, criterion,
+    train_model(net, num_epoch, train_loader, criterion,
                 learn_rate=learn_rate,
                 val_loader=val_loader,
                 optimizer=optimizer,
                 logger=logger,
                 verbose=verbose,
                 save_freq=save_freq)
+
+
+def adjust_learning_rate(l_rate, optimizer, epoch):
+    """Sets the learning rate to the initial LR decayed by 2 every 30 epochs"""
+    lr = l_rate * (0.5 ** (epoch // 30))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
 
 if __name__ == "__main__":

@@ -21,6 +21,9 @@
 ### run as maastricht university dke project group
 #SBATCH --account=um_dke
 
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=julianlehnen@gmail.com
+
 ### start environment
 source .brains/bin/activate
 module load cuda
