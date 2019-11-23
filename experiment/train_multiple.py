@@ -51,7 +51,7 @@ def run(strategy: str, iterations: int):
         train_indices = list(filter(lambda x: x not in val_indices, list(range(len(trainval_set)))))
         val_set = Subset(trainval_set, indices=val_indices)
         train_set = Subset(trainval_set, indices=train_indices)
-        
+
         network = None
         if strategy == "baseline":
             network = Baseline()
@@ -82,14 +82,14 @@ def run(strategy: str, iterations: int):
         logger = Logger(network, experiment_code=f"{strategy}_{i}")
 
         train(net=network,
-              num_epoch=100,
+              num_epoch=180,
               train_set=train_set,
               batch_size=128,
               criterion=nn.CrossEntropyLoss(),
               logger=logger,
               val_set=val_set,
-              optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),
-              learn_rate=0.05,
+              # optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),
+              learn_rate=0.001,
               verbose=False)
 
         network.eval()
