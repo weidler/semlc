@@ -7,7 +7,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import Baseline
+from model.network.alexnet_cifar import Baseline
 from util.train import train
 from util.eval import accuracy
 

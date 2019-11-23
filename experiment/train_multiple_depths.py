@@ -8,7 +8,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork
+from model.network.alexnet_cifar import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork
 from util.train import train
 from util.eval import accuracy
 
@@ -49,17 +49,13 @@ for i in range(0, iterations):
         elif strategy == "cmap":
             network = BaselineCMap(logdir=logdir)
         elif strategy == "ss":
-            network = SingleShotInhibitionNetwork([63, 63, 63], 8, 0.2, freeze=False, logdir=logdir,
-                                                  inhibition_start=inhib_start, inhibition_end=inhib_end)
+            network = SingleShotInhibitionNetwork([63, 63, 63], 8, 0.2, freeze=False)
         elif strategy == "ss_freeze":
-            network = SingleShotInhibitionNetwork([27, 63, 63], 3, 0.1, freeze=True, logdir=logdir,
-                                                  inhibition_start=inhib_start, inhibition_end=inhib_end)
+            network = SingleShotInhibitionNetwork([27, 63, 63], 3, 0.1, freeze=True)
         elif strategy == "converged":
-            network = ConvergedInhibitionNetwork([27, 27, 27], 3, 0.1, freeze=False, logdir=logdir,
-                                                 inhibition_start=inhib_start, inhibition_end=inhib_end)
+            network = ConvergedInhibitionNetwork([27, 27, 27], 3, 0.1, freeze=False)
         elif strategy == "converged_freeze":
-            network = ConvergedInhibitionNetwork([45, 45, 45], 3, 0.2, freeze=True, logdir=logdir,
-                                                 inhibition_start=inhib_start, inhibition_end=inhib_end)  # toeplitz
+            network = ConvergedInhibitionNetwork([45, 45, 45], 3, 0.2, freeze=True)  # toeplitz
 
         print(f"{network.__class__.__name__}_{i+1}")
 

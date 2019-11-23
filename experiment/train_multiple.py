@@ -13,7 +13,8 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_paper import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork
+from model.network.alexnet_cifar import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork, \
+    ParametricInhibitionNetwork
 from util.train import train
 from util.eval import accuracy
 
@@ -63,6 +64,8 @@ def run(strategy: str, iterations: int):
             network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False)
         elif strategy == "converged_freeze":
             network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True)  # toeplitz
+        elif strategy == "parametric":
+            network = ParametricInhibitionNetwork([45], 3, 0.2)  # toeplitz
         elif strategy == "vgg19":
             network = vgg19()
         elif strategy == "vgg19_inhib":
@@ -95,8 +98,8 @@ def run(strategy: str, iterations: int):
 if __name__ == '__main__':
     import argparse
 
-    strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze", "vgg19", "vgg19_inhib",
-                  "vgg19_inhib_self"]
+    strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze", "parametric", "vgg19",
+                  "vgg19_inhib", "vgg19_inhib_self"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("strategy", type=str, choices=strategies)

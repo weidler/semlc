@@ -9,7 +9,7 @@ import time
 from torch import nn
 
 from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition
-from model.network.alexnet_paper import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, Baseline
+from model.network.alexnet_cifar import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork, Baseline
 
 
 class Logger:
@@ -60,10 +60,7 @@ class Logger:
 
 
 if __name__ == "__main__":
-    net = SingleShotInhibitionNetwork(scopes=[9],
-                                     width=int(4),
-                                     damp=0.1,
-                                     freeze=True)
+    net = SingleShotInhibitionNetwork(scopes=[9], width=int(4), damp=0.1, freeze=True)
     base = Baseline()
 
     logger = Logger(base)

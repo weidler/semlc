@@ -6,7 +6,7 @@ from matplotlib import gridspec
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from model.network.alexnet_paper import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork
+from model.network.alexnet_cifar import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork
 
 import matplotlib.pyplot as plt
 
@@ -22,7 +22,7 @@ fig.set_size_inches(12, 7)
 gs = fig.add_gridspec(3, 5, height_ratios=[1, 1, 2])
 
 # net = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, inhibition_start=1, inhibition_end=1)
-net = SingleShotInhibitionNetwork([63], 3, 0.1, freeze=False, inhibition_start=1, inhibition_end=1)
+net = SingleShotInhibitionNetwork([63], 3, 0.1, freeze=False)
 parameters = list(net.named_parameters())
 filter_before = None
 for p in parameters:

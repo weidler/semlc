@@ -5,7 +5,7 @@ import torch
 import torchvision
 from torchvision import transforms
 
-from model.network.alexnet_paper import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork
+from model.network.alexnet_cifar import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork
 from util.eval import accuracy_with_confidence
 
 # Random seeding is very important, since without the random cropping may be different
@@ -25,7 +25,7 @@ print(f"USE CUDA: {use_cuda}.")
 
 
 # SET UP NETS AND SETTINGS
-nets = [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, inhibition_start=1, inhibition_end=1) for i in range(1, 11)]
+nets = [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, 11)]
 # nets = [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, 11)]
 # nets = [SingleShotInhibitionNetwork([63], 3, 0.1, freeze=False) for i in range(1, 11)]
 # nets = [Baseline() for i in range(1, 11)]

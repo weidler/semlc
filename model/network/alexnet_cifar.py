@@ -2,7 +2,8 @@ from typing import List, Dict
 
 from torch import nn
 
-from model.inhibition_layer import SingleShotInhibition, ConvergedFrozenInhibition, ConvergedInhibition
+from model.inhibition_layer import SingleShotInhibition, ConvergedFrozenInhibition, ConvergedInhibition, \
+    ParametricInhibition
 from model.network.base import _BaseNetwork
 
 
@@ -116,25 +117,20 @@ class BaselineCMap(_AlexNetBase):
 
 class SingleShotInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1):
+    def __init__(self, scopes: List[int], width: float, damp: float, freeze: bool = True, coverage: int = 1):
         super().__init__()
-
-        if len(scopes) != inhibition_end - inhibition_start + 1:
-            raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
-                             f"({inhibition_start}/{inhibition_end}).")
 
         self.scopes = scopes
         self.width = width
         self.damp = damp
 
         self.freeze = freeze
-        self.inhibition_start = inhibition_start
-        self.inhibition_end = inhibition_end
+        self.coverage = coverage
 
         inhibition_layers = {}
-        for i in range(inhibition_start, inhibition_end + 1):
+        for i in range(coverage):
             inhibition_layers.update(
-                {f"inhib_{i}": SingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
+                {f"inhib_{i}": SingleShotInhibition(scope=scopes[i], ricker_width=width, damp=damp,
                                                     learn_weights=not freeze)})
 
         self.build_module(inhibition_layers)
@@ -142,27 +138,22 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
 
 class ConvergedInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, inhibition_start=1, inhibition_end=1):
+    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, coverage: int = 1):
         super().__init__()
-
-        # if len(scopes) != inhibition_end - inhibition_start + 1:
-        #    raise ValueError(f"Inconsistent number of given scopes ({len(scopes)}) and desired inhibition start/end "
-        #                     f"({inhibition_start}/{inhibition_end}).")
 
         self.scopes = scopes
         self.width = width
         self.damp = damp
 
         self.freeze = freeze
-        self.inhibition_start = inhibition_start
-        self.inhibition_end = inhibition_end
+        self.coverage = coverage
 
         inhibition_layers = {}
-        for i in range(inhibition_start, inhibition_end + 1):
+        for i in range(coverage):
             inhibition_layers.update(
-                {f"inhib_{i}": ConvergedInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
-                                                   in_channels=64) if not self.freeze else
-                ConvergedFrozenInhibition(scope=scopes[i - 1],
+                {f"inhib_{i}": ConvergedInhibition(scope=scopes[i], ricker_width=width,
+                                                   damp=damp) if not self.freeze else
+                ConvergedFrozenInhibition(scope=scopes[i],
                                           ricker_width=width, damp=damp,
                                           in_channels=64)})
 
@@ -176,7 +167,32 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
         return x
 
 
+class ParametricInhibitionNetwork(_AlexNetBase):
+
+    def __init__(self, scopes: List[int], width: float, damp: float, coverage: int = 1):
+        super().__init__()
+
+        self.scopes = scopes
+        self.width = width
+        self.damp = damp
+        self.coverage = coverage
+
+        inhibition_layers = {}
+        for i in range(coverage):
+            inhibition_layers.update(
+                {f"inhib_{i}": ParametricInhibition(scope=scopes[i], initial_ricker_width=width, initial_damp=damp,
+                                                    in_channels=64)})
+
+        self.build_module(inhibition_layers)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), 32 * 5 * 5)
+        x = self.classifier(x)
+
+        return x
+
+
 if __name__ == "__main__":
-    net = ConvergedInhibitionNetwork(scopes=[27, 27, 27], width=3, damp=0.1, freeze=True, inhibition_start=2,
-                                     inhibition_end=2)
+    net = ConvergedInhibitionNetwork(scopes=[27, 27, 27], width=3, damp=0.1, freeze=True)
     print(net.features)

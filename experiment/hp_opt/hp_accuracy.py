@@ -11,7 +11,7 @@ from torchvision import transforms, datasets
 import pandas as pd
 
 from util.eval import accuracy, accuracy_from_data_loader
-from model.network.alexnet_paper import ConvergedInhibitionNetwork
+from model.network.alexnet_cifar import ConvergedInhibitionNetwork
 
 #torch.random.manual_seed(12311)
 #np.random.seed(12311)
@@ -165,12 +165,8 @@ if __name__ == "__main__":
             for scope, ricker_width, damp in configurations:
                 print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
                 # fix scope when applying depth > 1
-                net = ConvergedInhibitionNetwork(scopes=[int(scope)],
-                                                 width=int(ricker_width),
-                                                 damp=damp,
-                                                 freeze=strategy=='toeplitz',
-                                                 logdir=f"0{i}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
-                                                 )
+                net = ConvergedInhibitionNetwork(scopes=[int(scope)], width=int(ricker_width), damp=damp,
+                                                 freeze=strategy == 'toeplitz')
 
                 freeze='_freeze' if strategy=='toeplitz' else ''
                 net.load_state_dict(torch.load(f"../saved_models/0{i}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/ConvergedInhibitionNetwork{freeze}_final.model"))

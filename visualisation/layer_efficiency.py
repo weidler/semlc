@@ -51,7 +51,7 @@ def make_passes(layer, n):
 def make_layers(depth, scope, recurrent=True):
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
     inhibitor = Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
-    inhibitor_ssi_tpl = SingleShotInhibition(scope, wavelet_width, damp=damping, in_channels=depth, learn_weights=True)
+    inhibitor_ssi_tpl = SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=True)
     inhibitor_rec = Conv3DRecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True,
                                               max_steps=5)
 

@@ -16,7 +16,7 @@ from torchvision import transforms, datasets
 
 from util.eval import accuracy
 from util.ourlogging import Logger
-from model.network.alexnet_paper import ConvergedInhibitionNetwork
+from model.network.alexnet_cifar import ConvergedInhibitionNetwork
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -158,12 +158,8 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
             print("starting",
                   f"str: {strategy} freeze: {strategy == 'toeplitz'} sc: {int(scope)} w: {int(ricker_width)} d: {damp}")
             # fix scope when applying depth > 1
-            net = ConvergedInhibitionNetwork(scopes=[int(scope)],
-                                             width=int(ricker_width),
-                                             damp=damp,
-                                             freeze=strategy == 'toeplitz' or strategy == 'once',
-                                             logdir=f"0{rep}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}"
-                                             )
+            net = ConvergedInhibitionNetwork(scopes=[int(scope)], width=int(ricker_width), damp=damp,
+                                             freeze=strategy == 'toeplitz' or strategy == 'once')
 
             if use_cuda:
                 net.cuda()

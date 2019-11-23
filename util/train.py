@@ -87,6 +87,6 @@ def adjust_learning_rate(l_rate, optimizer, epoch):
 
 
 if __name__ == "__main__":
-    from model.network.alexnet_paper import InhibitionNetwork
+    from model.network.alexnet_cifar import InhibitionNetwork
 
     model = InhibitionNetwork()

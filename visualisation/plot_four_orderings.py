@@ -8,7 +8,7 @@ from torch import Tensor
 from tqdm import tqdm
 
 from visualisation.plot_ordering import get_orderings, create_plot
-from model.network.alexnet_paper import ConvergedInhibitionNetwork, Baseline, BaselineCMap
+from model.network.alexnet_cifar import ConvergedInhibitionNetwork, Baseline, BaselineCMap
 from visualisation.filter_weights_visualization import get_ordering_difference
 from util.filter_ordering import two_opt
 
@@ -20,17 +20,8 @@ damp = 0.1
 
 base = Baseline()
 cmap = BaselineCMap()
-converged = ConvergedInhibitionNetwork(
-    scopes=[27],
-    width=ricker_width,
-    damp=0.1,
-    freeze=False
-)
-converged_f = ConvergedInhibitionNetwork(
-    scopes=[27],
-    width=ricker_width,
-    damp=0.1,
-)
+converged = ConvergedInhibitionNetwork(scopes=[27], width=ricker_width, damp=0.1, freeze=False)
+converged_f = ConvergedInhibitionNetwork(scopes=[27], width=ricker_width, damp=0.1)
 
 base.load_state_dict(torch.load(
     f"../final_results/baseline/baseline_1/Baseline_best.model",

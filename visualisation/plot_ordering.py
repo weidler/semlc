@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 from torch import Tensor
 from tqdm import tqdm
 
-from model.network.alexnet_paper import SingleShotInhibitionNetwork, BaselineCMap
+from model.network.alexnet_cifar import SingleShotInhibitionNetwork, BaselineCMap
 from util.filter_ordering import two_opt, mse
 from visualisation.filter_weights_visualization import get_ordering_difference
 
@@ -103,11 +103,7 @@ def plot_all(save=True):
                 map_location=lambda storage, loc: storage))
         else:
             scope = 63
-            net = SingleShotInhibitionNetwork(
-                scopes=[scope],
-                width=ricker_width,
-                damp=0.1
-            )
+            net = SingleShotInhibitionNetwork(scopes=[scope], width=ricker_width, damp=0.1)
             net.load_state_dict(torch.load(
                 f"../final_results/ss/ss_{j - 10}/SingleShotInhibitionNetwork_best.model",
                 map_location=lambda storage, loc: storage))
