@@ -8,6 +8,8 @@ from util import weight_initialization, ricker
 from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
 
 
+# SINGLE SHOT
+
 class SingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
@@ -44,37 +46,7 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
         return (0 if self.self_connection else activations) + convolve_3d_toeplitz(tpl, activations)
 
 
-class SingleShotGaussianChannelFilter(SingleShotInhibition):
-    def __init__(self, scope: int, width: int, damp: float, in_channels: int,
-                 pad="circular", self_connection: bool = False):
-        super().__init__(scope, width, damp, in_channels, False, pad, self_connection)
-
-    def _make_filter(self):
-        return weight_initialization.gaussian(scope, damping=self.damp, width=self.width,
-                                              self_connect=self.self_connection)
-
-
-class RecurrentGaussianChannelFilter(SingleShotGaussianChannelFilter):
-
-    def __init__(self, scope: int, width: int, damp: float, in_channels: int, pad="circular",
-                 self_connection: bool = False):
-        super().__init__(scope, width, damp, in_channels, pad, self_connection)
-
-    def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        # construct filter toeplitz
-        if self.is_circular:
-            tpl = toeplitz1d_circular(self.inhibition_filter, self.in_channels)
-        else:
-            tpl = toeplitz1d_zero(self.inhibition_filter, self.in_channels)
-
-        # convolve by toeplitz
-        inhibited_activations = activations.clone()
-        for _ in range(10):
-            inhibited = convolve_3d_toeplitz(tpl, inhibited_activations)
-            inhibited_activations = activations + inhibited
-
-        return inhibited_activations
-
+# CONVERGED
 
 class ConvergedInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
@@ -154,6 +126,18 @@ class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
         return convolve_3d_toeplitz(self.tpl_inv, activations)
 
 
+# GAUSSIAN FILTER
+
+class SingleShotGaussianChannelFilter(SingleShotInhibition):
+    def __init__(self, scope: int, width: int, damp: float, in_channels: int,
+                 pad="circular", self_connection: bool = False):
+        super().__init__(scope, width, damp, in_channels, False, pad, self_connection)
+
+    def _make_filter(self):
+        return weight_initialization.gaussian(scope, damping=self.damp, width=self.width,
+                                              self_connect=self.self_connection)
+
+
 class ConvergedGaussianChannelFilter(ConvergedFrozenInhibition):
 
     def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular",
@@ -164,6 +148,44 @@ class ConvergedGaussianChannelFilter(ConvergedFrozenInhibition):
         return weight_initialization.gaussian(scope, width=self.width, damping=self.damp,
                                               self_connect=self.self_connection)
 
+
+class RecurrentInhibition(SingleShotGaussianChannelFilter):
+
+    def __init__(self, scope: int, width: int, damp: float, in_channels: int, pad="circular",
+                 self_connection: bool = False, filter_distribution: str = "ricker"):
+        self.filter_distribution = filter_distribution
+        super().__init__(scope, width, damp, in_channels, pad, self_connection)
+
+    def _make_filter(self):
+        if self.filter_distribution == "ricker":
+            return weight_initialization.mexican_hat(scope, damping=self.damp, width=self.width,
+                                                     self_connect=self.self_connection)
+        elif self.filter_distribution == "gaussian":
+            return weight_initialization.gaussian(scope, width=self.width, damping=self.damp,
+                                                  self_connect=self.self_connection)
+        else:
+            raise NotImplementedError("Unknown inhibition filter distribution")
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # construct filter toeplitz
+        if self.is_circular:
+            tpl = toeplitz1d_circular(self.inhibition_filter, self.in_channels)
+        else:
+            tpl = toeplitz1d_zero(self.inhibition_filter, self.in_channels)
+
+        # convolve by toeplitz
+        inhibited_activations = activations.clone()
+        for _ in range(100):
+            # x = inhibited_activations[0, :, 0, 0].detach().cpu().numpy()
+            # plt.cla()
+            # plt.plot(x)
+            # plt.pause(0.1)
+            inhibited_activations = activations + convolve_3d_toeplitz(tpl, inhibited_activations)
+
+        return inhibited_activations
+
+
+# PARAMETRIC
 
 class ParametrizedInhibition(nn.Module, InhibitionModule):
 
@@ -253,8 +275,11 @@ if __name__ == "__main__":
     inhibitor_gaussian = ConvergedGaussianChannelFilter(scope, wavelet_width, damp=damping, in_channels=depth,
                                                         self_connection=self_connect)
 
-    inhibitor_gaussian_rec = RecurrentGaussianChannelFilter(scope, wavelet_width, damp=damping, in_channels=depth,
-                                                            self_connection=self_connect)
+    inhibitor_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                        self_connection=self_connect, filter_distribution="ricker")
+
+    inhibitor_gaussian_rec = RecurrentInhibition(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                 self_connection=self_connect, filter_distribution="gaussian")
 
     inhibitor_parametrized = ParametrizedInhibition(scope, wavelet_width, initial_damp=damping, in_channels=depth,
                                                     self_connection=self_connect)
@@ -286,18 +311,22 @@ if __name__ == "__main__":
     plt.plot(tensor_out_parametrized[0, :, 4, 7].detach().cpu().numpy(), "--",
              label="Parametrized Toeplitz Circular")
 
+    tensor_out_rec = inhibitor_rec(tensor_in)
+    plt.plot(tensor_out_rec[0, :, 4, 7].detach().cpu().numpy(), "--",
+             label="Recurrent Inhibition")
+
     # GAUSSIAN WAVELETS
     tensor_out_gaussian = inhibitor_gaussian(tensor_in)
     plt.plot(tensor_out_gaussian[0, :, 4, 7].detach().cpu().numpy(), ".",
              label="Converged Gaussian Channel Filter")
 
-    tensor_out_gaussian_rec = inhibitor_gaussian_rec(tensor_in)
-    plt.plot(tensor_out_gaussian_rec[0, :, 4, 7].detach().cpu().numpy(), "--",
-             label="Recurrent Gaussian Channel Filter")
-
-    tensor_out_gaussian_ssi = inhibitor_gaussian_ssi(tensor_in)
-    plt.plot(tensor_out_gaussian_ssi[0, :, 4, 7].detach().cpu().numpy(), "--",
-             label="Single Shot Gaussian Channel Filter")
+    # tensor_out_gaussian_rec = inhibitor_gaussian_rec(tensor_in)
+    # plt.plot(tensor_out_gaussian_rec[0, :, 4, 7].detach().cpu().numpy(), "--",
+    #          label="Recurrent Gaussian Channel Filter")
+    #
+    # tensor_out_gaussian_ssi = inhibitor_gaussian_ssi(tensor_in)
+    # plt.plot(tensor_out_gaussian_ssi[0, :, 4, 7].detach().cpu().numpy(), "--",
+    #          label="Single Shot Gaussian Channel Filter")
 
     plt.title(f"Effects of Different Inhibition Strategies ")
     plt.legend()

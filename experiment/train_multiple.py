@@ -99,7 +99,7 @@ if __name__ == '__main__':
                   "vgg19_inhib_self"]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("strategy", type=str, default="converged", choices=strategies)
+    parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("-i", type=int, default=10)
     args = parser.parse_args()
 
