@@ -1,7 +1,4 @@
-from torch import nn
-
-
-class _BaseNetwork():
+class _BaseNetwork:
 
     def __repr__(self):
         ret = ""

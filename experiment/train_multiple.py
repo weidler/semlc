@@ -1,5 +1,6 @@
-import math
 import sys
+
+from torch.utils.data import Subset
 
 sys.path.append("../")
 
@@ -45,12 +46,12 @@ def run(strategy: str, iterations: int):
     trainval_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
     test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-    # Split into train/validation
-    n_train = math.ceil(0.9 * len(trainval_set))
-    n_validation = len(trainval_set) - n_train
-    train_set, validation_set = torch.utils.data.random_split(trainval_set, [n_train, n_validation])
-
     for i in range(0, iterations):
+        val_indices = list(range(int((i % 10) * len(trainval_set) / 10), int(((i % 10) + 1) * len(trainval_set) / 10)))
+        train_indices = list(filter(lambda x: x not in val_indices, list(range(len(trainval_set)))))
+        val_set = Subset(trainval_set, indices=val_indices)
+        train_set = Subset(trainval_set, indices=train_indices)
+        
         network = None
         if strategy == "baseline":
             network = Baseline()
@@ -86,7 +87,7 @@ def run(strategy: str, iterations: int):
               batch_size=128,
               criterion=nn.CrossEntropyLoss(),
               logger=logger,
-              val_set=validation_set,
+              val_set=val_set,
               optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),
               learn_rate=0.05,
               verbose=False)
@@ -103,7 +104,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("strategy", type=str, choices=strategies)
-    parser.add_argument("-i", type=int, default=10)
+    parser.add_argument("-i", type=int, default=30)
     args = parser.parse_args()
 
     run(args.strategy, args.i)
