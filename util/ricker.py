@@ -38,7 +38,7 @@ def dif_of_gauss(width, std, scope):
 if __name__ == "__main__":
     from util.weight_initialization import mexican_hat
 
-    scope = 9
+    scope = 27
     width = 3
     damping = 0.1
 

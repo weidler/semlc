@@ -54,6 +54,28 @@ class SingleShotGaussianChannelFilter(SingleShotInhibition):
                                               self_connect=self.self_connection)
 
 
+class RecurrentGaussianChannelFilter(SingleShotGaussianChannelFilter):
+
+    def __init__(self, scope: int, width: int, damp: float, in_channels: int, pad="circular",
+                 self_connection: bool = False):
+        super().__init__(scope, width, damp, in_channels, pad, self_connection)
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        # construct filter toeplitz
+        if self.is_circular:
+            tpl = toeplitz1d_circular(self.inhibition_filter, self.in_channels)
+        else:
+            tpl = toeplitz1d_zero(self.inhibition_filter, self.in_channels)
+
+        # convolve by toeplitz
+        inhibited_activations = activations.clone()
+        for _ in range(10):
+            inhibited = convolve_3d_toeplitz(tpl, inhibited_activations)
+            inhibited_activations = activations + inhibited
+
+        return inhibited_activations
+
+
 class ConvergedInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
@@ -231,6 +253,9 @@ if __name__ == "__main__":
     inhibitor_gaussian = ConvergedGaussianChannelFilter(scope, wavelet_width, damp=damping, in_channels=depth,
                                                         self_connection=self_connect)
 
+    inhibitor_gaussian_rec = RecurrentGaussianChannelFilter(scope, wavelet_width, damp=damping, in_channels=depth,
+                                                            self_connection=self_connect)
+
     inhibitor_parametrized = ParametrizedInhibition(scope, wavelet_width, initial_damp=damping, in_channels=depth,
                                                     self_connection=self_connect)
 
@@ -263,8 +288,12 @@ if __name__ == "__main__":
 
     # GAUSSIAN WAVELETS
     tensor_out_gaussian = inhibitor_gaussian(tensor_in)
-    plt.plot(tensor_out_gaussian[0, :, 4, 7].detach().cpu().numpy(), "--",
+    plt.plot(tensor_out_gaussian[0, :, 4, 7].detach().cpu().numpy(), ".",
              label="Converged Gaussian Channel Filter")
+
+    tensor_out_gaussian_rec = inhibitor_gaussian_rec(tensor_in)
+    plt.plot(tensor_out_gaussian_rec[0, :, 4, 7].detach().cpu().numpy(), "--",
+             label="Recurrent Gaussian Channel Filter")
 
     tensor_out_gaussian_ssi = inhibitor_gaussian_ssi(tensor_in)
     plt.plot(tensor_out_gaussian_ssi[0, :, 4, 7].detach().cpu().numpy(), "--",
