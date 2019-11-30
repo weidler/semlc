@@ -50,8 +50,10 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     """
 
     accuracies = []
+    data_loader = DataLoader(data, batch_size=batchsize,
+                             shuffle=False, num_workers=0)
     for network in networks:
-        acc = accuracy(network, data, batchsize)
+        acc = accuracy_from_data_loader(network, data_loader)
         accuracies.append(acc)
 
     mean = statistics.mean(accuracies)
