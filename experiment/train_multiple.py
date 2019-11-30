@@ -105,7 +105,8 @@ def run(strategy: str, iterations: int):
 if __name__ == '__main__':
     import argparse
 
-    strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze", "parametric", "vgg19",
+    strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
+                  "converged_freeze_self", "parametric", "parametric_self", "vgg19",
                   "vgg19_inhib", "vgg19_inhib_self"]
 
     parser = argparse.ArgumentParser()
