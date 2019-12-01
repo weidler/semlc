@@ -1,5 +1,6 @@
 import sys
 
+import torchsummary
 from torch.utils.data import Subset
 
 sys.path.append("../")
@@ -81,6 +82,7 @@ def run(strategy: str, iterations: int):
             network = vgg19_inhib(self_connection=True)
 
         print(f"{network.__class__.__name__}_{i + 1}")
+        print(network.features)
 
         if use_cuda:
             network.cuda()

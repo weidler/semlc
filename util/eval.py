@@ -7,6 +7,7 @@ import torch
 from scipy.stats import sem, t
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 
 def accuracy(net, data_set, batch_size):
@@ -52,7 +53,7 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     accuracies = []
     data_loader = DataLoader(data, batch_size=batchsize,
                              shuffle=False, num_workers=0)
-    for network in networks:
+    for network in tqdm(networks):
         acc = accuracy_from_data_loader(network, data_loader)
         accuracies.append(acc)
 

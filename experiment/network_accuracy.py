@@ -5,6 +5,7 @@ import torch
 import torchvision
 from torchvision import transforms
 import pandas as pd
+from tqdm import tqdm
 
 from model.network.alexnet_cifar import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork, \
     ParametricInhibitionNetwork
@@ -27,13 +28,13 @@ print(f"USE CUDA: {use_cuda}.")
 
 
 # SET UP NETS AND SETTINGS
-nets = [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, 31)]
-# nets = [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, 31)]
+# nets = [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, 31)]
+nets = [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, 31)]
 # nets = [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False) for i in range(1, 31)]
 # nets = [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, 31)]
 # nets = [ParametricInhibitionNetwork([45], 3, 0.2) for i in range(1, 31)]
 # nets = [Baseline() for i in range(1, 31)]
-random_transform_test = False
+random_transform_test = True
 
 
 # LOAD TEST DATA
@@ -52,11 +53,12 @@ test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, downloa
 keychain = "../output/keychain.txt"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
-df = df[df['group'].str.contains('converged')]
-df = df[~df['group'].str.contains('freeze')]['id']
+df = df[df['group'].str.contains('converged_freeze')]['id']
+#df = df[~df['group'].str.contains('freeze')]['id']
 print(df.head())
 
-model_path = "../../../experiments/01/"
+model_path = "../output/"
+
 # EVALUATE
 
 for i, row in enumerate(df):
