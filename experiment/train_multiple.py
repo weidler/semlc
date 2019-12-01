@@ -63,10 +63,16 @@ def run(strategy: str, iterations: int):
             network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True)
         elif strategy == "converged":
             network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False)
+        elif strategy == "converged_self":
+            network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, self_connection=True)
         elif strategy == "converged_freeze":
             network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True)  # toeplitz
+        elif strategy == "converged_freeze_self":
+            network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, self_connection=True)
         elif strategy == "parametric":
-            network = ParametricInhibitionNetwork([45], 3, 0.2)  # toeplitz
+            network = ParametricInhibitionNetwork([45], 3, 0.2)
+        elif strategy == "parametric_self":
+            network = ParametricInhibitionNetwork([45], 3, 0.2, self_connection=True)
         elif strategy == "vgg19":
             network = vgg19()
         elif strategy == "vgg19_inhib":
@@ -99,7 +105,8 @@ def run(strategy: str, iterations: int):
 if __name__ == '__main__':
     import argparse
 
-    strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_freeze", "parametric", "vgg19",
+    strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
+                  "converged_freeze_self", "parametric", "parametric_self", "vgg19",
                   "vgg19_inhib", "vgg19_inhib_self"]
 
     parser = argparse.ArgumentParser()

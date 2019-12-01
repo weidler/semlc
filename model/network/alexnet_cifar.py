@@ -138,7 +138,7 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
 
 class ConvergedInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, coverage: int = 1):
+    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, coverage: int = 1, self_connection=False):
         super().__init__()
 
         self.scopes = scopes
@@ -147,15 +147,16 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
 
         self.freeze = freeze
         self.coverage = coverage
+        self.self_connection=self_connection
 
         inhibition_layers = {}
         for i in range(coverage):
             inhibition_layers.update(
                 {f"inhib_{i}": ConvergedInhibition(scope=scopes[i], ricker_width=width,
-                                                   damp=damp) if not self.freeze else
+                                                   damp=damp, self_connection=self_connection) if not self.freeze else
                 ConvergedFrozenInhibition(scope=scopes[i],
                                           ricker_width=width, damp=damp,
-                                          in_channels=64)})
+                                          in_channels=64, self_connection=self_connection)})
 
         self.build_module(inhibition_layers)
 
@@ -169,19 +170,20 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
 
 class ParametricInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, coverage: int = 1):
+    def __init__(self, scopes: List[int], width: float, damp: float, coverage: int = 1, self_connection=False):
         super().__init__()
 
         self.scopes = scopes
         self.width = width
         self.damp = damp
         self.coverage = coverage
+        self.self_connection = self_connection
 
         inhibition_layers = {}
         for i in range(coverage):
             inhibition_layers.update(
                 {f"inhib_{i}": ParametricInhibition(scope=scopes[i], initial_ricker_width=width, initial_damp=damp,
-                                                    in_channels=64)})
+                                                    in_channels=64, self_connection=self_connection)})
 
         self.build_module(inhibition_layers)
 
