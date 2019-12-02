@@ -26,16 +26,29 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
+keychain = "../output/keychain.txt"
+model_path = "../output/"
+
+strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
+              "converged_freeze_self", "parametric", "parametric_self", "vgg19",
+              "vgg19_inhib", "vgg19_inhib_self"]
+
+df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 # SET UP NETS AND SETTINGS
-# nets = [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, 31)]
-nets = [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, 31)]
-# nets = [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False) for i in range(1, 31)]
-# nets = [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, 31)]
-# nets = [ParametricInhibitionNetwork([45], 3, 0.2) for i in range(1, 31)]
-# nets = [Baseline() for i in range(1, 31)]
-random_transform_test = True
 
+num_nets = 30
+
+all_nets = {
+    'converged_freeze': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, num_nets + 1)],
+    'converged': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, num_nets + 1)],
+    'ss': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False) for i in range(1, num_nets + 1)],
+    'ss_freeze': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, num_nets + 1)],
+    'parametric': [ParametricInhibitionNetwork([45], 3, 0.2) for i in range(1, num_nets + 1)],
+    'baseline': [Baseline() for i in range(1, num_nets + 1)]
+}
+
+random_transform_test = True
 
 # LOAD TEST DATA
 if random_transform_test:
@@ -50,23 +63,18 @@ else:
 
 test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
-keychain = "../output/keychain.txt"
-
-df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
-df = df[df['group'].str.contains('converged_freeze')]['id']
-#df = df[~df['group'].str.contains('freeze')]['id']
-print(df.head())
-
-model_path = "../output/"
 
 # EVALUATE
 
-for i, row in enumerate(df):
-    filename = f"{model_path}{row}_best.model"
-    print(f"Loading {filename}")
-    nets[i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
+for strategy in strategies:
+    if strategy in all_nets.keys():
+        filenames = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
+        for i, row in tqdm(enumerate(filenames), disable=True):
+            filename = f"{model_path}{row}_best.model"
+            print(f"Loading {filename}")
+            all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
 
-print(accuracy_with_confidence(nets, test_set, 128, 0.95))
+        print(strategy, accuracy_with_confidence(all_nets[strategy], test_set, 128, 0.95))
 
 
 # CENTER CROPPING
