@@ -71,10 +71,10 @@ for strategy in strategies:
         filenames = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
         for i, row in tqdm(enumerate(filenames), disable=True):
             filename = f"{model_path}{row}_best.model"
-            print(f"Loading {filename}")
-            all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
-
-        print(strategy, accuracy_with_confidence(all_nets[strategy], test_set, 128, 0.95))
+            print(f"Loading {filename} for strategy {strategy}")
+            # all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
+        if len(filenames):
+            print(strategy, accuracy_with_confidence(all_nets[strategy], test_set, 128, 0.95))
 
 
 # CENTER CROPPING
