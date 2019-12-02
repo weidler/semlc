@@ -39,6 +39,8 @@ df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 num_nets = 30
 
+
+# extend this for future experiments
 all_nets = {
     'converged_freeze': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, num_nets + 1)],
     'converged': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, num_nets + 1)],
@@ -68,11 +70,12 @@ test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, downloa
 
 for strategy in strategies:
     if strategy in all_nets.keys():
+        # match the exact strategy followed by _ and 1 or optional 2 digits
         filenames = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
         for i, row in tqdm(enumerate(filenames), disable=True):
             filename = f"{model_path}{row}_best.model"
             print(f"Loading {filename} for strategy {strategy}")
-            # all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
+            all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
         if len(filenames):
             print(strategy, accuracy_with_confidence(all_nets[strategy], test_set, 128, 0.95))
 
