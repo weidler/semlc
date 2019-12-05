@@ -117,7 +117,8 @@ class BaselineCMap(_AlexNetBase):
 
 class SingleShotInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze: bool = True, coverage: int = 1):
+    def __init__(self, scopes: List[int], width: float, damp: float, freeze: bool = True, coverage: int = 1,
+                 pad: str = "circular"):
         super().__init__()
 
         self.scopes = scopes
@@ -126,12 +127,13 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
 
         self.freeze = freeze
         self.coverage = coverage
+        self.pad = pad
 
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update(
                 {f"inhib_{i}": SingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
-                                                    learn_weights=not freeze)})
+                                                    learn_weights=not freeze, pad=pad)})
 
         self.build_module(inhibition_layers)
 
@@ -139,7 +141,7 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
 class ConvergedInhibitionNetwork(_AlexNetBase):
 
     def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, coverage: int = 1,
-                 self_connection=False):
+                 self_connection=False, pad: str = "circular"):
         super().__init__()
 
         self.scopes = scopes
@@ -149,15 +151,16 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
         self.freeze = freeze
         self.coverage = coverage
         self.self_connection = self_connection
+        self.pad = pad
 
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update({f"inhib_{i}":
                                           ConvergedInhibition(scope=scopes[i - 1], ricker_width=width,
-                                                              damp=damp,
+                                                              damp=damp, pad=pad,
                                                               self_connection=self_connection) if not self.freeze else
                                           ConvergedFrozenInhibition(scope=scopes[i - 1],
-                                                                    ricker_width=width, damp=damp,
+                                                                    ricker_width=width, damp=damp, pad=pad,
                                                                     in_channels=64, self_connection=self_connection)})
 
         self.build_module(inhibition_layers)
@@ -172,7 +175,8 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
 
 class ParametricInhibitionNetwork(_AlexNetBase):
 
-    def __init__(self, scopes: List[int], width: float, damp: float, coverage: int = 1, self_connection=False):
+    def __init__(self, scopes: List[int], width: float, damp: float, coverage: int = 1, self_connection=False,
+                 pad: str = "circular"):
         super().__init__()
 
         self.scopes = scopes
@@ -180,12 +184,13 @@ class ParametricInhibitionNetwork(_AlexNetBase):
         self.damp = damp
         self.coverage = coverage
         self.self_connection = self_connection
+        self.pad = pad
 
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update(
                 {f"inhib_{i}": ParametricInhibition(scope=scopes[i - 1], initial_ricker_width=width, initial_damp=damp,
-                                                    in_channels=64, self_connection=self_connection)})
+                                                    in_channels=64, self_connection=self_connection, pad=pad)})
 
         self.build_module(inhibition_layers)
 
