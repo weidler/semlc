@@ -60,8 +60,16 @@ def run(strategy: str, iterations: int):
             network = BaselineCMap()
         elif strategy == "ss":
             network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False)
+        elif strategy == "ss_self":
+            network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, self_connection=True)
+        elif strategy == "ss_zeros":
+            network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, pad="zeros")
         elif strategy == "ss_freeze":
             network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True)
+        elif strategy == "ss_freeze_self":
+            network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, self_connection=True)
+        elif strategy == "ss_freeze_zeros":
+            network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, pad="zeros")
         elif strategy == "converged":
             network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False)
         elif strategy == "converged_self":
@@ -115,7 +123,8 @@ if __name__ == '__main__':
 
     strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
                   "converged_freeze_self", "parametric", "parametric_self", "vgg19", "vgg19_inhib", "vgg19_inhib_self",
-                  "converged_freeze_zeros", "converged_zeros", "parametric_zeros"]
+                  "converged_freeze_zeros", "converged_zeros", "parametric_zeros", "ss_self", "ss_zeros",
+                  "ss_freeze_self", "ss_freeze_zeros"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("strategy", type=str, choices=strategies)
