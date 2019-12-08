@@ -10,7 +10,7 @@
 #SBATCH --output=ALEXNET_OUTPUT
 
 ### Time your job needs to execute
-#SBATCH --time=03:00:00
+#SBATCH --time=exp_set_2:00:00
 
 ### Memory your job needs per node, e. g. 1G
 #SBATCH --mem-per-cpu=2G

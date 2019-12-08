@@ -57,9 +57,9 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
         acc = accuracy_from_data_loader(network, data_loader)
         accuracies.append(acc)
 
-    mean = statistics.mean(accuracies)
+    mean = round(statistics.mean(accuracies), 2)
     error = sem(accuracies)
-    h = error * t.ppf((1 + confidence) / 2., len(accuracies) - 1)
+    h = round(error * t.ppf((1 + confidence) / 2., len(accuracies) - 1), 2)
     interval = (mean - h, mean + h)
 
     return mean, h, interval

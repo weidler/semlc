@@ -118,7 +118,7 @@ class BaselineCMap(_AlexNetBase):
 class SingleShotInhibitionNetwork(_AlexNetBase):
 
     def __init__(self, scopes: List[int], width: float, damp: float, freeze: bool = True, coverage: int = 1,
-                 pad: str = "circular"):
+                 self_connection=False, pad: str = "circular"):
         super().__init__()
 
         self.scopes = scopes
@@ -127,13 +127,15 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
 
         self.freeze = freeze
         self.coverage = coverage
+        self.self_connection = self_connection
         self.pad = pad
 
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update(
                 {f"inhib_{i}": SingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
-                                                    learn_weights=not freeze, pad=pad)})
+                                                    learn_weights=not freeze, self_connection=self_connection,
+                                                    pad=pad)})
 
         self.build_module(inhibition_layers)
 
