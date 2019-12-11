@@ -88,6 +88,8 @@ def run(strategy: str, iterations: int):
             network = ParametricInhibitionNetwork([45], 3, 0.2, self_connection=True)
         elif strategy == "parametric_zeros":
             network = ParametricInhibitionNetwork([45], 3, 0.2, pad="zeros")
+        elif strategy == "parametric_full":
+            network = ParametricInhibitionNetwork([63, 63, 63, 31], 3, 0.2, coverage=4)
         elif strategy == "vgg19":
             network = vgg19()
         elif strategy == "vgg19_inhib":
@@ -124,7 +126,7 @@ if __name__ == '__main__':
     strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
                   "converged_freeze_self", "parametric", "parametric_self", "vgg19", "vgg19_inhib", "vgg19_inhib_self",
                   "converged_freeze_zeros", "converged_zeros", "parametric_zeros", "ss_self", "ss_zeros",
-                  "ss_freeze_self", "ss_freeze_zeros"]
+                  "ss_freeze_self", "ss_freeze_zeros", "parametric_full"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("strategy", type=str, choices=strategies)

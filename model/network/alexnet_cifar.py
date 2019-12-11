@@ -192,13 +192,14 @@ class ParametricInhibitionNetwork(_AlexNetBase):
         for i in range(1, coverage + 1):
             inhibition_layers.update(
                 {f"inhib_{i}": ParametricInhibition(scope=scopes[i - 1], initial_ricker_width=width, initial_damp=damp,
-                                                    in_channels=64, self_connection=self_connection, pad=pad)})
+                                                    in_channels=scopes[i - 1] + 1, self_connection=self_connection, pad=pad)})
+            # TODO more general in_channels parameter
 
         self.build_module(inhibition_layers)
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), 32 * 5 * 5)
+        x = x.contiguous().view(x.size(0), 32 * 5 * 5)
         x = self.classifier(x)
 
         return x
