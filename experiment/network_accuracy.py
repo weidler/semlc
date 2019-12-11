@@ -26,58 +26,74 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
-keychain = "../output/keychain.txt"
-model_path = "../output/"
-
-strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
-              "converged_freeze_self", "parametric", "parametric_self", "vgg19",
-              "vgg19_inhib", "vgg19_inhib_self"]
+keychain = "output/exp_set_2/keychain.txt"
+model_path = "output/exp_set_2/"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 # SET UP NETS AND SETTINGS
 
-num_nets = 30
+num_nets = 10
 
 
 # extend this for future experiments
 all_nets = {
-    'converged_freeze': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, num_nets + 1)],
-    'converged': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, num_nets + 1)],
+    # baselines
+    'baseline': [Baseline() for i in range(1, num_nets + 1)],
+    'cmap': [BaselineCMap() for i in range(1, 30 + 1)],
+
+    # ssi
     'ss': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False) for i in range(1, num_nets + 1)],
     'ss_freeze': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, num_nets + 1)],
+    'ss_zeros': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, pad="zeros") for i in range(1, num_nets + 1)],
+    'ss_self': [SingleShotInhibitionNetwork([63], 3, 0.1, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
+
+    # converged
+    'converged': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, num_nets + 1)],
+    'converged_freeze': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, num_nets + 1)],
+    'converged_zeros': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, pad="zeros") for i in range(1, num_nets + 1)],
+    'converged_freeze_zeros': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, pad="zeros") for i in range(1, num_nets + 1)],
+    'converged_self': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, self_connection=True) for i in range(1, num_nets + 1)],
+    'converged_freeze_self': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
+
+    # parametric
     'parametric': [ParametricInhibitionNetwork([45], 3, 0.2) for i in range(1, num_nets + 1)],
-    'baseline': [Baseline() for i in range(1, num_nets + 1)]
+    'parametric_zeros': [ParametricInhibitionNetwork([45], 3, 0.2, pad="zeros") for i in range(1, num_nets + 1)],
+    'parametric_self': [ParametricInhibitionNetwork([45], 3, 0.2, self_connection=True) for i in range(1, num_nets + 1)],
 }
 
-random_transform_test = True
+strategies = all_nets.keys()
+ignored_strats = []
 
-# LOAD TEST DATA
-if random_transform_test:
-    transform = transforms.Compose([transforms.RandomCrop(24),
-                                    transforms.RandomHorizontalFlip(),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-else:
-    transform = transforms.Compose([transforms.CenterCrop(24),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+for random_transform_test in [True, False]:
+    # LOAD TEST DATA
+    if random_transform_test:
+        transform = transforms.Compose([transforms.RandomCrop(24),
+                                        transforms.RandomHorizontalFlip(),
+                                        transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    else:
+        transform = transforms.Compose([transforms.CenterCrop(24),
+                                        transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+    test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
 
+    # EVALUATE
+    for strategy in strategies:
+        if strategy in all_nets.keys():
+            if strategy in ignored_strats:
+                print(f"Skipping strategy {strategy}.")
+                continue
 
-# EVALUATE
-
-for strategy in strategies:
-    if strategy in all_nets.keys():
-        # match the exact strategy followed by _ and 1 or optional 2 digits
-        filenames = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
-        for i, row in tqdm(enumerate(filenames), disable=True):
-            filename = f"{model_path}{row}_best.model"
-            print(f"Loading {filename} for strategy {strategy}")
-            all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
-        if len(filenames):
-            print(strategy, accuracy_with_confidence(all_nets[strategy], test_set, 128, 0.95))
+            # match the exact strategy followed by _ and 1 or optional 2 digits
+            filenames = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
+            for i, row in tqdm(enumerate(filenames), disable=True):
+                filename = f"{model_path}{row}_best.model"
+                all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
+            print(f"\nLoaded {len(filenames)} files for strategy {strategy}.")
+            if len(filenames):
+                print(f"{strategy}{'[wA]' if random_transform_test else ''}: {accuracy_with_confidence(all_nets[strategy], test_set, 128, 0.95)}")
 
 
 # CENTER CROPPING

@@ -9,9 +9,9 @@ _deprecated/logs/
 .idea/
 .vscode/
 
-output/*.txt
-output/*.loss
-output/*.model
+output/**/*.txt
+output/**/*.loss
+output/**/*.model
 
 # Created by https://www.gitignore.io/api/python,pycharm
 # Edit at https://www.gitignore.io/?templates=python,pycharm
