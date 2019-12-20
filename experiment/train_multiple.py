@@ -80,7 +80,7 @@ def run(strategy: str, iterations: int):
         elif strategy == "converged_zeros":
             network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, pad="zeros")
         elif strategy == "converged_full":
-            network = ConvergedInhibitionNetwork([27, 27, 27, 13], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], freeze=False,
+            network = ConvergedInhibitionNetwork([27, 27, 27, 27], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], freeze=False,
                                                  coverage=4)
         elif strategy == "converged_freeze":
             network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True)  # toeplitz
@@ -100,6 +100,11 @@ def run(strategy: str, iterations: int):
             network = ParametricInhibitionNetwork([45], 3, 0.2, pad="zeros")
         elif strategy == "parametric_full":
             network = ParametricInhibitionNetwork([63, 63, 63, 31], [3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2], coverage=4)
+        elif strategy == "parametric_12":
+            network = ParametricInhibitionNetwork([63, 63], [3, 3], [0.2, 0.2], coverage=2)
+        elif strategy == "parametric_123":
+            network = ParametricInhibitionNetwork([63, 63, 63], [3, 3, 3], [0.2, 0.2, 0.2], coverage=3)
+
         elif strategy == "vgg19":
             network = vgg19()
         elif strategy == "vgg19_inhib":
@@ -136,7 +141,8 @@ if __name__ == '__main__':
     strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
                   "converged_freeze_self", "parametric", "parametric_self", "vgg19", "vgg19_inhib", "vgg19_inhib_self",
                   "converged_freeze_zeros", "converged_zeros", "parametric_zeros", "ss_self", "ss_zeros",
-                  "ss_freeze_self", "ss_freeze_zeros", "converged_full", "ss_full", "parametric_full"]
+                  "ss_freeze_self", "ss_freeze_zeros", "converged_full", "ss_full", "parametric_full",
+                  "parametric_12", "parametric_123"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("strategy", type=str, choices=strategies)
