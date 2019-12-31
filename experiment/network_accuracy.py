@@ -1,5 +1,6 @@
 import random
-
+import sys
+sys.path.append("../")
 import numpy
 import torch
 import torchvision
@@ -26,14 +27,14 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
-keychain = "output/exp_set_2/keychain.txt"
-model_path = "output/exp_set_2/"
+keychain = "../output/keychain.txt"
+model_path = "../output/"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 # SET UP NETS AND SETTINGS
 
-num_nets = 10
+num_nets = 30
 
 
 # extend this for future experiments
@@ -55,15 +56,21 @@ all_nets = {
     'converged_freeze_zeros': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, pad="zeros") for i in range(1, num_nets + 1)],
     'converged_self': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, self_connection=True) for i in range(1, num_nets + 1)],
     'converged_freeze_self': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
+    'converged_cov_12': [ConvergedInhibitionNetwork([27, 27], [3, 3], [0.1, 0.1], freeze=False, coverage=2) for i in range(1, num_nets + 1)],
+    'converged_cov_123': [ConvergedInhibitionNetwork([27, 27, 27], [3, 3, 3], [0.1, 0.1, 0.1], freeze=False, coverage=3) for i in range(1, num_nets + 1)],
+    'converged_full': [ConvergedInhibitionNetwork([27, 27, 27, 27], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], freeze=False, coverage=4) for i in range(1, num_nets + 1)],
+
 
     # parametric
     'parametric': [ParametricInhibitionNetwork([45], 3, 0.2) for i in range(1, num_nets + 1)],
     'parametric_zeros': [ParametricInhibitionNetwork([45], 3, 0.2, pad="zeros") for i in range(1, num_nets + 1)],
     'parametric_self': [ParametricInhibitionNetwork([45], 3, 0.2, self_connection=True) for i in range(1, num_nets + 1)],
+    'parametric_12': [ParametricInhibitionNetwork([63, 63], [3, 3], [0.2, 0.2], coverage=2) for i in range(1, num_nets + 1)],
+    'parametric_123': [ParametricInhibitionNetwork([63, 63, 63], [3, 3, 3], [0.2, 0.2, 0.2], coverage=3) for i in range(1, num_nets + 1)],
 }
 
 strategies = all_nets.keys()
-ignored_strats = []
+ignored_strats = ['parametric', 'parametric_zeros', 'parametric_full', 'parametric_self']
 
 for random_transform_test in [True, False]:
     # LOAD TEST DATA
