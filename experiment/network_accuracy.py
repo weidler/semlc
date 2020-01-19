@@ -26,14 +26,14 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
-keychain = "output/exp_set_2/keychain.txt"
-model_path = "output/exp_set_2/"
+keychain = "output/exp_set_3/keychain.txt"
+model_path = "output/exp_set_3/"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 # SET UP NETS AND SETTINGS
 
-num_nets = 10
+num_nets = 60
 
 
 # extend this for future experiments
@@ -45,6 +45,7 @@ all_nets = {
     # ssi
     'ss': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False) for i in range(1, num_nets + 1)],
     'ss_freeze': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, num_nets + 1)],
+    'ss_freeze_zeros': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, pad="zeros") for i in range(1, 10 + 1)],
     'ss_zeros': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, pad="zeros") for i in range(1, num_nets + 1)],
     'ss_self': [SingleShotInhibitionNetwork([63], 3, 0.1, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
 
@@ -63,7 +64,7 @@ all_nets = {
 }
 
 strategies = all_nets.keys()
-ignored_strats = []
+analyse_strats = ['parametric_zeros', 'converged_freeze_zeros', 'ss_zeros', 'converged_zeros', "ss_freeze_zeros"]
 
 for random_transform_test in [True, False]:
     # LOAD TEST DATA
@@ -82,7 +83,7 @@ for random_transform_test in [True, False]:
     # EVALUATE
     for strategy in strategies:
         if strategy in all_nets.keys():
-            if strategy in ignored_strats:
+            if strategy not in analyse_strats:
                 print(f"Skipping strategy {strategy}.")
                 continue
 
