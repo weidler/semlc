@@ -2,6 +2,7 @@
 only adapted to include our inhibition."""
 
 import math
+import pandas as pd
 
 import torch
 import torch.nn as nn
@@ -9,6 +10,11 @@ import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
 from model.inhibition_layer import ConvergedInhibition
+from model.network.base import _BaseNetwork
+from torch.utils.data import Subset
+
+from util.eval import accuracy_with_confidence
+from util.ourlogging import Logger
 
 
 def squash(x):
@@ -87,7 +93,7 @@ class PrimaryCapsLayer(nn.Module):
         return out
 
 
-class InhibitionCapsNet(nn.Module):
+class InhibitionCapsNet(_BaseNetwork, nn.Module):
     def __init__(self, routing_iterations, n_classes=10, inhib_scope=27, inhib_width=3, inhib_damp=0.1):
         super(InhibitionCapsNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
@@ -107,7 +113,7 @@ class InhibitionCapsNet(nn.Module):
         return x, probs
 
 
-class CapsNet(nn.Module):
+class CapsNet(_BaseNetwork, nn.Module):
     def __init__(self, routing_iterations, n_classes=10):
         super(CapsNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
@@ -187,6 +193,8 @@ if __name__ == '__main__':
 
     # Training settings
     parser = argparse.ArgumentParser(description='CapsNet with MNIST')
+    parser.add_argument("strategy", type=str, choices=['capsnet', 'capsnet_inhib'])
+    parser.add_argument("-i", type=int, default=30)
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
@@ -215,17 +223,19 @@ if __name__ == '__main__':
     kwargs = {}
 
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../../data', train=True, download=True,
+        datasets.MNIST('./data/mnist', train=True, download=True,
                        transform=transforms.Compose([
                            transforms.Pad(2), transforms.RandomCrop(28),
                            transforms.ToTensor()
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
 
-    test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../../data', train=False, transform=transforms.Compose([
+    test_set = datasets.MNIST('./data/mnist', train=False, transform=transforms.Compose([
             transforms.ToTensor()
-        ])),
+        ]))
+
+    test_loader = torch.utils.data.DataLoader(
+        test_set,
         batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
     # CUDA
@@ -233,24 +243,9 @@ if __name__ == '__main__':
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
         print(f"USE CUDA: YES.")
 
-    model = InhibitionCapsNet(args.routing_iterations)
-
-    if args.with_reconstruction:
-        reconstruction_model = ReconstructionNet(16, 10)
-        reconstruction_alpha = 0.0005
-        model = CapsNetWithReconstruction(model, reconstruction_model)
-
-    if args.cuda:
-        model.cuda()
-
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
-
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, patience=15, min_lr=1e-6)
-
-    loss_fn = MarginLoss(0.9, 0.1, 0.5)
 
 
-    def train(epoch):
+    def train(epoch, logger):
         model.train()
         for batch_idx, (data, target) in enumerate(train_loader):
             if args.cuda:
@@ -269,6 +264,9 @@ if __name__ == '__main__':
             optimizer.step()
             if batch_idx % args.log_interval == 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    epoch, batch_idx * len(data), len(train_loader.dataset),
+                           100. * batch_idx / len(train_loader), loss.item()))
+                logger.log('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(data), len(train_loader.dataset),
                            100. * batch_idx / len(train_loader), loss.item()))
 
@@ -303,10 +301,41 @@ if __name__ == '__main__':
         return test_loss
 
 
-    for epoch in range(1, args.epochs + 1):
-        train(epoch)
-        test_loss = test()
-        scheduler.step(test_loss)
-        torch.save(model.state_dict(),
-                   '{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(epoch, args.routing_iterations,
-                                                                             args.with_reconstruction))
+    networks = []
+
+    for i in range(0, args.i):
+        if args.strategy == 'capsnet':
+            model = CapsNet(args.routing_iterations)
+        elif args.strategy == 'capsnet_inhib':
+            model = InhibitionCapsNet(args.routing_iterations)
+
+        if args.with_reconstruction:
+            reconstruction_model = ReconstructionNet(16, 10)
+            reconstruction_alpha = 0.0005
+            model = CapsNetWithReconstruction(model, reconstruction_model)
+
+        if args.cuda:
+            model.cuda()
+
+        logger = Logger(model, experiment_code=f"{args.strategy}_{i}")
+
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+
+        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, patience=15, min_lr=1e-6)
+
+        loss_fn = MarginLoss(0.9, 0.1, 0.5)
+
+        networks.append(model)
+
+        for epoch in range(1, args.epochs + 1):
+            train(epoch, logger)
+            test_loss = test()
+            scheduler.step(test_loss)
+            torch.save(model.state_dict(),
+                       '../output/capsnet/{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(epoch, args.routing_iterations,
+                                                                                 args.with_reconstruction))
+
+    # LOAD TEST DATA
+
+    acc = accuracy_with_confidence(networks, test_set, 128, 0.95)
+    print(f"{acc}")

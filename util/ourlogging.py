@@ -17,13 +17,13 @@ class Logger:
     def __init__(self, model: nn.Module, experiment_code: str = ""):
         self.model = model
         self.process_id = str(int(time.time() * 10000)) + str(random.randint(100000, 999999))
-        self.loss_filename = f"../output/{self.process_id}.loss"
-        self.acc_filename = f"../output/{self.process_id}.acc"
-        self.log_filename = f"../output/{self.process_id}.log"
-        self.model_filename = f"../output/{self.process_id}_n.model"
-        self.best_model_filename = f"../output/{self.process_id}_best.model"
+        self.loss_filename = f"./output/{self.process_id}.loss"
+        self.acc_filename = f"./output/{self.process_id}.acc"
+        self.log_filename = f"./output/{self.process_id}.log"
+        self.model_filename = f"./output/{self.process_id}_n.model"
+        self.best_model_filename = f"./output/{self.process_id}_best.model"
 
-        with open("../output/keychain.txt", "a") as f:
+        with open("./output/keychain.txt", "a") as f:
             f.write(
                 f"{self.process_id}\t{experiment_code}\t{repr(model)}\t{datetime.datetime.now()}\n"
             )
