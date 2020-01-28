@@ -13,7 +13,7 @@ from model.inhibition_layer import ConvergedInhibition
 from model.network.base import _BaseNetwork
 from torch.utils.data import Subset
 
-from util.eval import accuracy_with_confidence
+from util.eval import accuracies_from_list
 from util.ourlogging import Logger
 
 
@@ -194,7 +194,7 @@ if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='CapsNet with MNIST')
     parser.add_argument("strategy", type=str, choices=['capsnet', 'capsnet_inhib'])
-    parser.add_argument("-i", type=int, default=30)
+    parser.add_argument("-i", type=int, default=5)
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
@@ -212,6 +212,7 @@ if __name__ == '__main__':
                         help='how many batches to wait before logging training status')
     parser.add_argument('--routing_iterations', type=int, default=3)
     parser.add_argument('--with_reconstruction', action='store_true', default=False)
+    parser.add_argument('--save_freq', type=int, default=50)
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -223,12 +224,14 @@ if __name__ == '__main__':
     kwargs = {}
 
     train_loader = torch.utils.data.DataLoader(
+        # Subset(
         datasets.MNIST('./data/mnist', train=True, download=True,
                        transform=transforms.Compose([
                            transforms.Pad(2), transforms.RandomCrop(28),
                            transforms.ToTensor()
-                       ])),
-        batch_size=args.batch_size, shuffle=True, **kwargs)
+                       ]))
+        #    , indices=[i for i in range(100)])
+        , batch_size=args.batch_size, shuffle=True, **kwargs)
 
     test_set = datasets.MNIST('./data/mnist', train=False, transform=transforms.Compose([
             transforms.ToTensor()
@@ -266,9 +269,6 @@ if __name__ == '__main__':
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(data), len(train_loader.dataset),
                            100. * batch_idx / len(train_loader), loss.item()))
-                logger.log('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, batch_idx * len(data), len(train_loader.dataset),
-                           100. * batch_idx / len(train_loader), loss.item()))
 
 
     def test():
@@ -292,16 +292,18 @@ if __name__ == '__main__':
                 test_loss += loss_fn(probs, target, size_average=False).item()
 
             pred = probs.data.max(1, keepdim=True)[1]  # get the index of the max probability
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+            correct += pred.eq(target.data.view_as(pred)).sum().item()
 
         test_loss /= len(test_loader.dataset)
+        val_acc = 100. * correct / len(test_loader.dataset)
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
             test_loss, correct, len(test_loader.dataset),
-            100. * correct / len(test_loader.dataset)))
-        return test_loss
+            val_acc))
+        return test_loss, val_acc
 
 
     networks = []
+    accuracies = []
 
     for i in range(0, args.i):
         if args.strategy == 'capsnet':
@@ -327,15 +329,27 @@ if __name__ == '__main__':
 
         networks.append(model)
 
+        max_val_acc = 0
+
         for epoch in range(1, args.epochs + 1):
             train(epoch, logger)
-            test_loss = test()
+            test_loss, val_acc = test()
+
+            if val_acc > max_val_acc:
+                max_val_acc = val_acc
+                logger.save_model(epoch + 1, best=True)
+
+            logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, test_loss, val_acc))
+
             scheduler.step(test_loss)
             torch.save(model.state_dict(),
-                       '../output/capsnet/{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(epoch, args.routing_iterations,
+                       './output/capsnet/{:02d}_{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(i, epoch, args.routing_iterations,
                                                                                  args.with_reconstruction))
+            if epoch > 0 and epoch % args.save_freq == 0:
+                logger.save_model(epoch + 1)
 
-    # LOAD TEST DATA
+        accuracies.append(max_val_acc)
 
-    acc = accuracy_with_confidence(networks, test_set, 128, 0.95)
+    print(accuracies)
+    acc = accuracies_from_list(accuracies)
     print(f"{acc}")

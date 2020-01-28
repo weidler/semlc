@@ -65,6 +65,25 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     return mean, h, interval
 
 
+def accuracies_from_list(accuracies: List[float], confidence: float = 0.95) \
+        -> Tuple[float, float, Tuple[float, float]]:
+    """Determine the mean accuracy of a given list of accuracies, alongside the confidence interval of this mean.
+    This way, for multiple training runs with random initialization of on architecture, the resulting networks can be
+    evaluated for accuracy with more confidence about the true power of the architecture.
+
+    :param accuracies:      list of accuracies
+    :param confidence:      confidence that mean lies in interval, given at range [0, 1]
+
+    :return:                mean accuracy and confidence interval
+    """
+    mean = round(statistics.mean(accuracies), 2)
+    error = sem(accuracies)
+    h = round(error * t.ppf((1 + confidence) / 2., len(accuracies) - 1), 2)
+    interval = (mean - h, mean + h)
+
+    return mean, h, interval
+
+
 def validate(net, val_loader, optimizer, criterion):
     model_loss = 0.0
     val_size = val_loader.__len__()
