@@ -338,6 +338,7 @@ if __name__ == '__main__':
             if val_acc > max_val_acc:
                 max_val_acc = val_acc
                 logger.save_model(epoch + 1, best=True)
+                logger.save_optimizer(optimizer, epoch + 1, best=True)
 
             logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, test_loss, val_acc))
 
@@ -347,6 +348,7 @@ if __name__ == '__main__':
                                                                                  args.with_reconstruction))
             if epoch > 0 and epoch % args.save_freq == 0:
                 logger.save_model(epoch + 1)
+                logger.save_optimizer(optimizer, epoch + 1)
 
         accuracies.append(max_val_acc)
 

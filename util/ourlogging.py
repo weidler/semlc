@@ -22,6 +22,8 @@ class Logger:
         self.log_filename = f"./output/{self.process_id}.log"
         self.model_filename = f"./output/{self.process_id}_n.model"
         self.best_model_filename = f"./output/{self.process_id}_best.model"
+        self.opt_filename = f"./output/{self.process_id}_n.opt"
+        self.best_opt_filename = f"./output/{self.process_id}_best.opt"
 
         with open("./output/keychain.txt", "a") as f:
             f.write(
@@ -54,6 +56,11 @@ class Logger:
             f.write(f"{data}\n")
         if console:
             print(data)
+
+    def save_optimizer(self, optimizer, epoch, best=False):
+        path = re.sub("_n", f"_{epoch}", self.opt_filename if not best else self.best_opt_filename)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        torch.save(optimizer.state_dict(), path)
 
     def describe_network(self):
         print(repr(self.model))
