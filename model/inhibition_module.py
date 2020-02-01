@@ -1,10 +1,15 @@
-from abc import ABC
+import abc
 from typing import List
 
 from torch import Tensor
 
 
-class InhibitionModule(ABC):
+class InhibitionModule(abc.ABC):
+
+    @property
+    @abc.abstractmethod
+    def name(self):
+        return self.__class__.__name__
 
     def sort_filters_in_layer(self, layer: int = 0):
         """

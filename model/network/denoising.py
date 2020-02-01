@@ -4,7 +4,7 @@ from torch import nn
 
 
 # DENOISING
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition
+from model.alternative_inhibition_layers import Conv3DSingleShotInhibition
 from model.network.classification import BaseClassificationCNN
 
 

@@ -14,9 +14,9 @@ from torch.nn.functional import mse_loss
 from tqdm import tqdm
 
 from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition, \
-    SingleShotInhibition
+    SingleShotInhibition, ParametricInhibition
 from model.fft_inhibition_layer import FFTConvergedInhibition, FFTConvergedFrozenInhibition
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
+from model.alternative_inhibition_layers import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -30,6 +30,8 @@ def make_passes(layer, n):
     has_parameters = len(list(layer.parameters())) > 0
     if has_parameters:
         optimizer = optim.SGD(layer.parameters(), 0.01)
+    else:
+        print("fock")
     start_time = time.time()
 
     for i in range(n):
@@ -48,24 +50,18 @@ def make_passes(layer, n):
     return round(time.time() - start_time, 2)
 
 
-def make_layers(depth, scope, recurrent=True):
-    simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-    inhibitor = Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True)
-    inhibitor_ssi_tpl = SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=True)
-    inhibitor_rec = Conv3DRecurrentInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True,
-                                              max_steps=5)
-
-    inhibitor_conv = FFTConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-    inhibitor_conv_freeze = FFTConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-    inhibitor_tpl = ConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-    inhibitor_tpl_freeze = ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth)
-
-    if recurrent:
-        return [simple_conv, inhibitor, inhibitor_ssi_tpl, inhibitor_rec, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
-                inhibitor_tpl_freeze]
-    else:
-        return [simple_conv, inhibitor, inhibitor_ssi_tpl, inhibitor_conv, inhibitor_conv_freeze, inhibitor_tpl,
-                inhibitor_tpl_freeze]
+def make_layers(depth, scope):
+    return [
+        nn.Conv2d(depth, depth, 3, 1, padding=1),
+        Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True),
+        SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=True),
+        SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=False),
+        FFTConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
+        FFTConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
+        ConvergedInhibition(scope, wavelet_width, damp=damping),
+        ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
+        ParametricInhibition(scope, wavelet_width, damping, in_channels=depth),
+    ]
 
 
 def make_network(layer, depth):
@@ -92,7 +88,7 @@ def make_input():
 
 
 # SETTINGS
-n_forward_passes = 10
+n_passes = 10
 depth_x = [16, 32, 64, 128]
 width = 28
 height = 28
@@ -113,8 +109,9 @@ results = []
 for test_layer in make_layers(depth, scope):
     net = make_network(test_layer, depth)
 
-    execution_time = make_passes(net, n_forward_passes)
-    results.append((test_layer.__class__.__name__, execution_time))
+    execution_time = make_passes(net, n_passes)
+    results.append((test_layer.name if hasattr(test_layer, "name") else test_layer.__class__.__name__,
+                    round(execution_time / n_passes, 4)))
 
 # ranking
 ranked_performance = sorted(results, key=lambda x: x[1])
@@ -127,6 +124,8 @@ df.index += 1
 with open("../documentation/tables/efficiency.tex", "w") as f:
     f.write(df.to_latex(header=["Strategy", "Time (s)"]))
 
+exit()
+
 # ADAPTIVE DEPTH
 print("Calculating Adaptive Depth Times")
 for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
@@ -134,7 +133,7 @@ for depth in tqdm(depth_x, desc="Adaptive Depth Benchmark"):
 
     for test_layer in make_layers(depth, scope, recurrent=False):
         net = make_network(test_layer, depth)
-        execution_time = make_passes(net, n_forward_passes)
+        execution_time = make_passes(net, n_passes)
 
         layer_name = test_layer.__class__.__name__
         if layer_name not in results_adaptive_scope:
@@ -148,22 +147,13 @@ for depth in tqdm(depth_x, desc="Constant Depth Benchmark"):
 
     for test_layer in make_layers(depth, scope, recurrent=False):
         net = make_network(test_layer, depth)
-        execution_time = make_passes(net, n_forward_passes)
+        execution_time = make_passes(net, n_passes)
 
         layer_name = test_layer.__class__.__name__
         if layer_name not in results_constant_scope:
             results_constant_scope.update({layer_name: []})
         results_constant_scope[layer_name].append(execution_time)
 
-name_map = {
-    'Conv2d': 'Conv2d',
-    'SingleShotInhibition': 'Single Shot',
-    'ConvergedInhibition': 'Converged Adaptive (FFT)',
-    'ConvergedFrozenInhibition': 'Converged Frozen (FFT)',
-    'ConvergedToeplitzInhibition': 'Converged Adaptive (Toeplitz)',
-    'ConvergedToeplitzFrozenInhibition': 'Converged Frozen (Toeplitz)',
-    'ToeplitzSingleShotInhibition': 'Single Shot (Toeplitz)'
-}
 # PLOT RESULTS
 axs: List[Axes]
 fig: Figure

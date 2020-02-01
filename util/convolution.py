@@ -11,10 +11,6 @@ def pad_roll(k: torch.Tensor, in_channels, scope):
     pad_left = torch.zeros((1, 1, (in_channels - scope) // 2))
     pad_right = torch.zeros((1, 1, (in_channels - scope) - pad_left.shape[-1]))
 
-    # if k.is_cuda:
-    #     pad_left = pad_left.cuda().to(k.device)
-    #     pad_right = pad_right.cuda().to(k.device)
-
     return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
 
 

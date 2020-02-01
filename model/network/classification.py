@@ -1,7 +1,7 @@
 from torch import nn as nn, nn
 
 from model.inhibition_module import InhibitionModule
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
+from model.alternative_inhibition_layers import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 
 
 class InhibitionClassificationCNN(nn.Module, InhibitionModule):

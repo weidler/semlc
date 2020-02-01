@@ -1,14 +1,15 @@
 \begin{tabular}{llr}
 \toprule
-{} &                           Strategy & Time (s) \\
+{} &                    Strategy & Time (s) \\
 \midrule
-1 &  ConvergedToeplitzFrozenInhibition &     0.11 \\
-2 &                             Conv2d &     0.12 \\
-3 &       ToeplitzSingleShotInhibition &     0.18 \\
-4 &        ConvergedToeplitzInhibition &     0.19 \\
-5 &          ConvergedFrozenInhibition &     0.47 \\
-6 &                ConvergedInhibition &     0.74 \\
-7 &               SingleShotInhibition &     2.66 \\
-8 &                RecurrentInhibition &    12.87 \\
+1 &           SingleShot Frozen &    0.011 \\
+2 &            Converged Frozen &    0.012 \\
+3 &                      Conv2d &    0.013 \\
+4 &         SingleShot Adaptive &    0.017 \\
+5 &        Converged Parametric &    0.017 \\
+6 &          Converged Adaptive &    0.018 \\
+7 &       ConvergedFrozen (FFT) &    0.048 \\
+8 &             Converged (FFT) &    0.051 \\
+9 &  Conv3DSingleShotInhibition &    0.322 \\
 \bottomrule
 \end{tabular}

@@ -1,7 +1,7 @@
 import numpy
 import torch
 
-from model.deprecated_inhibition_layer import pad_shift_zero
+from model.alternative_inhibition_layers import pad_shift_zero
 from util.convolution import toeplitz1d_circular, toeplitz1d_zero, pad_roll
 
 signal = torch.tensor([1, 2, 3, 4, 5, 4, 3, 2, 1])

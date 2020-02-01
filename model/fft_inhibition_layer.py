@@ -10,7 +10,6 @@ from util import weight_initialization
 from util.complex import div_complex
 
 
-@DeprecationWarning
 class FFTConvergedInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms.
@@ -20,6 +19,10 @@ class FFTConvergedInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
+    @property
+    def name(self):
+        return "Converged (FFT)"
+
     def __init__(self, scope: int, ricker_width: float, damp: float, in_channels: int, learn_weights: bool = True):
         super().__init__()
         self.scope = scope
@@ -27,9 +30,8 @@ class FFTConvergedInhibition(nn.Module, InhibitionModule):
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp)
-        self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter))
-        self.inhibition_filter.requires_grad = learn_weights
+        inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp, self_connect=False)
+        self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter, requires_grad=learn_weights))
 
         # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
         self.kronecker_delta = torch.zeros(in_channels).index_fill(0, torch.tensor([0]), 1)
@@ -39,13 +41,12 @@ class FFTConvergedInhibition(nn.Module, InhibitionModule):
         # pad roll the filter;
         # TODO inefficient to do this every time, but need to keep zeros out of autograd, better solutions?
         # cannot think of anything better, will probably do for now, see how it performs
-        kernel = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
+        kernel = pad_roll(self.inhibition_filter.view(1, 1, -1), self.in_channels, self.scope)
         kernel = kernel.view((1, 1, 1, -1))
 
         return convolve_3d_fourier(kernel, activations, self.kronecker_delta)
 
 
-@DeprecationWarning
 class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms. Filter is frozen, implementation is optimized
@@ -56,6 +57,10 @@ class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
+    @property
+    def name(self):
+        return "ConvergedFrozen (FFT)"
+
     def __init__(self, scope: int, ricker_width: int, in_channels: int, damp: float = 0.12):
         super().__init__()
         self.scope = scope
@@ -63,8 +68,9 @@ class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp)
-        self.inhibition_filter = pad_roll(self.inhibition_filter, self.in_channels, self.scope)
+        self.inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp,
+                                                                   self_connect=False)
+        self.inhibition_filter = pad_roll(self.inhibition_filter.view(1, 1, -1), self.in_channels, self.scope)
         self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
 
         # kronecker delta with mass at i=0 is identity to convolution with focus at i=0

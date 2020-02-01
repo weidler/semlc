@@ -13,7 +13,6 @@ from util import weight_initialization
 import torch
 
 
-@DeprecationWarning
 class Conv3DSingleShotInhibition(nn.Module, InhibitionModule):
     """Nice Inhibition Layer. """
 
@@ -46,6 +45,10 @@ class Conv3DSingleShotInhibition(nn.Module, InhibitionModule):
         if not learn_weights:
             for param in self.convolver.parameters():
                 param.requires_grad = False
+
+    @property
+    def name(self):
+        return f"SingleShot (Conv3D) {'Frozen' if not self.learn_weights else 'Adaptive'}"
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
 

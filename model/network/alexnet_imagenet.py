@@ -2,7 +2,7 @@ from torch import nn
 import torch
 #from torchvision.models import AlexNet
 
-from model.deprecated_inhibition_layer import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
+from model.alternative_inhibition_layers import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 
 
 class AlexNetInhibition(nn.Module):
