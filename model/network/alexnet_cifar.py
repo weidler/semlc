@@ -53,7 +53,6 @@ class _AlexNetBase(_BaseNetwork, nn.Module):
         self.features.add_module("conv_1", self.conv1)
         if "inhib_1" in inhibition_layers.keys():
             self.features.add_module("inhib_1", inhibition_layers["inhib_1"])
-            print(inhibition_layers["inhib_1"])
         self.features.add_module("relu_1", self.relu1)
         self.features.add_module("pool_1", self.pool1)
         self.features.add_module("bnorm_1", self.bnorm1)

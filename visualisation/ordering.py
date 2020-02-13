@@ -15,7 +15,7 @@ num_layer = 0
 strategies = ['baseline', 'cmap', 'converged', 'converged_freeze', 'parametric']
 # strategies = ['converged_freeze', 'converged', 'parametric']
 # names = ["Baseline AlexNet", "Baseline AlexCMap", "Single Shot Frozen", "Single Shot Adaptive", "Converged Frozen", "Converged Adaptive", "Converged Parametric"]
-names = ["Baseline", "LRN", "CLC Adaptive", "CLC Frozen", "CLC Parametric"]
+names = ["None", "LRN", "CLC Adaptive", "CLC Frozen", "CLC Parametric"]
 # names = ["Converged Frozen", "Converged Adaptive", "Converged Parametric"]
 # names = ["Conv. Adapt." for _ in range(num_nets)]
 models = []
@@ -47,7 +47,7 @@ r, c = 1, 5 #  get_dim_for_plot(len(names))
 print(r, c)
 gs = gridspec.GridSpec(r, c)
 fig, axs = plt.subplots(r, c)
-fig.set_size_inches(9, 2)
+fig.set_size_inches(8, 2)
 
 # use for plotting all models
 rows = [i for i in range(r) for _ in range(c)]
@@ -68,12 +68,13 @@ for net in tqdm(models, disable=False):
     plot_row = rows[counter]
     plot_col = cols[counter]
     ax: Axes = plt.subplot(gs[plot_row, plot_col])
-    if plot_col != 0:
-        ax.set_yticks([])
-    if plot_row != r - 1:
-        ax.set_xticks([])
+    # if plot_col != 0:
+    ax.set_yticks([])
+    # if plot_row != r - 1:
+    ax.set_xticks([])
     create_plot(net, ax, cmap=colors[counter], num_layer=num_layer, point_size=2)
     ax.set_title(names[counter])
+
     counter += 1
 
 # ordering_{strategies[0]}.pdf

@@ -32,14 +32,14 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
-keychain = "../output/keychain.txt"
-model_path = "../output/"
+keychain = "../../../experiments/all/keychain.txt"
+model_path = "../../../experiments/all/"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 # SET UP NETS AND SETTINGS
 
-num_nets = 30
+num_nets = 10
 
 
 # extend this for future experiments
@@ -51,7 +51,8 @@ all_nets = {
     # ssi
     'ss': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False) for i in range(1, num_nets + 1)],
     'ss_freeze': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, num_nets + 1)],
-    'ss_freeze_zeros': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, pad="zeros") for i in range(1, 10 + 1)],
+    'ss_freeze_zeros': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, pad="zeros") for i in range(1, num_nets + 1)],
+    'ss_freeze_self': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
     'ss_zeros': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, pad="zeros") for i in range(1, num_nets + 1)],
     'ss_self': [SingleShotInhibitionNetwork([63], 3, 0.1, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
 
@@ -81,7 +82,7 @@ all_nets = {
 }
 
 strategies = all_nets.keys()
-analyse_strats = ['parametric']  # ['cmap', 'ss', 'ss_freeze', 'converged_freeze', 'converged']
+analyse_strats = ['ss_freeze_self']  # ['cmap', 'ss', 'ss_freeze', 'converged_freeze', 'converged']
 
 for random_transform_test in [False, True]:
     # LOAD TEST DATA

@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
-from model.inhibition_layer import ConvergedInhibition
+from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
 from model.network.base import _BaseNetwork
 from torch.utils.data import Subset
 
@@ -97,7 +97,7 @@ class InhibitionCapsNet(_BaseNetwork, nn.Module):
     def __init__(self, routing_iterations, n_classes=10, inhib_scope=27, inhib_width=3, inhib_damp=0.1):
         super(InhibitionCapsNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
-        self.inhibition_layer = ConvergedInhibition(scope=inhib_scope, ricker_width=inhib_width, damp=inhib_damp)
+        self.inhibition_layer = ConvergedFrozenInhibition(scope=inhib_scope, ricker_width=inhib_width, damp=inhib_damp, in_channels=256)
         self.primaryCaps = PrimaryCapsLayer(256, 32, 8, kernel_size=9, stride=2)  # outputs 6*6
         self.num_primaryCaps = 32 * 6 * 6
         routing_module = AgreementRouting(self.num_primaryCaps, n_classes, routing_iterations)
@@ -321,7 +321,10 @@ if __name__ == '__main__':
 
         logger = Logger(model, experiment_code=f"{args.strategy}_{i}")
 
+        model.load_state_dict(torch.load('output/15802478382228594699_best.model', map_location=lambda storage, loc: storage))
+
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
+        optimizer.load_state_dict(torch.load('./output/15802478382228594699_best.opt', map_location=lambda storage, loc: storage))
 
         scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, patience=15, min_lr=1e-6)
 
