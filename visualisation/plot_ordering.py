@@ -1,3 +1,4 @@
+import statistics
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -13,9 +14,9 @@ from util.filter_ordering import two_opt, mse
 from visualisation.filter_weights_visualization import get_ordering_difference
 
 
-def create_plot(net, part, plot_sequence=False, num_layer=0, point_size=4):
+def create_plot(net, part, cmap, plot_sequence=False, num_layer=0, point_size=4):
     original_ordering, inhibited_ordering = get_orderings(net, num_layer)
-    part.plot(original_ordering, inhibited_ordering, "--", linewidth=1)
+    part.plot(original_ordering, inhibited_ordering, "--", linewidth=0.5, alpha=0.5, color=cmap)
 
     if plot_sequence:
         min_sequence_length = 3
@@ -37,7 +38,7 @@ def create_plot(net, part, plot_sequence=False, num_layer=0, point_size=4):
                 current_sequence_xs = [current_sequence_xs[-1], i]
                 current_direction = direction / abs(direction)
 
-    part.scatter(original_ordering, inhibited_ordering, s=point_size)
+    part.scatter(original_ordering, inhibited_ordering, s=point_size, color=cmap)
 
 
 def plot_ordering(net, plot_sequence=False, num_layer=0, save=True, point_size=4):
@@ -57,12 +58,13 @@ def get_orderings(net, num_layer=0):
     return original_ordering, inhibited_ordering
 
 
-def mse_difference(filters):
+def mse_difference(filters, scaler=None):
     differences = []
-    for i in range(len(filters) - 1):
+    for i in range(-1, len(filters) - 1):
         diff = mse(filters[i + 1], filters[i])
         differences.append(diff)
-
+    if scaler is not None:
+        differences = scaler.transform(np.array(differences).reshape(-1, 1))[:, 0].tolist()
     return sum(differences) / len(differences)
 
 

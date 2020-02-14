@@ -24,3 +24,10 @@ class InhibitionModule(abc.ABC):
 
     def get_filters_from_layer(self, layer: int = 0):
         return self.features[layer].weight.data.numpy()
+
+    def __repr__(self):
+        params = []
+        for p in ["scope", "width", "damp", "self_connection", "is_circular"]:
+            if p in self.__dict__.keys():
+                params.append(f"{p}={str(self.__dict__[p])}")
+        return f"{self.__class__.__name__}({', '.join(params)})"

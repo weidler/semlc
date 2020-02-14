@@ -10,7 +10,7 @@ from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz
 
 # SINGLE SHOT
 
-class SingleShotInhibition(nn.Module, InhibitionModule):
+class SingleShotInhibition(InhibitionModule, nn.Module):
     """Nice Inhibition Layer. """
 
     def __init__(self, scope: int, ricker_width: float, damp: float, learn_weights=False, pad="circular",
@@ -51,7 +51,7 @@ class SingleShotInhibition(nn.Module, InhibitionModule):
 
 # CONVERGED
 
-class ConvergedInhibition(nn.Module, InhibitionModule):
+class ConvergedInhibition(InhibitionModule, nn.Module):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
@@ -63,6 +63,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
     def __init__(self, scope: int, ricker_width: int, damp: float, pad="circular",
                  self_connection: bool = False):
         super().__init__()
+        super()
         self.scope = scope
         self.damp = damp
         assert pad in ["circular", "zeros"]
@@ -93,7 +94,7 @@ class ConvergedInhibition(nn.Module, InhibitionModule):
         return convolve_3d_toeplitz(tpl_inv, activations)
 
 
-class ConvergedFrozenInhibition(nn.Module, InhibitionModule):
+class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
@@ -200,7 +201,7 @@ class RecurrentInhibition(SingleShotGaussianChannelFilter):
 
 # PARAMETRIC
 
-class ParametricInhibition(nn.Module, InhibitionModule):
+class ParametricInhibition(InhibitionModule, nn.Module):
 
     def __init__(self, scope: int, initial_ricker_width: float, initial_damp: float, in_channels: int,
                  pad="circular", self_connection: bool = False):
@@ -226,14 +227,14 @@ class ParametricInhibition(nn.Module, InhibitionModule):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        inhibition_filter = ricker.ricker(scope=self.scope, width=self.width, damp=self.damp,
+        self.inhibition_filter = ricker.ricker(scope=self.scope, width=self.width, damp=self.damp,
                                           self_connect=self.self_connection)
 
         # construct filter toeplitz
         if self.is_circular:
-            tpl = toeplitz1d_circular(inhibition_filter, self.in_channels)
+            tpl = toeplitz1d_circular(self.inhibition_filter, self.in_channels)
         else:
-            tpl = toeplitz1d_zero(inhibition_filter, self.in_channels)
+            tpl = toeplitz1d_zero(self.inhibition_filter, self.in_channels)
 
         tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 

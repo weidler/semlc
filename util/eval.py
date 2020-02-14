@@ -65,6 +65,26 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     return mean, h, interval
 
 
+def accuracies_from_list(accuracies: List, confidence: float = 0.95, dec: int = 2) \
+        -> Tuple[float, float, Tuple[float, float]]:
+    """Determine the mean accuracy of a given list of accuracies, alongside the confidence interval of this mean.
+    This way, for multiple training runs with random initialization of on architecture, the resulting networks can be
+    evaluated for accuracy with more confidence about the true power of the architecture.
+
+    :param accuracies:      list of accuracies
+    :param confidence:      confidence that mean lies in interval, given at range [0, 1]
+    :param dec:         decimal places
+
+    :return:                mean accuracy and confidence interval
+    """
+    mean = round(sum(accuracies) / len(accuracies), dec)
+    error = sem(accuracies)
+    h = round(error * t.ppf((1 + confidence) / 2., len(accuracies) - 1), dec)
+    interval = (mean - h, mean + h)
+
+    return mean, h, interval
+
+
 def validate(net, val_loader, optimizer, criterion):
     model_loss = 0.0
     val_size = val_loader.__len__()
@@ -80,3 +100,8 @@ def validate(net, val_loader, optimizer, criterion):
         model_loss += loss.item()
     net.train()
     return model_loss / val_size
+
+
+# print(accuracies_from_list([99.66, 99.57, 99.61, 99.62, 99.59, 99.57, 99.59, 99.57, 99.56, 99.68, 99.68, 99.64, 99.54, 99.65, 99.64, 99.63, 99.65, 99.66, 99.57]))
+# print(accuracies_from_list([99.65, 99.60, 99.65, 99.69, 99.60, 99.57, 99.65, 99.61, 99.61, 99.58, 99.62, 99.62, 99.65, 99.7, 99.58, 99.64, 99.67, 99.63, 99.68]))
+print(accuracies_from_list([99.63, 99.58, 99.59, 99.57, 99.55, 99.62, 99.6, 99.68, 99.62, 99.57]))
