@@ -1,8 +1,5 @@
-"""
-Modified from:  https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/vgg.py
-                https://github.com/pytorch/vision.git
-
-"""
+"""Modified from Cheng-Yang Fu's implementation (https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/vgg.py)
+ and PyTorch's (https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py)"""
 
 from typing import List
 

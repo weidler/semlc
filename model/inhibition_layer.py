@@ -11,7 +11,7 @@ from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz
 # SINGLE SHOT
 
 class SingleShotInhibition(InhibitionModule, nn.Module):
-    """Nice Inhibition Layer. """
+    """SSLC Layer. """
 
     def __init__(self, scope: int, ricker_width: float, damp: float, learn_weights=False, pad="circular",
                  self_connection: bool = False):

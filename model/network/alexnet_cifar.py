@@ -8,6 +8,7 @@ from model.network.base import _BaseNetwork
 
 
 class _AlexNetBase(_BaseNetwork, nn.Module):
+    """The abstract Baseline class for CIFAR-10 reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
 
     def __init__(self):
         super().__init__()
@@ -50,6 +51,13 @@ class _AlexNetBase(_BaseNetwork, nn.Module):
         return x
 
     def build_module(self, inhibition_layers: Dict[str, nn.Module]):
+        """
+        composes the module with optional specified inhibition layers as dictionary with 'inhib_{i}' as key,
+         starting at i=1. Layers will be added after the i-th convolutional layer.
+
+        :param inhibition_layers: a dictionary with inhibition layers and 'inhib_{i}' as key, starting with i=1
+
+        """
         self.features.add_module("conv_1", self.conv1)
         if "inhib_1" in inhibition_layers.keys():
             self.features.add_module("inhib_1", inhibition_layers["inhib_1"])
@@ -82,6 +90,7 @@ class _AlexNetBase(_BaseNetwork, nn.Module):
 
 
 class Baseline(_AlexNetBase):
+    """AlexNet Baseline for CIFAR-10"""
 
     def __init__(self):
         super().__init__()
@@ -89,6 +98,7 @@ class Baseline(_AlexNetBase):
 
 
 class BaselineCMap(_AlexNetBase):
+    """AlexNet Baseline with Local Response Normalization reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
 
     def __init__(self):
         super().__init__()
@@ -116,9 +126,20 @@ class BaselineCMap(_AlexNetBase):
 
 
 class SingleShotInhibitionNetwork(_AlexNetBase):
+    """Baseline with added opportunity to add SSLC layers after convolutional layers"""
 
     def __init__(self, scopes: List[int],  width: Union[int, List[int]], damp: Union[float, List], freeze: bool = True,
                  coverage: int = 1, self_connection=False, pad: str = "circular"):
+        """
+
+        :param scopes:              an array of scopes for every SSLC layer
+        :param width:               the width of the ricker wavelet
+        :param damp:                the damping factor
+        :param freeze:              true for frozen parameters, false for adaptive
+        :param coverage:            the number of SSLC layers (depth)
+        :param self_connection:     whether the activated filter inhibits/excites itself or not
+        :param pad:                 the padding, 'circular' or 'zeros'
+        """
         super().__init__()
 
         self.scopes = scopes
@@ -142,9 +163,20 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
 
 
 class ConvergedInhibitionNetwork(_AlexNetBase):
+    """Baseline with added opportunity to add CLC layers after convolutional layers"""
 
     def __init__(self, scopes: List[int], width: Union[int, List[int]], damp: Union[float, List], freeze=True,
                  coverage: int = 1, self_connection=False, pad: str = "circular"):
+        """
+
+        :param scopes:              an array of scopes for every SSLC layer
+        :param width:               the width of the ricker wavelet
+        :param damp:                the damping factor
+        :param freeze:              true for frozen parameters, false for adaptive
+        :param coverage:            the number of SSLC layers (depth)
+        :param self_connection:     whether the activated filter inhibits/excites itself or not
+        :param pad:                 the padding, 'circular' or 'zeros'
+        """
         super().__init__()
 
         self.scopes = scopes
@@ -180,9 +212,19 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
 
 
 class ParametricInhibitionNetwork(_AlexNetBase):
+    """Baseline with added opportunity to add Paranetric CLC layers after convolutional layers"""
 
     def __init__(self, scopes: List[int], width: Union[int, List[int]], damp: Union[float, List], coverage: int = 1,
                  self_connection=False, pad: str = "circular"):
+        """
+
+        :param scopes:              an array of scopes for every SSLC layer
+        :param width:               the width of the ricker wavelet
+        :param damp:                the damping factor
+        :param coverage:            the number of SSLC layers (depth)
+        :param self_connection:     whether the activated filter inhibits/excites itself or not
+        :param pad:                 the padding, 'circular' or 'zeros'
+        """
         super().__init__()
 
         self.scopes = scopes

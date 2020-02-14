@@ -50,6 +50,12 @@ def plot_ordering(net, plot_sequence=False, num_layer=0, save=True, point_size=4
 
 
 def get_orderings(net, num_layer=0):
+    """
+    returns the original and
+    :param net:
+    :param num_layer:
+    :return:
+    """
     filters = net.features[num_layer].weight.data.numpy()
     sorted_filters: List[Tensor] = two_opt(filters)
     diff = get_ordering_difference(filters, sorted_filters)
@@ -59,6 +65,13 @@ def get_orderings(net, num_layer=0):
 
 
 def mse_difference(filters, scaler=None):
+    """
+    calculates the mse differences between filters
+    :param filters:         a tensor of filters (C X H X W) where C is the number of filters and H and W are spatial dimensions.
+    :param scaler:          an optional sklearn scaler to transform the differences
+
+    :return:                the mse difference between filters
+    """
     differences = []
     for i in range(-1, len(filters) - 1):
         diff = mse(filters[i + 1], filters[i])
@@ -69,6 +82,13 @@ def mse_difference(filters, scaler=None):
 
 
 def get_mean_difference(net):
+    """
+    returns the mean mse differences between all neighboring filters (circular) for both the imposed order by the
+    network and the suggested order by the two opt algorithm.
+
+    :param net:         the network
+    :return:            the mean
+    """
     filters = net.features[0].weight.data.numpy()
     mean = mse_difference(filters)
 

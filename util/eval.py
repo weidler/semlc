@@ -11,12 +11,28 @@ from tqdm import tqdm
 
 
 def accuracy(net, data_set, batch_size):
+    """
+    computes the accuracy with confidence interval from a given test set
+    :param net:             the network
+    :param data_set:        the set to be tested on
+    :param batch_size:      the batch size
+
+    :return:                mean accuracy and confidence interval
+    """
     data_loader = DataLoader(data_set, batch_size=batch_size,
                              shuffle=False, num_workers=0)
     return accuracy_from_data_loader(net, data_loader)
 
 
 def accuracy_from_data_loader(net, data_loader):
+    """
+    computes the accuracy with confidence interval from a given data loader
+
+    :param net:             the network
+    :param data_loader:     the data loader to use
+
+    :return:                mean accuracy and confidence interval
+    """
     net.eval()
     correct = 0
     total = 0

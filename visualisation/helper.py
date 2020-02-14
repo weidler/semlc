@@ -12,7 +12,11 @@ df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 
 def get_net(strategy: str):
-    # extend this for future experiments
+    """returns a network instance of the given strategy
+
+    :param strategy:        the strategy
+    :return:                the strategy module
+    """
     all_nets = {
         # baselines
         'baseline': Baseline(),
@@ -57,11 +61,24 @@ def get_net(strategy: str):
 
 
 def get_all_model_paths(strategy: str):
+    """returns all file paths belonging to a certain strategy
+
+    :param strategy:        the strategy
+
+    :return                 a list of file paths
+    """
     files = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
     return files
 
 
 def get_one_model(strategy: str, index=0):
+    """
+    returns exactly one model from the list of models belonging to the strategy
+    :param strategy:        the strategy
+    :param index:           the index in list set of models, default is first
+
+    :return:
+    """
     model_path = get_all_model_paths(strategy).iloc[index]
     filename = f"{path}{model_path}_best.model"
     model = get_net(strategy)

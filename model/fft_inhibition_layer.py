@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Implementations of inhibition layers using fourier transform. Turned out to be a lost slower to backpropagate,
+"""Implementations of inhibition layers using fourier transform. Turned out to be a lot slower to backpropagate,
 hence this is sort of deprecated but kept here for speed demonstration."""
 from torch import nn
 import torch

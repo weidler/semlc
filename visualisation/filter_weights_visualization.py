@@ -7,10 +7,8 @@ from torch import Tensor
 
 def visualize_filters(filters: List[Tensor]):
     """
-    visualizes the given filters, rows * cols must be >= number of filters
-    :param filters: the filters
-    :param rows: number of rows in plot
-    :param cols: number of cols in plot
+    visualizes the given filters
+    :param filters:         the filters
     """
     rows, cols = get_dim_for_plot(len(filters))
     fig, axs = plt.subplots(rows, cols)
@@ -26,11 +24,10 @@ def visualize_filters(filters: List[Tensor]):
 
 def plot_unsorted_and_sorted_filters(filters: List[Tensor], sorted_filters: List[Tensor]):
     """
-    visualizes the given filters, rows * cols must be >= number of filters
-    :param filters: the filters
-    :param sorted_filters: the sorted filters
-    :param rows: number of rows in plot
-    :param cols: number of cols in plot
+    visualizes the given filters
+
+    :param filters:             the filters
+    :param sorted_filters:      the sorted filters
     """
     rows, cols = get_dim_for_plot(len(filters))
     fig, axs = plt.subplots(rows, cols)
@@ -53,9 +50,12 @@ def plot_unsorted_and_sorted_filters(filters: List[Tensor], sorted_filters: List
 
 def get_ordering_difference(filters: List[Tensor], sorted_filters: List[Tensor]):
     """
-    prints the previous ordering followed by the ordering after sorting in tuples
-    :param filters: the filters
-    :param sorted_filters: the sorted filters
+    returns a list of tuples comparing the indices of filters from the previous ordering with the indices after sorting
+
+    :param filters:             the filters
+    :param sorted_filters:      the sorted filters
+
+    :return                     a list of tuples containing the difference in indices
     """
     diff = []
     for i in range(len(filters)):
@@ -68,8 +68,11 @@ def get_ordering_difference(filters: List[Tensor], sorted_filters: List[Tensor])
 def get_dim_for_plot(n):
     """
     returns the "best" dimension for plotting filters, e.g. n = 6 returns 2,3 and 16 returns 4,4
-    :param n: the number of filters
-    :return: a tuple of rows and cols for the plot
+    adapted from Daniel Lee's solution (https://stackoverflow.com/questions/39248245/factor-an-integer-to-something-as-close-to-a-square-as-possible/39248503#39248503)
+
+    :param n:       the number of filters
+
+    :return:        a tuple of rows and cols for the plot
     """
     nsqrt = np.math.ceil(np.math.sqrt(n))
     solution = False
