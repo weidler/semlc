@@ -3,7 +3,7 @@ import sys
 import torchsummary
 from torch.utils.data import Subset
 
-sys.path.append("../")
+sys.path.append("./")
 
 from torch.optim import SGD
 
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("strategy", type=str, choices=strategies)
-    parser.add_argument("-i", type=int, default=30)
+    parser.add_argument("-i", type=int, default=30, help="the number of iterations")
     args = parser.parse_args()
 
     run(args.strategy, args.i)

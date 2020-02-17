@@ -4,7 +4,7 @@ import pandas as pd
 
 from util.train import train_model
 
-sys.path.append("../")
+sys.path.append("./")
 
 import random
 import torch
@@ -63,12 +63,7 @@ def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, 
     """
     error_msg = "[!] valid_size should be in the range [0, 1]."
     assert ((valid_size >= 0) and (valid_size <= 1)), error_msg
-    # use these for now as the baseline uses these
     normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    # normalize = transforms.Normalize(
-    #    mean=[0.4914, 0.4822, 0.4465],
-    #    std=[0.2023, 0.1994, 0.2010],
-    # )
 
     # define transforms
     valid_transform = transforms.Compose([
@@ -128,6 +123,16 @@ def get_train_valid_loaders(data_dir, batch_size, augment=True, valid_size=0.2, 
 
 
 def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
+    """
+    creates a number of unique random configurations
+
+    :param samples:                 the number of samples
+    :param range_scope:             an array containing all considered values for the scope
+    :param range_ricker_width:      an array containing all considered values for the ricker width
+    :param range_damp:              an array containing all considered values for the damping factor
+
+    :return:                        a list of configurations
+    """
     configurations = []
     for i in range(samples):
         # for the lack of do while loops
@@ -145,13 +150,31 @@ def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
 
 
 def get_samples_from_disk():
-    df = pd.read_csv("../data/hp_config.csv", dtype={'scope': int, 'width': int, 'damp': float})
+    """
+    laods already generated configurations from disk
+
+    :return:        a list of configurations
+    """
+    df = pd.read_csv("./data/hp_config.csv", dtype={'scope': int, 'width': int, 'damp': float})
     configurations = df.values
     return configurations
 
 
-def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, learn_rate=0.01, test_set=None,
+def hp_opt(num_epoch, train_loader, val_loader, criterion, learn_rate=0.01, test_set=None,
            optimizer=None, verbose=True):
+    """
+    runs a hyper parameter optimisation with hyper parameter sets loaded from disk
+
+    :param num_epoch:           the number of epochs
+    :param train_loader:        the training data loader
+    :param val_loader:          the validation data loader
+    :param criterion:           the loss criterion
+    :param learn_rate:          the learning rate
+    :param test_set:            the test set
+    :param optimizer:           the optimizer
+    :param verbose:             whether to print updates during running the optimisation
+
+    """
     configurations = get_samples_from_disk()
     for strategy in strategies:
         for scope, ricker_width, damp in configurations:
@@ -173,7 +196,6 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
             train_model(net=net,
                         num_epoch=num_epoch,
                         train_loader=train_loader,
-                        batch_size=batch_size,
                         criterion=criterion,
                         logger=logger,
                         val_loader=val_loader,
@@ -189,13 +211,11 @@ def hp_opt(rep, num_epoch, train_loader, val_loader, criterion, samples=30, lear
 if __name__ == "__main__":
     batch_size = 128
     l_rate = 0.001
-    train_loader, valid_loader, test_set = get_train_valid_loaders("../data/cifar10/", batch_size)
-    hp_opt(rep=1,
-           num_epoch=1,
+    train_loader, valid_loader, test_set = get_train_valid_loaders("./data/cifar10/", batch_size)
+    hp_opt(num_epoch=1,
            train_loader=train_loader,
            val_loader=valid_loader,
            criterion=nn.CrossEntropyLoss(),
            learn_rate=l_rate,
            test_set=test_set,
-           samples=30,
            verbose=True)

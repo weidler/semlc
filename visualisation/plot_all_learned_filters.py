@@ -1,12 +1,7 @@
-from typing import List, Any, Tuple
-
 import numpy
 import torch
-from matplotlib import gridspec
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-
-from model.network.alexnet_cifar import ConvergedInhibitionNetwork, SingleShotInhibitionNetwork
 
 import matplotlib.pyplot as plt
 
@@ -30,12 +25,9 @@ layer = 1
 num_plot_samples = 10
 
 for i in range(0, num_nets):
-    # get first model found
     model = get_one_model(strategy, index=i)
     models.append(model)
 
-print(models[0].features)
-# net = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, inhibition_start=1, inhibition_end=1)
 net = get_net(strategy)
 parameters = list(net.named_parameters())
 filter_before = None
@@ -47,7 +39,6 @@ for p in parameters:
 filters_after = []
 for i in range(1, num_plot_samples + 1):
     parameters = list(models[i - 1].named_parameters())
-    # print(parameters)
     filter_after = None
     for p in parameters:
         if p[0] == f"features.inhib_{layer}.inhibition_filter":
