@@ -5,6 +5,7 @@ from model.network.VGG import vgg19, vgg19_inhib
 from model.network.alexnet_cifar import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork, \
     ParametricInhibitionNetwork
 
+# files to saved models and keychain
 keychain = "../../../experiments/all/keychain.txt"
 path = "../../../experiments/all/"
 
@@ -12,7 +13,14 @@ df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
 
 def get_net(strategy: str):
-    # extend this for future experiments
+    """
+    loads the model with pre-defined hyper parameters for a given strategy
+
+    :param strategy:                the strategy
+
+    :return:                        the model
+    """
+
     all_nets = {
         # baselines
         'baseline': Baseline(),
@@ -57,11 +65,27 @@ def get_net(strategy: str):
 
 
 def get_all_model_paths(strategy: str):
+    """
+    returns all file paths to saved models for a given strategy
+    :param strategy:            the strategy
+
+    :return:                    a list of file paths
+    """
+
     files = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
     return files
 
 
 def get_one_model(strategy: str, index=0):
+    """
+    returns a model with loaded state dictionary at the specified index of all saved models
+
+    :param strategy:            the strategy
+    :param index:               the index
+
+    :return:                    the model with loaded state dictionary
+    """
+
     model_path = get_all_model_paths(strategy).iloc[index]
     filename = f"{path}{model_path}_best.model"
     model = get_net(strategy)
