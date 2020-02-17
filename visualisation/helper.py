@@ -6,8 +6,8 @@ from model.network.alexnet_cifar import SingleShotInhibitionNetwork, BaselineCMa
     ParametricInhibitionNetwork
 
 # files to saved models and keychain
-keychain = "../../../experiments/all/keychain.txt"
-path = "../../../experiments/all/"
+keychain = "./../../experiments/all/keychain.txt"
+path = "./../../experiments/all/"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 

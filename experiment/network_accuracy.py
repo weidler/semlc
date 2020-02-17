@@ -1,3 +1,5 @@
+"""Tests the accuracy on a given model or an average over a set of models"""
+
 import random
 import sys
 
@@ -5,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from model.network.VGG import vgg19, vgg19_inhib
 
-sys.path.append("../")
+sys.path.append("./")
 import numpy
 import torch
 import torchvision
@@ -32,8 +34,8 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
-keychain = "../../../experiments/all/keychain.txt"
-model_path = "../../../experiments/all/"
+keychain = "./../../experiments/all/keychain.txt"
+model_path = "./../../experiments/all/"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
@@ -84,6 +86,7 @@ all_nets = {
 strategies = all_nets.keys()
 analyse_strats = ['ss_freeze_self']  # ['cmap', 'ss', 'ss_freeze', 'converged_freeze', 'converged']
 
+# test on both the augmented and non-augmented test set
 for random_transform_test in [False, True]:
     # LOAD TEST DATA
     if random_transform_test:
@@ -96,7 +99,7 @@ for random_transform_test in [False, True]:
                                         transforms.ToTensor(),
                                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+    test_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
 
     # EVALUATE
     for strategy in strategies:

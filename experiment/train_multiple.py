@@ -44,8 +44,8 @@ def run(strategy: str, iterations: int):
                                     ])
 
     # load data
-    trainval_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
-    test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+    trainval_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=True, download=True, transform=transform)
+    test_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
 
     for i in range(0, iterations):
         val_indices = list(range(int((i % 10) * len(trainval_set) / 10), int(((i % 10) + 1) * len(trainval_set) / 10)))

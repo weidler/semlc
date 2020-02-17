@@ -1,3 +1,5 @@
+"""helper file for visualizations of filter ordering"""
+
 from typing import List
 import matplotlib.pyplot as plt
 import numpy as np

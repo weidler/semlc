@@ -1,7 +1,9 @@
+"""Hyper parameter optimization script exploring the coverage of LC layers"""
+
 import sys
 from torch.utils.data import Subset
 
-sys.path.append("../")
+sys.path.append("./")
 
 import torch
 import numpy as np
@@ -49,8 +51,8 @@ def run(strategy: str, runs: int, iterations: int):
                                     ])
 
     # load data
-    trainval_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
-    test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+    trainval_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=True, download=True, transform=transform)
+    test_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
 
     df = pd.DataFrame(columns=['config', 'val_acc', 'val_acc_wA'])
 
@@ -112,7 +114,7 @@ def run(strategy: str, runs: int, iterations: int):
                                                 transforms.ToTensor(),
                                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-            test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+            test_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
 
             acc = accuracy_with_confidence(networks, test_set, 128, 0.95)
             print(f"{strategy}{'[wA]' if random_transform_test else ''}: {acc}")

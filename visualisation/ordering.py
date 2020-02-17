@@ -1,3 +1,5 @@
+"""visually compares the ordering imposed by the network with the suggested ordering by the two-opt"""
+
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.axes import Axes
@@ -82,6 +84,5 @@ for net in tqdm(models, disable=False):
 
     counter += 1
 
-# ordering_{strategies[0]}.pdf
-fig.savefig(f'../documentation/figures/ordering_{strategies[0]}.pdf', format="pdf", bbox_inches='tight')
+fig.savefig(f'./documentation/figures/ordering_{strategies[0]}.pdf', format="pdf", bbox_inches='tight')
 plt.show()
