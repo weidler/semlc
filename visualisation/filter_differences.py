@@ -1,4 +1,4 @@
-"""calculates the mean differences between filters in certain strategies and layers and writes a file"""
+"""calculates the mean differences between filters in certain strategies and layers and writes the results to a file"""
 
 import numpy as np
 from tqdm import tqdm
@@ -11,7 +11,7 @@ from visualisation.plot_ordering import mse_difference
 
 # 30 for parametric else 60
 num_nets = 60
-num_layer = 1
+num_layer = 0
 
 strategy = 'converged'
 

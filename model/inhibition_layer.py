@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-import numpy
 import torch
 from torch import nn
 
@@ -11,7 +9,11 @@ from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz
 # SINGLE SHOT
 
 class SingleShotInhibition(InhibitionModule, nn.Module):
-    """SSLC Layer. """
+    """SSLC Layer.
+    Input shape:
+        N x C x H x W
+        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
+    """
 
     def __init__(self, scope: int, ricker_width: float, damp: float, learn_weights=False, pad="circular",
                  self_connection: bool = False):
@@ -159,6 +161,7 @@ class ConvergedGaussianChannelFilter(ConvergedFrozenInhibition):
                                               self_connect=self.self_connection)
 
 
+@DeprecationWarning
 class RecurrentInhibition(SingleShotGaussianChannelFilter):
 
     def __init__(self, scope: int, width: float, damp: float, pad="circular",
@@ -202,6 +205,13 @@ class RecurrentInhibition(SingleShotGaussianChannelFilter):
 # PARAMETRIC
 
 class ParametricInhibition(InhibitionModule, nn.Module):
+    """Inhibition layer using the single operation convergence point strategy with trainable parameters
+    damping and width factor. Convergence point is determined using the inverse of a Toeplitz matrix.
+
+    Input shape:
+        N x C x H x W
+        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
+    """
 
     def __init__(self, scope: int, initial_ricker_width: float, initial_damp: float, in_channels: int,
                  pad="circular", self_connection: bool = False):

@@ -1,3 +1,6 @@
+"""
+A script for all main experiments that allows running multiple experiments of the same strategy
+"""
 import sys
 
 from torch.utils.data import Subset
@@ -127,7 +130,8 @@ def run(strategy: str, iterations: int):
               criterion=nn.CrossEntropyLoss(),
               logger=logger,
               val_set=val_set,
-              # optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),
+              # optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),  # for VGG
+              # learn_rate=0.05  # for VGG
               learn_rate=0.001,
               verbose=False)
 

@@ -1,4 +1,4 @@
-# Biologically Inspired Lateral Connectivityin Convolutional Neural Networks
+# Biologically Inspired Lateral Connectivity in Convolutional Neural Networks
 
 ## User Guide
 
@@ -6,7 +6,7 @@
 
 This module uses Python 3.6.8. All required packages can be found in the requiremens.txt file.
 
-When using CUDA use the following PyTorch and torchvision versions:
+When using CUDA the following PyTorch and torchvision versions are needed:
 ```bash
 # torch
 $ pip3 install https://download.pytorch.org/whl/cu100/torch-1.1.0-cp36-cp36m-linux_x86_64.whl

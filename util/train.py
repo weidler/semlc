@@ -8,15 +8,19 @@ from util.eval import accuracy_from_data_loader
 
 def train_model(net, num_epoch, train_loader, criterion, learn_rate=0.01, val_loader=None, optimizer=None,
                 logger=None, verbose=False, save_freq=80):
-    # Adam optimizer by default
+
     if optimizer is None:
         optimizer = optim.Adam(net.parameters(), lr=learn_rate)
 
     loss_history = []
     max_val_acc = 0
     num_batches = train_loader.__len__()
-    for epoch in tqdm(range(num_epoch), disable=verbose):  # loop over the dataset multiple times
+    for epoch in tqdm(range(num_epoch), disable=verbose):
         running_loss = 0.0
+
+        # for VGG
+        # adjust_learning_rate(learn_rate, optimizer, epoch)
+
         if epoch == 100:
             for param_group in optimizer.param_groups:
                 param_group['lr'] = param_group['lr'] * 0.1
@@ -27,7 +31,6 @@ def train_model(net, num_epoch, train_loader, criterion, learn_rate=0.01, val_lo
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            # TODO probably unnecessary
             if torch.cuda.is_available():
                 outputs = net(inputs.cuda())
             else:
