@@ -1,11 +1,8 @@
 import sys
 
-import torchsummary
 from torch.utils.data import Subset
 
 sys.path.append("./")
-
-from torch.optim import SGD
 
 from model.network.VGG import vgg19, vgg19_inhib
 
@@ -93,7 +90,6 @@ def run(strategy: str, iterations: int):
         elif strategy == "converged_freeze_zeros":
             network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, pad="zeros")
         elif strategy == "converged_freeze_full":
-            # TODO not working yet due to hard coded in_channels in layer instantiation!
             network = ConvergedInhibitionNetwork([45, 45, 45, 23], [3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2], freeze=True,
                                                  coverage=4)
         elif strategy == "parametric":

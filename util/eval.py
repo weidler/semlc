@@ -1,6 +1,5 @@
 import statistics
 
-import torchvision
 from typing import List, Tuple
 
 import torch
@@ -89,7 +88,7 @@ def accuracies_from_list(accuracies: List, confidence: float = 0.95, dec: int = 
 
     :param accuracies:      list of accuracies
     :param confidence:      confidence that mean lies in interval, given at range [0, 1]
-    :param dec:         decimal places
+    :param dec:             decimal places
 
     :return:                mean accuracy and confidence interval
     """
@@ -102,6 +101,16 @@ def accuracies_from_list(accuracies: List, confidence: float = 0.95, dec: int = 
 
 
 def validate(net, val_loader, optimizer, criterion):
+    """
+    validate the network on the given validation data loader
+
+    :param net:             the network
+    :param val_loader:      the validation data loader
+    :param optimizer:       the optimizer
+    :param criterion:       the loss criterion
+
+    :return:                the validation accuracy
+    """
     model_loss = 0.0
     val_size = val_loader.__len__()
     net.eval()
@@ -116,8 +125,3 @@ def validate(net, val_loader, optimizer, criterion):
         model_loss += loss.item()
     net.train()
     return model_loss / val_size
-
-
-# print(accuracies_from_list([99.66, 99.57, 99.61, 99.62, 99.59, 99.57, 99.59, 99.57, 99.56, 99.68, 99.68, 99.64, 99.54, 99.65, 99.64, 99.63, 99.65, 99.66, 99.57]))
-# print(accuracies_from_list([99.65, 99.60, 99.65, 99.69, 99.60, 99.57, 99.65, 99.61, 99.61, 99.58, 99.62, 99.62, 99.65, 99.7, 99.58, 99.64, 99.67, 99.63, 99.68]))
-print(accuracies_from_list([99.63, 99.58, 99.59, 99.57, 99.55, 99.62, 99.6, 99.68, 99.62, 99.57]))

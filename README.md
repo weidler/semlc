@@ -37,6 +37,6 @@ python model/network/capsnet.py --help
 
 ```
 ### Output
-Every Model generates a unique experiment id used in the file names for saved models and optimizers, log files and a keychain.txt to lookup the belonging experiment configurations.
+Every Model generates a unique process id used in the file names for saved models and optimizers, log files and a keychain.txt to lookup the belonging experiment configurations.
 The keychain contains tab-separated the id, the experiment group and an iteration index (i.e. baseline_15), the representation of the model and a timestamp.
 This keychain is used to load saved models for visualizations and analysis.
