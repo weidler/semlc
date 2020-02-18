@@ -41,7 +41,21 @@ Every Model generates a unique process id used in the file names for saved model
 The keychain contains tab-separated the id, the experiment group and an iteration index (i.e. baseline_15), the representation of the model and a timestamp.
 This keychain is used to load saved models for visualizations and analysis.
 
+Please note that we renamed our strategies for the paper submission but left the code as is.
+Find a mapping table below for the codes and class names we used.
+
+| Strategy       | Code             | Name of class            |
+|----------------|------------------|-----------------------------|
+| None           | baseline         | Baseline                    |
+| LRN            | cmap             | BaselineCMap                |
+| SSLC Frozen    | ss_freeze        | SingleShotInhibitionNetwork |
+| SSLC Adaptive  | ss               | SingleShotInhibitionNetwork |
+| CLC Frozen     | converged_freeze | ConvergedInhibitionNetwork  |
+| CLC Adaptive   | converged        | ConvergedInhibitionNetwork  |
+| CLC Parametric | parametric       | ParametricInhibitionNetwork | 
+
 ### Testing
 Using ``python experiments/network_accuracy.py`` the test accuracy with confidence interval for a number of specified strategies can be computed.
 
-Different visualization and analysis scripts are available - see python documentation strings for usage. 
+Different visualization and analysis scripts are available - see python documentation strings for usage.
+
