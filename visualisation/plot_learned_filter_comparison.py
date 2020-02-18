@@ -2,10 +2,15 @@
 
 import numpy
 import torch
+import matplotlib as mp
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from visualisation.helper import get_one_model, get_net
+
+mp.rcParams['ps.useafm'] = True
+mp.rcParams['pdf.use14corefonts'] = True
+mp.rcParams['text.usetex'] = True
 
 use_cuda = False
 if torch.cuda.is_available():

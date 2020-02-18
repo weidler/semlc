@@ -50,7 +50,7 @@ def plot_ordering(net, plot_sequence=False, num_layer=0, save=True, point_size=4
     fig, _ = plt.subplots()
     create_plot(net, plt, plot_sequence=plot_sequence, num_layer=num_layer, point_size=point_size)
     if save:
-        fig.savefig('./documentation/figures/ordering.pdf', format="pdf", bbox_inches='tight')
+        fig.savefig('./documentation/figures/_ordering.pdf', format="pdf", bbox_inches='tight')
     plt.show()
 
 
