@@ -34,8 +34,8 @@ if torch.cuda.is_available():
 
 print(f"USE CUDA: {use_cuda}.")
 
-keychain = "./../../experiments/all/keychain.txt"
-model_path = "./../../experiments/all/"
+keychain = "./output/keychain.txt"
+model_path = "./output/"
 
 df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
 
