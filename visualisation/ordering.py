@@ -94,10 +94,10 @@ for net in tqdm(models, disable=False):
 
 if strategy is not None:
     # use for plotting all models of single strategy
-    fig.savefig(f'./documentation/figures/testordering_{strategy}.pdf', format="pdf", bbox_inches='tight')
+    fig.savefig(f'./documentation/figures/ordering_{strategy}.pdf', format="pdf", bbox_inches='tight')
 
 else:
     # use for comparison of 5 strategies
-    fig.savefig(f'./documentation/figures/testordering.pdf', format="pdf", bbox_inches='tight')
+    fig.savefig(f'./documentation/figures/ordering.pdf', format="pdf", bbox_inches='tight')
 
 plt.show()
