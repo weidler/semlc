@@ -5,8 +5,18 @@ import torch
 
 
 def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int, self_connect: bool = True):
+    """
+    composes the ricker wavelet
+
+    :param width:               the width of the wavelet
+    :param damp:                the damping factor
+    :param scope:               the scope
+    :param self_connect:        whether to form a connection of a neuron to itself
+
+    :return:                    the wavelet
+    """
     assert scope % 2 != 0, "Scope must have an odd number of dimensions."
-    assert scope > 0, "WHAT?"
+    assert scope > 0, "Scope must be positive"
     assert isinstance(width, torch.Tensor) and isinstance(damp, torch.Tensor), "Width and Damp must be tensors"
 
     A = 2 / (torch.sqrt(3 * width) * (math.pi ** 0.25))
@@ -21,6 +31,16 @@ def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int, self_connect: bo
 
 
 def dif_of_gauss(width, std, scope):
+    """
+    realize the wavelet as a difference of gaussians
+
+    :param width:       the width of the wavelet
+    :param std:         the standard deviation
+    :param scope:       the scope
+
+    :return:            the wavelet
+
+    """
     start = -(scope - 1.0) / 2
     stdb = std * 2
     vec = [start + 1 * i for i in range(scope)]
@@ -44,11 +64,11 @@ if __name__ == "__main__":
 
     mh = mexican_hat(scope, width, damping)
     rickered = ricker(torch.tensor(width, dtype=torch.float32), torch.tensor(damping, dtype=torch.float32), scope=scope)
-    doggy = dif_of_gauss(width=width, std=width, scope=scope)
+    dog = dif_of_gauss(width=width, std=width, scope=scope)
 
     plt.plot(mh.detach().cpu().numpy(), label="SciPy Ricker")
     plt.plot(rickered.detach().cpu().numpy(), "--", label="Ricker")
-    plt.plot(doggy.detach().cpu().numpy(), label="DoG")
+    plt.plot(dog.detach().cpu().numpy(), label="DoG")
     plt.legend()
     plt.axhline(color="black", lw=1)
 

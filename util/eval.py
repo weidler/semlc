@@ -1,6 +1,5 @@
 import statistics
 
-import torchvision
 from typing import List, Tuple
 
 import torch
@@ -11,12 +10,28 @@ from tqdm import tqdm
 
 
 def accuracy(net, data_set, batch_size):
+    """
+    computes the accuracy with confidence interval from a given test set
+    :param net:             the network
+    :param data_set:        the set to be tested on
+    :param batch_size:      the batch size
+
+    :return:                mean accuracy and confidence interval
+    """
     data_loader = DataLoader(data_set, batch_size=batch_size,
                              shuffle=False, num_workers=0)
     return accuracy_from_data_loader(net, data_loader)
 
 
 def accuracy_from_data_loader(net, data_loader):
+    """
+    computes the accuracy with confidence interval from a given data loader
+
+    :param net:             the network
+    :param data_loader:     the data loader to use
+
+    :return:                mean accuracy and confidence interval
+    """
     net.eval()
     correct = 0
     total = 0
@@ -65,7 +80,37 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     return mean, h, interval
 
 
+def accuracies_from_list(accuracies: List, confidence: float = 0.95, dec: int = 2) \
+        -> Tuple[float, float, Tuple[float, float]]:
+    """Determine the mean accuracy of a given list of accuracies, alongside the confidence interval of this mean.
+    This way, for multiple training runs with random initialization of on architecture, the resulting networks can be
+    evaluated for accuracy with more confidence about the true power of the architecture.
+
+    :param accuracies:      list of accuracies
+    :param confidence:      confidence that mean lies in interval, given at range [0, 1]
+    :param dec:             decimal places
+
+    :return:                mean accuracy and confidence interval
+    """
+    mean = round(sum(accuracies) / len(accuracies), dec)
+    error = sem(accuracies)
+    h = round(error * t.ppf((1 + confidence) / 2., len(accuracies) - 1), dec)
+    interval = (mean - h, mean + h)
+
+    return mean, h, interval
+
+
 def validate(net, val_loader, optimizer, criterion):
+    """
+    validate the network on the given validation data loader
+
+    :param net:             the network
+    :param val_loader:      the validation data loader
+    :param optimizer:       the optimizer
+    :param criterion:       the loss criterion
+
+    :return:                the validation accuracy
+    """
     model_loss = 0.0
     val_size = val_loader.__len__()
     net.eval()

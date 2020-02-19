@@ -2,13 +2,19 @@
 only adapted to include our inhibition."""
 
 import math
+import pandas as pd
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
-from model.inhibition_layer import ConvergedInhibition
+from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
+from model.network.base import _BaseNetwork
+from torch.utils.data import Subset
+
+from util.eval import accuracies_from_list
+from util.ourlogging import Logger
 
 
 def squash(x):
@@ -87,11 +93,11 @@ class PrimaryCapsLayer(nn.Module):
         return out
 
 
-class InhibitionCapsNet(nn.Module):
+class InhibitionCapsNet(_BaseNetwork, nn.Module):
     def __init__(self, routing_iterations, n_classes=10, inhib_scope=27, inhib_width=3, inhib_damp=0.1):
         super(InhibitionCapsNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
-        self.inhibition_layer = ConvergedInhibition(scope=inhib_scope, ricker_width=inhib_width, damp=inhib_damp)
+        self.inhibition_layer = ConvergedFrozenInhibition(scope=inhib_scope, ricker_width=inhib_width, damp=inhib_damp, in_channels=256)
         self.primaryCaps = PrimaryCapsLayer(256, 32, 8, kernel_size=9, stride=2)  # outputs 6*6
         self.num_primaryCaps = 32 * 6 * 6
         routing_module = AgreementRouting(self.num_primaryCaps, n_classes, routing_iterations)
@@ -107,7 +113,7 @@ class InhibitionCapsNet(nn.Module):
         return x, probs
 
 
-class CapsNet(nn.Module):
+class CapsNet(_BaseNetwork, nn.Module):
     def __init__(self, routing_iterations, n_classes=10):
         super(CapsNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
@@ -187,6 +193,8 @@ if __name__ == '__main__':
 
     # Training settings
     parser = argparse.ArgumentParser(description='CapsNet with MNIST')
+    parser.add_argument("strategy", type=str, choices=['capsnet', 'capsnet_inhib'])
+    parser.add_argument("-i", type=int, default=5)
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
@@ -204,6 +212,7 @@ if __name__ == '__main__':
                         help='how many batches to wait before logging training status')
     parser.add_argument('--routing_iterations', type=int, default=3)
     parser.add_argument('--with_reconstruction', action='store_true', default=False)
+    parser.add_argument('--save_freq', type=int, default=50)
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -215,17 +224,21 @@ if __name__ == '__main__':
     kwargs = {}
 
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../../data', train=True, download=True,
+        # Subset(
+        datasets.MNIST('./data/mnist', train=True, download=True,
                        transform=transforms.Compose([
                            transforms.Pad(2), transforms.RandomCrop(28),
                            transforms.ToTensor()
-                       ])),
-        batch_size=args.batch_size, shuffle=True, **kwargs)
+                       ]))
+        #    , indices=[i for i in range(100)])
+        , batch_size=args.batch_size, shuffle=True, **kwargs)
+
+    test_set = datasets.MNIST('./data/mnist', train=False, transform=transforms.Compose([
+            transforms.ToTensor()
+        ]))
 
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../../data', train=False, transform=transforms.Compose([
-            transforms.ToTensor()
-        ])),
+        test_set,
         batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
     # CUDA
@@ -233,24 +246,9 @@ if __name__ == '__main__':
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
         print(f"USE CUDA: YES.")
 
-    model = InhibitionCapsNet(args.routing_iterations)
-
-    if args.with_reconstruction:
-        reconstruction_model = ReconstructionNet(16, 10)
-        reconstruction_alpha = 0.0005
-        model = CapsNetWithReconstruction(model, reconstruction_model)
-
-    if args.cuda:
-        model.cuda()
-
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
-
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, patience=15, min_lr=1e-6)
-
-    loss_fn = MarginLoss(0.9, 0.1, 0.5)
 
 
-    def train(epoch):
+    def train(epoch, logger):
         model.train()
         for batch_idx, (data, target) in enumerate(train_loader):
             if args.cuda:
@@ -294,19 +292,69 @@ if __name__ == '__main__':
                 test_loss += loss_fn(probs, target, size_average=False).item()
 
             pred = probs.data.max(1, keepdim=True)[1]  # get the index of the max probability
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+            correct += pred.eq(target.data.view_as(pred)).sum().item()
 
         test_loss /= len(test_loader.dataset)
+        val_acc = 100. * correct / len(test_loader.dataset)
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
             test_loss, correct, len(test_loader.dataset),
-            100. * correct / len(test_loader.dataset)))
-        return test_loss
+            val_acc))
+        return test_loss, val_acc
 
 
-    for epoch in range(1, args.epochs + 1):
-        train(epoch)
-        test_loss = test()
-        scheduler.step(test_loss)
-        torch.save(model.state_dict(),
-                   '{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(epoch, args.routing_iterations,
-                                                                             args.with_reconstruction))
+    networks = []
+    accuracies = []
+
+    for i in range(0, args.i):
+        if args.strategy == 'capsnet':
+            model = CapsNet(args.routing_iterations)
+        elif args.strategy == 'capsnet_inhib':
+            model = InhibitionCapsNet(args.routing_iterations)
+
+        if args.with_reconstruction:
+            reconstruction_model = ReconstructionNet(16, 10)
+            reconstruction_alpha = 0.0005
+            model = CapsNetWithReconstruction(model, reconstruction_model)
+
+        if args.cuda:
+            model.cuda()
+
+        logger = Logger(model, experiment_code=f"{args.strategy}_{i}")
+
+        model.load_state_dict(torch.load('output/15802478382228594699_best.model', map_location=lambda storage, loc: storage))
+
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+        optimizer.load_state_dict(torch.load('./output/15802478382228594699_best.opt', map_location=lambda storage, loc: storage))
+
+        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, patience=15, min_lr=1e-6)
+
+        loss_fn = MarginLoss(0.9, 0.1, 0.5)
+
+        networks.append(model)
+
+        max_val_acc = 0
+
+        for epoch in range(1, args.epochs + 1):
+            train(epoch, logger)
+            test_loss, val_acc = test()
+
+            if val_acc > max_val_acc:
+                max_val_acc = val_acc
+                logger.save_model(epoch + 1, best=True)
+                logger.save_optimizer(optimizer, epoch + 1, best=True)
+
+            logger.log('[%d, %5d] loss: %.3f val_acc: %.3f' % (epoch + 1, i + 1, test_loss, val_acc))
+
+            scheduler.step(test_loss)
+            torch.save(model.state_dict(),
+                       './output/capsnet/{:02d}_{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(i, epoch, args.routing_iterations,
+                                                                                 args.with_reconstruction))
+            if epoch > 0 and epoch % args.save_freq == 0:
+                logger.save_model(epoch + 1)
+                logger.save_optimizer(optimizer, epoch + 1)
+
+        accuracies.append(max_val_acc)
+
+    print(accuracies)
+    acc = accuracies_from_list(accuracies)
+    print(f"{acc}")

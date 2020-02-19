@@ -1,4 +1,5 @@
 class _BaseNetwork:
+    """Superclass for uniform representation string for easier logging and debugging"""
 
     def __repr__(self):
         ret = ""

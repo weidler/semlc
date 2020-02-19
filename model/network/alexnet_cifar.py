@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Union
 
 from torch import nn
 
@@ -8,6 +8,7 @@ from model.network.base import _BaseNetwork
 
 
 class _AlexNetBase(_BaseNetwork, nn.Module):
+    """The abstract Baseline class for CIFAR-10 reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
 
     def __init__(self):
         super().__init__()
@@ -44,12 +45,19 @@ class _AlexNetBase(_BaseNetwork, nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), 32 * 5 * 5)
+        x = x.contiguous().view(x.size(0), 32 * 5 * 5)
         x = self.classifier(x)
 
         return x
 
     def build_module(self, inhibition_layers: Dict[str, nn.Module]):
+        """
+        composes the module with optional specified inhibition layers as dictionary with 'inhib_{i}' as key,
+         starting at i=1. Layers will be added after the i-th convolutional layer.
+
+        :param inhibition_layers: a dictionary with inhibition layers and 'inhib_{i}' as key, starting with i=1
+
+        """
         self.features.add_module("conv_1", self.conv1)
         if "inhib_1" in inhibition_layers.keys():
             self.features.add_module("inhib_1", inhibition_layers["inhib_1"])
@@ -82,6 +90,7 @@ class _AlexNetBase(_BaseNetwork, nn.Module):
 
 
 class Baseline(_AlexNetBase):
+    """AlexNet Baseline for CIFAR-10"""
 
     def __init__(self):
         super().__init__()
@@ -89,6 +98,7 @@ class Baseline(_AlexNetBase):
 
 
 class BaselineCMap(_AlexNetBase):
+    """AlexNet Baseline with Local Response Normalization reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
 
     def __init__(self):
         super().__init__()
@@ -116,14 +126,26 @@ class BaselineCMap(_AlexNetBase):
 
 
 class SingleShotInhibitionNetwork(_AlexNetBase):
+    """Baseline with added opportunity to add SSLC layers after convolutional layers"""
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze: bool = True, coverage: int = 1,
-                 self_connection=False, pad: str = "circular"):
+    def __init__(self, scopes: List[int],  width: Union[int, List[int]], damp: Union[float, List], freeze: bool = True,
+                 coverage: int = 1, self_connection=False, pad: str = "circular"):
+        """
+
+        :param scopes:              an array of scopes for every SSLC layer
+        :param width:               the width of the ricker wavelet
+        :param damp:                the damping factor
+        :param freeze:              true for frozen parameters, false for adaptive
+        :param coverage:            the number of SSLC layers (depth)
+        :param self_connection:     whether the activated filter inhibits/excites itself or not
+        :param pad:                 the padding, 'circular' or 'zeros'
+        """
         super().__init__()
 
         self.scopes = scopes
-        self.width = width
-        self.damp = damp
+        # backward compatibility
+        self.width = width if isinstance(width, List) else [width]
+        self.damp = damp if isinstance(damp, List) else [damp]
 
         self.freeze = freeze
         self.coverage = coverage
@@ -133,22 +155,34 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update(
-                {f"inhib_{i}": SingleShotInhibition(scope=scopes[i - 1], ricker_width=width, damp=damp,
-                                                    learn_weights=not freeze, self_connection=self_connection,
-                                                    pad=pad)})
+                {f"inhib_{i}": SingleShotInhibition(scope=self.scopes[i - 1], ricker_width=self.width[i - 1],
+                                                    damp=self.damp[i - 1], learn_weights=not freeze,
+                                                    self_connection=self_connection, pad=pad)})
 
         self.build_module(inhibition_layers)
 
 
 class ConvergedInhibitionNetwork(_AlexNetBase):
+    """Baseline with added opportunity to add CLC layers after convolutional layers"""
 
-    def __init__(self, scopes: List[int], width: float, damp: float, freeze=True, coverage: int = 1,
-                 self_connection=False, pad: str = "circular"):
+    def __init__(self, scopes: List[int], width: Union[int, List[int]], damp: Union[float, List], freeze=True,
+                 coverage: int = 1, self_connection=False, pad: str = "circular"):
+        """
+
+        :param scopes:              an array of scopes for every SSLC layer
+        :param width:               the width of the ricker wavelet
+        :param damp:                the damping factor
+        :param freeze:              true for frozen parameters, false for adaptive
+        :param coverage:            the number of SSLC layers (depth)
+        :param self_connection:     whether the activated filter inhibits/excites itself or not
+        :param pad:                 the padding, 'circular' or 'zeros'
+        """
         super().__init__()
 
         self.scopes = scopes
-        self.width = width
-        self.damp = damp
+        # backward compatibility
+        self.width = width if isinstance(width, List) else [width]
+        self.damp = damp if isinstance(damp, List) else [damp]
 
         self.freeze = freeze
         self.coverage = coverage
@@ -158,32 +192,45 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update({f"inhib_{i}":
-                                          ConvergedInhibition(scope=scopes[i - 1], ricker_width=width,
-                                                              damp=damp, pad=pad,
+                                          ConvergedInhibition(scope=self.scopes[i - 1], ricker_width=self.width[i - 1],
+                                                              damp=self.damp[i - 1], pad=pad,
                                                               self_connection=self_connection) if not self.freeze else
-                                          ConvergedFrozenInhibition(scope=scopes[i - 1],
-                                                                    ricker_width=width, damp=damp, pad=pad,
+                                          ConvergedFrozenInhibition(scope=self.scopes[i - 1],
+                                                                    ricker_width=self.width[i - 1],
+                                                                    damp=self.damp[i - 1], pad=pad,
                                                                     in_channels=64, self_connection=self_connection)})
+            # TODO find nice solution for non hard coded in_channels
 
         self.build_module(inhibition_layers)
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), 32 * 5 * 5)
+        x = x.contiguous().view(x.size(0), 32 * 5 * 5)
         x = self.classifier(x)
 
         return x
 
 
 class ParametricInhibitionNetwork(_AlexNetBase):
+    """Baseline with added opportunity to add Paranetric CLC layers after convolutional layers"""
 
-    def __init__(self, scopes: List[int], width: float, damp: float, coverage: int = 1, self_connection=False,
-                 pad: str = "circular"):
+    def __init__(self, scopes: List[int], width: Union[int, List[int]], damp: Union[float, List], coverage: int = 1,
+                 self_connection=False, pad: str = "circular"):
+        """
+
+        :param scopes:              an array of scopes for every SSLC layer
+        :param width:               the width of the ricker wavelet
+        :param damp:                the damping factor
+        :param coverage:            the number of SSLC layers (depth)
+        :param self_connection:     whether the activated filter inhibits/excites itself or not
+        :param pad:                 the padding, 'circular' or 'zeros'
+        """
         super().__init__()
 
         self.scopes = scopes
-        self.width = width
-        self.damp = damp
+        # backward compatibility
+        self.width = width if isinstance(width, List) else [width]
+        self.damp = damp if isinstance(damp, List) else [damp]
         self.coverage = coverage
         self.self_connection = self_connection
         self.pad = pad
@@ -191,8 +238,9 @@ class ParametricInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update(
-                {f"inhib_{i}": ParametricInhibition(scope=scopes[i - 1], initial_ricker_width=width, initial_damp=damp,
-                                                    in_channels=scopes[i - 1] + 1, self_connection=self_connection, pad=pad)})
+                {f"inhib_{i}": ParametricInhibition(scope=self.scopes[i - 1], initial_ricker_width=self.width[i - 1],
+                                                    initial_damp=self.damp[i - 1], in_channels=scopes[i - 1] + 1,
+                                                    self_connection=self_connection, pad=pad)})
             # TODO more general in_channels parameter
 
         self.build_module(inhibition_layers)

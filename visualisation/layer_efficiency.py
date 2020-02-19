@@ -134,7 +134,7 @@ for i, (name, t) in enumerate(ranked_performance, 1):
 # save latex table
 df = DataFrame(ranked_performance)
 df.index += 1
-with open("../documentation/tables/efficiency.tex", "w") as f:
+with open("./documentation/tables/efficiency.tex", "w") as f:
     f.write(df.to_latex(header=["Strategy", "Time (s)"]))
 
 exit()
@@ -191,5 +191,5 @@ handles, labels = axs[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc="lower center", ncol=2)
 fig.subplots_adjust(hspace=0.35, bottom=0.2)
 
-plt.savefig('../documentation/figures/layer_efficiency_horizontal.pdf', format="pdf", bbox_inches='tight')
+plt.savefig('./documentation/figures/layer_efficiency_horizontal.pdf', format="pdf", bbox_inches='tight')
 plt.show()

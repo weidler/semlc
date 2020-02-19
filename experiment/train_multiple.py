@@ -1,11 +1,11 @@
+"""
+A script for all main experiments that allows running multiple experiments of the same strategy
+"""
 import sys
 
-import torchsummary
 from torch.utils.data import Subset
 
-sys.path.append("../")
-
-from torch.optim import SGD
+sys.path.append("./")
 
 from model.network.VGG import vgg19, vgg19_inhib
 
@@ -44,8 +44,8 @@ def run(strategy: str, iterations: int):
                                     ])
 
     # load data
-    trainval_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=True, download=True, transform=transform)
-    test_set = torchvision.datasets.CIFAR10("../data/cifar10/", train=False, download=True, transform=transform)
+    trainval_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=True, download=True, transform=transform)
+    test_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
 
     for i in range(0, iterations):
         val_indices = list(range(int((i % 10) * len(trainval_set) / 10), int(((i % 10) + 1) * len(trainval_set) / 10)))
@@ -64,6 +64,9 @@ def run(strategy: str, iterations: int):
             network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, self_connection=True)
         elif strategy == "ss_zeros":
             network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, pad="zeros")
+        elif strategy == "ss_full":
+            network = SingleShotInhibitionNetwork([63, 63, 63, 31], [8, 8, 8, 8], [0.2, 0.2, 0.2, 0.2], freeze=False,
+                                                  coverage=4)
         elif strategy == "ss_freeze":
             network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True)
         elif strategy == "ss_freeze_self":
@@ -76,12 +79,22 @@ def run(strategy: str, iterations: int):
             network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, self_connection=True)
         elif strategy == "converged_zeros":
             network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, pad="zeros")
+        elif strategy == "converged_full":
+            network = ConvergedInhibitionNetwork([27, 27, 27, 27], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], freeze=False,
+                                                 coverage=4)
+        elif strategy == "converged_cov_12":
+            network = ConvergedInhibitionNetwork([27, 27], [3, 3], [0.1, 0.1], freeze=False, coverage=2)
+        elif strategy == "converged_cov_123":
+            network = ConvergedInhibitionNetwork([27, 27, 27], [3, 3, 3], [0.1, 0.1, 0.1], freeze=False, coverage=3)
         elif strategy == "converged_freeze":
             network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True)  # toeplitz
         elif strategy == "converged_freeze_self":
             network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, self_connection=True)
         elif strategy == "converged_freeze_zeros":
             network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, pad="zeros")
+        elif strategy == "converged_freeze_full":
+            network = ConvergedInhibitionNetwork([45, 45, 45, 23], [3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2], freeze=True,
+                                                 coverage=4)
         elif strategy == "parametric":
             network = ParametricInhibitionNetwork([45], 3, 0.2)
         elif strategy == "parametric_self":
@@ -89,7 +102,12 @@ def run(strategy: str, iterations: int):
         elif strategy == "parametric_zeros":
             network = ParametricInhibitionNetwork([45], 3, 0.2, pad="zeros")
         elif strategy == "parametric_full":
-            network = ParametricInhibitionNetwork([63, 63, 63, 31], 3, 0.2, coverage=4)
+            network = ParametricInhibitionNetwork([63, 63, 63, 31], [3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2], coverage=4)
+        elif strategy == "parametric_cov_12":
+            network = ParametricInhibitionNetwork([63, 63], [3, 3], [0.2, 0.2], coverage=2)
+        elif strategy == "parametric_cov_123":
+            network = ParametricInhibitionNetwork([63, 63, 63], [3, 3, 3], [0.2, 0.2, 0.2], coverage=3)
+
         elif strategy == "vgg19":
             network = vgg19()
         elif strategy == "vgg19_inhib":
@@ -112,7 +130,8 @@ def run(strategy: str, iterations: int):
               criterion=nn.CrossEntropyLoss(),
               logger=logger,
               val_set=val_set,
-              # optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),
+              # optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),  # for VGG
+              # learn_rate=0.05  # for VGG
               learn_rate=0.001,
               verbose=False)
 
@@ -126,11 +145,12 @@ if __name__ == '__main__':
     strategies = ["baseline", "cmap", "ss", "ss_freeze", "converged", "converged_self", "converged_freeze",
                   "converged_freeze_self", "parametric", "parametric_self", "vgg19", "vgg19_inhib", "vgg19_inhib_self",
                   "converged_freeze_zeros", "converged_zeros", "parametric_zeros", "ss_self", "ss_zeros",
-                  "ss_freeze_self", "ss_freeze_zeros", "parametric_full"]
+                  "ss_freeze_self", "ss_freeze_zeros", "converged_full", "ss_full", "parametric_full",
+                  "parametric_cov_12", "parametric_cov_123", "converged_cov_12", "converged_cov_123"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("strategy", type=str, choices=strategies)
-    parser.add_argument("-i", type=int, default=30)
+    parser.add_argument("-i", type=int, default=30, help="the number of iterations")
     args = parser.parse_args()
 
     run(args.strategy, args.i)

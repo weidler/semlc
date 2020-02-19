@@ -1,8 +1,5 @@
-"""
-Modified from:  https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/vgg.py
-                https://github.com/pytorch/vision.git
-
-"""
+"""Modified from Cheng-Yang Fu's implementation (https://github.com/chengyangfu/pytorch-vgg-cifar10/blob/master/vgg.py)
+ and PyTorch's (https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py)"""
 
 from typing import List
 
@@ -90,7 +87,7 @@ cfgs = {
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'DI': [64, 'I', 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
-    'EI': [64, 'I', 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    'EI': [64, 'I', 64, 'I', 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
 
@@ -120,5 +117,9 @@ def vgg19(batch_norm=False, num_classes=10):
 def vgg19_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False):
     inhib_layers = [ConvergedFrozenInhibition(scope=27,
                                               ricker_width=4, damp=0.12,
-                                              in_channels=64, pad=padding, self_connection=self_connection)]
+                                              in_channels=64, pad=padding, self_connection=self_connection),
+                    ConvergedFrozenInhibition(scope=27,
+                                              ricker_width=4, damp=0.12,
+                                              in_channels=64, pad=padding, self_connection=self_connection)
+                    ]
     return VGG(make_layers(cfgs['EI'], batch_norm=batch_norm, inhibition_layers=inhib_layers), num_classes=num_classes)
