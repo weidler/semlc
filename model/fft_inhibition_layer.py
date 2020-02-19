@@ -21,7 +21,7 @@ class FFTConvergedInhibition(nn.Module, InhibitionModule):
 
     @property
     def name(self):
-        return "Converged (FFT)"
+        return "Converged Adaptive (FFT)"
 
     def __init__(self, scope: int, ricker_width: float, damp: float, in_channels: int, learn_weights: bool = True):
         super().__init__()
@@ -59,7 +59,7 @@ class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
 
     @property
     def name(self):
-        return "ConvergedFrozen (FFT)"
+        return "Converged Frozen (FFT)"
 
     def __init__(self, scope: int, ricker_width: int, in_channels: int, damp: float = 0.12):
         super().__init__()
