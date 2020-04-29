@@ -4,7 +4,7 @@
 
 ### Installation
 
-This module uses Python 3.6.8. All required packages can be found in the requiremens.txt file.
+This module was implemented for Python 3.6.8. All required packages can be found in the requirements.txt file.
 
 When using CUDA the following PyTorch and torchvision versions are needed:
 ```bash

@@ -5,7 +5,7 @@ from torch import nn
 
 from model.fft_inhibition_layer import FFTConvergedFrozenInhibition, FFTConvergedInhibition
 from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition, \
-    ConvergedFrozenInhibition, ParametricInhibition
+    ConvergedFrozenInhibition, ParametricInhibition, SingleShotGaussian, ConvergedGaussian
 
 
 def lateral_pass_plot(layer, signal, line_style="."):
@@ -66,8 +66,8 @@ if __name__ == "__main__":
         # ConvergedInhibition(scope, wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
         # ConvergedFrozenInhibition(scope, wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
 
-        # ConvergedGaussianChannelFilter(scope, wavelet_width, damp=damping, self_connection=self_connect, in_channels=depth),
-        # SingleShotGaussianChannelFilter(scope, wavelet_width, damp=damping, pad="circular", self_connection=self_connect),
+        ConvergedGaussian(scope, wavelet_width, damp=damping, self_connection=self_connect, in_channels=depth),
+        SingleShotGaussian(scope, wavelet_width, damp=damping, pad="circular", self_connection=self_connect),
         # RecurrentInhibition(scope, wavelet_width, damp=damping, self_connection=self_connect),
         # RecurrentInhibition(scope, wavelet_width, damp=damping, self_connection=self_connect),
     ]
