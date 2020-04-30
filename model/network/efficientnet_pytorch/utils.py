@@ -5,6 +5,8 @@ These helper functions are built to mirror those in the official TensorFlow impl
 
 import re
 import math
+import numpy as np
+import random
 import collections
 from functools import partial
 import torch
@@ -172,6 +174,17 @@ def efficientnet_params(model_name):
         'efficientnet-b7': (2.0, 3.1, 600, 0.5),
         'efficientnet-b8': (2.2, 3.6, 672, 0.5),
         'efficientnet-l2': (4.3, 5.3, 800, 0.5),
+
+        'inhib_efficientnet-b0': (1.0, 1.0, 224, 0.2),
+        'inhib_efficientnet-b1': (1.0, 1.1, 240, 0.2),
+        'inhib_efficientnet-b2': (1.1, 1.2, 260, 0.3),
+        'inhib_efficientnet-b3': (1.2, 1.4, 300, 0.3),
+        'inhib_efficientnet-b4': (1.4, 1.8, 380, 0.4),
+        'inhib_efficientnet-b5': (1.6, 2.2, 456, 0.4),
+        'inhib_efficientnet-b6': (1.8, 2.6, 528, 0.5),
+        'inhib_efficientnet-b7': (2.0, 3.1, 600, 0.5),
+        'inhib_efficientnet-b8': (2.2, 3.6, 672, 0.5),
+        'inhib_efficientnet-l2': (4.3, 5.3, 800, 0.5),
     }
     return params_dict[model_name]
 
@@ -280,9 +293,27 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
     return blocks_args, global_params
 
 
+def get_inhibition_params(num_channels=32):
+    # range_scope = np.array([7, 15, 23, 31])
+
+    # or simply random odd number >= 7
+    scope = random.randrange(7, num_channels, 2)
+
+    range_ricker_width = [3, 4, 6, 8, 10]
+    range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
+
+    inhib_params = {
+        'scope': scope,
+        'ricker_width': random.choice(range_ricker_width),
+        'damp': random.choice(range_damp)
+    }
+
+    return inhib_params
+
+
 def get_model_params(model_name, override_params):
     """ Get the block args and global params for a given model """
-    if model_name.startswith('efficientnet'):
+    if model_name.startswith(('efficientnet', 'inhib_efficientnet')):
         w, d, s, p = efficientnet_params(model_name)
         # note: all models have drop connect rate = 0.2
         blocks_args, global_params = efficientnet(

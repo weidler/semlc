@@ -5,6 +5,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
 from .utils import (
     round_filters,
     round_repeats,
@@ -15,6 +16,7 @@ from .utils import (
     load_pretrained_weights,
     Swish,
     MemoryEfficientSwish,
+    get_inhibition_params,
 )
 
 
@@ -115,11 +117,12 @@ class EfficientNet(nn.Module):
 
     """
 
-    def __init__(self, blocks_args=None, global_params=None):
+    def __init__(self, blocks_args=None, global_params=None, inhib_params=None):
         super().__init__()
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
         self._global_params = global_params
+        self._inhib_params = inhib_params
         self._blocks_args = blocks_args
 
         # Get static or dynamic convolution depending on image size
@@ -133,6 +136,12 @@ class EfficientNet(nn.Module):
         in_channels = 3  # rgb
         out_channels = round_filters(32, self._global_params)  # number of output channels
         self._conv_stem = Conv2d(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
+        if self._inhib_params is not None:
+            if self._inhib_params.get('freeze', False):
+                self._inhib_params.update({'in_channels': out_channels})
+                self.inhibition_layer = ConvergedFrozenInhibition(**self._inhib_params)
+            else:
+                self.inhibition_layer = ConvergedInhibition(**self._inhib_params)
         self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
         # Build blocks
@@ -175,7 +184,11 @@ class EfficientNet(nn.Module):
         """ Returns output of the final convolution layer """
 
         # Stem
-        x = self._swish(self._bn0(self._conv_stem(inputs)))
+        x = self._conv_stem(inputs)
+        if self._inhib_params is not None:
+            x = self.inhibition_layer(x)
+
+        x = self._swish(self._bn0(x))
 
         # Blocks
         for idx, block in enumerate(self._blocks):
@@ -203,10 +216,10 @@ class EfficientNet(nn.Module):
         return x
 
     @classmethod
-    def from_name(cls, model_name, override_params=None):
+    def from_name(cls, model_name, override_params=None, inhib_params=None):
         cls._check_model_name_is_valid(model_name)
         blocks_args, global_params = get_model_params(model_name, override_params)
-        return cls(blocks_args, global_params)
+        return cls(blocks_args, global_params, inhib_params)
 
     @classmethod
     def from_pretrained(cls, model_name, advprop=False, num_classes=1000, in_channels=3):
@@ -228,5 +241,6 @@ class EfficientNet(nn.Module):
     def _check_model_name_is_valid(cls, model_name):
         """ Validates model name. """ 
         valid_models = ['efficientnet-b'+str(i) for i in range(9)]
+        valid_models += ['inhib_efficientnet-b'+str(i) for i in range(9)]
         if model_name not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
