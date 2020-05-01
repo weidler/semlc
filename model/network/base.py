@@ -14,7 +14,7 @@ class _BaseNetwork:
         return f"{self.__class__.__name__},{ret[:-1]}"
 
 
-class _LateralConnectivityBase(nn.Module):
+class _LateralConnectivityBase(_BaseNetwork, nn.Module):
     """Improved Superclass ensuring equal structure and init of future baselines"""
 
     def __init__(self, scopes: List[int], width: List[int], damp: List[float], strategy: str, optim: str,
