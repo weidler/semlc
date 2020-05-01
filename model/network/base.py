@@ -41,6 +41,16 @@ class _LateralConnectivityBase(_BaseNetwork, nn.Module):
         self.logger = None
 
     def lateral_connect_layer_type(self, num_layer: int = 1, in_channels=None):
+        """
+        returns an LC layer determined by strategy and optim,
+        CLC-G and SSLC-G do not care about optim, they will always be frozen,
+        SSLC has no parametric optim
+
+        :param num_layer:       the number of the LC layer, starting at 1
+        :param in_channels:     obligatory for frozen optimisations
+
+        :return:                the LC layer
+        """
         idx = num_layer - 1
         if self.strategy == "CLC":
             if self.optim == "adaptive":
@@ -68,8 +78,6 @@ class _LateralConnectivityBase(_BaseNetwork, nn.Module):
                 return SingleShotInhibition(scope=self.scopes[idx],
                                             ricker_width=self.widths[idx],
                                             damp=self.damps[idx])
-            elif self.optim == "parametric":
-                pass
         elif self.strategy == "CLC-G":
             assert in_channels is not None, "in_channels is required for frozen optimisation"
             return ConvergedGaussian(scope=self.scopes[idx],
