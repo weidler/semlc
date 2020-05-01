@@ -3,7 +3,7 @@ import statistics
 from typing import List, Tuple
 
 import torch
-from scipy.stats import sem, t
+from scipy.stats import sem, t, shapiro
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -24,8 +24,7 @@ def accuracy(net, data_set, batch_size):
 
 
 def accuracy_from_data_loader(net, data_loader):
-    """
-    computes the accuracy with confidence interval from a given data loader
+    """Computes the accuracy with confidence interval from a given data loader
 
     :param net:             the network
     :param data_loader:     the data loader to use
@@ -49,6 +48,12 @@ def accuracy_from_data_loader(net, data_loader):
 
     net.train()
     return 100 * correct / total
+
+
+def is_normal_distributed(datapoints: List[float]):
+    wstat, pvalue = shapiro(datapoints)
+
+    return pvalue > 0.05
 
 
 def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize: int, confidence: float=0.95) \
@@ -92,6 +97,8 @@ def accuracies_from_list(accuracies: List, confidence: float = 0.95, dec: int = 
 
     :return:                mean accuracy and confidence interval
     """
+    is_nd = is_normal_distributed(accuracies)
+
     mean = round(sum(accuracies) / len(accuracies), dec)
     error = sem(accuracies)
     h = round(error * t.ppf((1 + confidence) / 2., len(accuracies) - 1), dec)
@@ -101,8 +108,7 @@ def accuracies_from_list(accuracies: List, confidence: float = 0.95, dec: int = 
 
 
 def validate(net, val_loader, optimizer, criterion):
-    """
-    validate the network on the given validation data loader
+    """Validate the network on the given validation data loader
 
     :param net:             the network
     :param val_loader:      the validation data loader

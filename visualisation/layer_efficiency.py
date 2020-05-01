@@ -24,36 +24,45 @@ if torch.cuda.is_available():
     torch.set_default_tensor_type(torch.cuda.FloatTensor)
 print(f"USE CUDA: {use_cuda}.")
 
-
 def make_passes(layer, n):
     optimizer = None
     has_parameters = len(list(layer.parameters())) > 0
     if has_parameters:
         optimizer = optim.SGD(layer.parameters(), 0.01)
-    else:
-        print("fock")
-    start_time = time.time()
 
+    fw_time = 0
+    bw_time = 0
+    loss_time = 0
+
+    target = torch.randn(layer(tensor_in).shape)
+    total_start_time = time.time()
     for i in range(n):
         if has_parameters:
+            start_time = time.time()
             optimizer.zero_grad()
+            bw_time += time.time() - start_time
 
+        start_time = time.time()
         out = layer(tensor_in)
-        target = torch.randn(out.shape)
+        fw_time += time.time() - start_time
 
+        start_time = time.time()
         loss = mse_loss(out, target)
+        loss_time += time.time() - start_time
 
         if has_parameters:
+            start_time = time.time()
             loss.backward()
             optimizer.step()
+            bw_time += time.time() - start_time
 
-    return round(time.time() - start_time, 2)
+    return time.time() - total_start_time, fw_time, bw_time, loss_time
 
 
 def make_layers(depth, scope):
     return [
         nn.Conv2d(depth, depth, 3, 1, padding=1),
-        Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True),
+        # Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True),
         SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=True),
         SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=False),
         FFTConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
@@ -88,7 +97,7 @@ def make_input():
 
 
 # SETTINGS
-n_passes = 10
+n_passes = 1000
 depth_x = [16, 32, 64, 128]
 width = 28
 height = 28
@@ -109,9 +118,13 @@ results = []
 for test_layer in make_layers(depth, scope):
     net = make_network(test_layer, depth)
 
-    execution_time = make_passes(net, n_passes)
+    execution_time, fw_time, bw_time, loss_time = make_passes(net, n_passes)
     results.append((test_layer.name if hasattr(test_layer, "name") else test_layer.__class__.__name__,
-                    round(execution_time / n_passes, 4)))
+                    round(execution_time / n_passes, 4),
+                    # round(fw_time / n_passes, 4),
+                    # round(bw_time / n_passes, 4),
+                    # round(loss_time / n_passes, 4),
+                    ))
 
 # ranking
 ranked_performance = sorted(results, key=lambda x: x[1])

@@ -10,6 +10,7 @@ from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz
 
 class SingleShotInhibition(InhibitionModule, nn.Module):
     """SSLC Layer.
+    
     Input shape:
         N x C x H x W
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
@@ -34,7 +35,7 @@ class SingleShotInhibition(InhibitionModule, nn.Module):
 
     @property
     def name(self):
-        return f"SingleShot {'Frozen' if not self.learn_weights else 'Adaptive'}"
+        return f"SSLC {'Frozen' if not self.learn_weights else 'Adaptive'}"
 
     def _make_filter(self):
         return weight_initialization.mexican_hat(self.scope, damping=self.damp, width=self.width,
@@ -81,7 +82,7 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
 
     @property
     def name(self):
-        return f"Converged Adaptive"
+        return f"CLC Adaptive"
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
@@ -129,7 +130,7 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
 
     @property
     def name(self):
-        return f"Converged Frozen"
+        return f"CLC Frozen"
 
     def _make_filter(self) -> torch.Tensor:
         return weight_initialization.mexican_hat(self.scope, width=self.width, damping=self.damp,
@@ -137,69 +138,6 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         return convolve_3d_toeplitz(self.tpl_inv, activations)
-
-
-# GAUSSIAN FILTER
-
-class SingleShotGaussianChannelFilter(SingleShotInhibition):
-    def __init__(self, scope: int, width: int, damp: float, pad="circular", self_connection: bool = False):
-        super().__init__(scope, width, damp, False, pad, self_connection)
-
-    def _make_filter(self):
-        return weight_initialization.gaussian(self.scope, damping=self.damp, width=self.width,
-                                              self_connect=self.self_connection)
-
-
-class ConvergedGaussianChannelFilter(ConvergedFrozenInhibition):
-
-    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular",
-                 self_connection: bool = False):
-        super().__init__(scope, ricker_width, in_channels, damp, pad, self_connection)
-
-    def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.gaussian(self.scope, width=self.width, damping=self.damp,
-                                              self_connect=self.self_connection)
-
-
-@DeprecationWarning
-class RecurrentInhibition(SingleShotGaussianChannelFilter):
-
-    def __init__(self, scope: int, width: float, damp: float, pad="circular",
-                 self_connection: bool = False, filter_distribution: str = "ricker"):
-        self.filter_distribution = filter_distribution
-        super().__init__(scope, width, damp, pad, self_connection)
-
-    @property
-    def name(self):
-        return f"Recurrent"
-
-    def _make_filter(self):
-        if self.filter_distribution == "ricker":
-            return weight_initialization.mexican_hat(self.scope, damping=self.damp, width=self.width,
-                                                     self_connect=self.self_connection)
-        elif self.filter_distribution == "gaussian":
-            return weight_initialization.gaussian(self.scope, width=self.width, damping=self.damp,
-                                                  self_connect=self.self_connection)
-        else:
-            raise NotImplementedError("Unknown inhibition filter distribution")
-
-    def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        # construct filter toeplitz
-        if self.is_circular:
-            tpl = toeplitz1d_circular(self.inhibition_filter, activations.shape[1])
-        else:
-            tpl = toeplitz1d_zero(self.inhibition_filter, activations.shape[1])
-
-        # convolve by toeplitz
-        inhibited_activations = activations.clone()
-        for _ in range(100):
-            # x = inhibited_activations[0, :, 0, 0].detach().cpu().numpy()
-            # plt.cla()
-            # plt.plot(x)
-            # plt.pause(0.1)
-            inhibited_activations = activations + convolve_3d_toeplitz(tpl, inhibited_activations)
-
-        return inhibited_activations
 
 
 # PARAMETRIC
@@ -233,12 +171,12 @@ class ParametricInhibition(InhibitionModule, nn.Module):
 
     @property
     def name(self):
-        return f"Converged Parametric"
+        return f"CLC Parametric"
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
         self.inhibition_filter = ricker.ricker(scope=self.scope, width=self.width, damp=self.damp,
-                                          self_connect=self.self_connection)
+                                               self_connect=self.self_connection)
 
         # construct filter toeplitz
         if self.is_circular:
@@ -250,3 +188,33 @@ class ParametricInhibition(InhibitionModule, nn.Module):
 
         # convolve by toeplitz
         return convolve_3d_toeplitz(tpl_inv, activations)
+
+
+# GAUSSIAN FILTER
+
+class SingleShotGaussian(SingleShotInhibition):
+    def __init__(self, scope: int, width: int, damp: float, pad="circular", self_connection: bool = False):
+        super().__init__(scope, width, damp, False, pad, self_connection)
+
+    @property
+    def name(self):
+        return f"SSLC-G"
+
+    def _make_filter(self):
+        return weight_initialization.gaussian(self.scope, damping=self.damp, width=self.width,
+                                              self_connect=self.self_connection)
+
+
+class ConvergedGaussian(ConvergedFrozenInhibition):
+
+    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular",
+                 self_connection: bool = False):
+        super().__init__(scope, ricker_width, in_channels, damp, pad, self_connection)
+
+    @property
+    def name(self):
+        return f"CLC-G"
+
+    def _make_filter(self) -> torch.Tensor:
+        return weight_initialization.gaussian(self.scope, width=self.width, damping=self.damp,
+                                              self_connect=self.self_connection)

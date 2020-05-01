@@ -185,7 +185,6 @@ class MarginLoss(nn.Module):
 
 
 if __name__ == '__main__':
-
     import argparse
     import torch.optim as optim
     from torchvision import datasets, transforms
