@@ -27,7 +27,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 
-from .efficientnet_pytorch import EfficientNet
+from efficientnet_pytorch import EfficientNet
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR', default='./data/imagenet/',
@@ -83,10 +83,13 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'multi node data parallel training')
 
 best_acc1 = 0
+USE_CUDA = True
 
 
 def main():
     args = parser.parse_args()
+    global USE_CUDA
+    USE_CUDA = args.gpu is not None
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -145,6 +148,7 @@ def main_worker(gpu, ngpus_per_node, args):
             print("=> creating model '{}'".format(args.arch))
             model = EfficientNet.from_name(args.arch)
 
+
     else:
         if args.pretrained:
             print("=> using pre-trained model '{}'".format(args.arch))
@@ -179,8 +183,10 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
             model.features = torch.nn.DataParallel(model.features)
             model.cuda()
-        else:
+        elif USE_CUDA:
             model = torch.nn.DataParallel(model).cuda()
+        else:
+            model = torch.nn.DataParallel(model)
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
@@ -309,7 +315,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
-        target = target.cuda(args.gpu, non_blocking=True)
+        if USE_CUDA:
+            target = target.cuda(args.gpu, non_blocking=True)
 
         # compute output
         output = model(images)
@@ -350,7 +357,8 @@ def validate(val_loader, model, criterion, args):
         for i, (images, target) in enumerate(val_loader):
             if args.gpu is not None:
                 images = images.cuda(args.gpu, non_blocking=True)
-            target = target.cuda(args.gpu, non_blocking=True)
+            if USE_CUDA:
+                target = target.cuda(args.gpu, non_blocking=True)
 
             # compute output
             output = model(images)
