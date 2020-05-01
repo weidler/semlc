@@ -38,7 +38,8 @@ class SingleShotInhibition(InhibitionModule, nn.Module):
         return f"SSLC {'Frozen' if not self.learn_weights else 'Adaptive'}"
 
     def _make_filter(self):
-        return weight_initialization.mexican_hat(self.scope, damping=self.damp, width=self.width,
+        return weight_initialization.mexican_hat(self.scope, damping=torch.tensor(self.damp, dtype=torch.float32),
+                                                 width=torch.tensor(self.width, dtype=torch.float32),
                                                  self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
@@ -75,7 +76,9 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
         self.width = ricker_width
 
         # inhibition filter
-        inhibition_filter = weight_initialization.mexican_hat(self.scope, width=ricker_width, damping=damp,
+        inhibition_filter = weight_initialization.mexican_hat(self.scope,
+                                                              width=torch.tensor(ricker_width, dtype=torch.float32),
+                                                              damping=torch.tensor(damp, dtype=torch.float32),
                                                               self_connect=self_connection)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter, requires_grad=True))
         self.inhibition_filter.requires_grad = True
@@ -133,7 +136,8 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
         return f"CLC Frozen"
 
     def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.mexican_hat(self.scope, width=self.width, damping=self.damp,
+        return weight_initialization.mexican_hat(self.scope, width=torch.tensor(self.width, dtype=torch.float32),
+                                                 damping=torch.tensor(self.damp, dtype=torch.float32),
                                                  self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
