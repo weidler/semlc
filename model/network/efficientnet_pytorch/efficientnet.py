@@ -8,7 +8,7 @@ from torch.nn import functional as F
 from torchsummary import summary
 
 from model.network.base import _LateralConnectivityBase
-from .eff_net_utils import (
+from model.network.efficientnet_pytorch.eff_net_utils import (
     round_filters,
     round_repeats,
     drop_connect,
