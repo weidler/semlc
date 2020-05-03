@@ -231,8 +231,6 @@ def main_worker(gpu, ngpus_per_node, args, inhib_params=None):
         else:
             model = torch.nn.DataParallel(model)
 
-    model.cuda()
-
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
@@ -356,7 +354,6 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
     # switch to train mode
     model.train()
-    model.cuda()
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
