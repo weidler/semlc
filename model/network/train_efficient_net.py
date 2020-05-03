@@ -28,6 +28,11 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 
 from efficientnet_pytorch import EfficientNet
+from torchsummary import summary
+
+from model.network.efficientnet_pytorch.eff_net_utils import get_random_inhibition_params
+from model.network.efficientnet_pytorch.efficientnet import LCEfficientNet
+from util.ourlogging import Logger
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR', default='./data/imagenet/',
@@ -81,6 +86,12 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'N processes per node, which has N GPUs. This is the '
                          'fastest way to use PyTorch for either single node or '
                          'multi node data parallel training')
+parser.add_argument('--opt_inh', default=False, action='store_true',
+                    help='use random inhibition params for optimisation or not')
+parser.add_argument('--strategy', default='CLC', type=str,
+                    help='the inhibition strategy')
+parser.add_argument('--optim', default='frozen', type=str,
+                    help='the inhibition optim')
 
 best_acc1 = 0
 USE_CUDA = True
@@ -90,6 +101,19 @@ def main():
     args = parser.parse_args()
     global USE_CUDA
     USE_CUDA = args.gpu is not None
+
+    inhib_params = None
+    if args.arch.startswith('inhib'):
+        assert args.strategy is not None, 'no inhib strategy given'
+        assert args.optim is not None, 'no inhib optim given'
+        if args.opt_inh:
+            # exploration (HP optimisation)
+            inhib_params = get_random_inhibition_params(strategy=args.strategy,
+                                                        optim=args.optim)
+        else:
+            # TODO exploitation
+            inhib_params = None
+
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -117,13 +141,14 @@ def main():
         args.world_size = ngpus_per_node * args.world_size
         # Use torch.multiprocessing.spawn to launch distributed processes: the
         # main_worker process function
-        mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
+        mp.spawn(main_worker, nprocs=ngpus_per_node,
+                 args=(ngpus_per_node, args))
     else:
         # Simply call main_worker function
-        main_worker(args.gpu, ngpus_per_node, args)
+        main_worker(args.gpu, ngpus_per_node, args, inhib_params=inhib_params)
 
 
-def main_worker(gpu, ngpus_per_node, args):
+def main_worker(gpu, ngpus_per_node, args, inhib_params=None):
     global best_acc1
     args.gpu = gpu
 
@@ -145,8 +170,12 @@ def main_worker(gpu, ngpus_per_node, args):
             model = EfficientNet.from_pretrained(args.arch, advprop=args.advprop)
             print("=> using pre-trained model '{}'".format(args.arch))
         else:
+            if 'inhib' in args.arch:
+                assert inhib_params is not None, 'no given inhib params'
+                model = LCEfficientNet.from_name(args.arch, inhib_params=inhib_params)
+            else:
+                model = EfficientNet.from_name(args.arch)
             print("=> creating model '{}'".format(args.arch))
-            model = EfficientNet.from_name(args.arch)
 
 
     else:
@@ -156,6 +185,11 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             print("=> creating model '{}'".format(args.arch))
             model = models.__dict__[args.arch]()
+
+    print(model)
+    print(summary(model, input_size=(3, 224, 224)))
+
+    logger = Logger(model)
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
@@ -242,7 +276,10 @@ def main_worker(gpu, ngpus_per_node, args):
         num_workers=args.workers, pin_memory=True, sampler=train_sampler)
 
     if 'efficientnet' in args.arch:
-        image_size = EfficientNet.get_image_size(args.arch)
+        if 'inhib' in args.arch:
+            image_size = LCEfficientNet.get_image_size(args.arch)
+        else:
+            image_size = EfficientNet.get_image_size(args.arch)
         val_transforms = transforms.Compose([
             transforms.Resize(image_size, interpolation=PIL.Image.BICUBIC),
             transforms.CenterCrop(image_size),
@@ -279,7 +316,8 @@ def main_worker(gpu, ngpus_per_node, args):
         train(train_loader, model, criterion, optimizer, epoch, args)
 
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+        acc1 = validate(val_loader, model, criterion, args, logger)
+        logger.update_acc(acc1, epoch)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -293,7 +331,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
                 'optimizer' : optimizer.state_dict(),
-            }, is_best)
+            }, is_best, logger, filename=f"{logger.process_id}.pth.tar")
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
@@ -341,7 +379,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             progress.print(i)
 
 
-def validate(val_loader, model, criterion, args):
+def validate(val_loader, model, criterion, args, logger):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')
@@ -378,16 +416,21 @@ def validate(val_loader, model, criterion, args):
                 progress.print(i)
 
         # TODO: this should also be done with the ProgressMeter
-        print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
-              .format(top1=top1, top5=top5))
+        print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f} Best {best:.3f}'
+              .format(top1=top1, top5=top5, best=best_acc1))
+        if logger is not None:
+            logger.log(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f} Best {best:.3f}'
+                       .format(top1=top1, top5=top5, best=best_acc1))
 
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
+def save_checkpoint(state, is_best, logger, filename='checkpoint.pth.tar'):
+    torch.save(state, f"./output/{filename}")
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(f"./output/{filename}", f'{logger.process_id}_best.pth.tar')
+    # additionally use our own saving, not necessary?
+    # logger.save_model(epoch=state.get('epoch'), best=is_best)
 
 
 class AverageMeter(object):

@@ -1,6 +1,6 @@
 __version__ = "0.6.3"
 from .efficientnet import EfficientNet
-from .utils import (
+from .eff_net_utils import (
     GlobalParams,
     BlockArgs,
     BlockDecoder,

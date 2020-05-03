@@ -8,7 +8,7 @@ from torch.nn import functional as F
 from torchsummary import summary
 
 from model.network.base import _LateralConnectivityBase
-from utils import (
+from .eff_net_utils import (
     round_filters,
     round_repeats,
     drop_connect,
@@ -119,10 +119,11 @@ class EfficientNet(nn.Module):
 
     """
 
-    def __init__(self, blocks_args=None, global_params=None):
+    def __init__(self, model_name, blocks_args=None, global_params=None):
         super().__init__()
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
+        self.model_name = model_name
         self._global_params = global_params
         self._blocks_args = blocks_args
 
@@ -210,7 +211,7 @@ class EfficientNet(nn.Module):
     def from_name(cls, model_name, override_params=None):
         cls._check_model_name_is_valid(model_name)
         blocks_args, global_params = get_model_params(model_name, override_params)
-        return cls(blocks_args, global_params)
+        return cls(model_name, blocks_args, global_params)
 
     @classmethod
     def from_pretrained(cls, model_name, advprop=False, num_classes=1000, in_channels=3):
@@ -235,14 +236,18 @@ class EfficientNet(nn.Module):
         if model_name not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
 
+    def __repr__(self):
+        return self.model_name
+
 
 class LCEfficientNet(_LateralConnectivityBase):
 
-    def __init__(self, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
+    def __init__(self, model_name, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
                  blocks_args=None, global_params=None):
         super().__init__(scopes=scopes, widths=widths, damps=damps, strategy=strategy, optim=optim)
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
+        self.model_name = model_name
         self._global_params = global_params
         self._blocks_args = blocks_args
 
@@ -334,7 +339,7 @@ class LCEfficientNet(_LateralConnectivityBase):
     def from_name(cls, model_name, inhib_params, override_params=None):
         cls._check_model_name_is_valid(model_name)
         blocks_args, global_params = get_model_params(model_name, override_params)
-        return cls(blocks_args=blocks_args, global_params=global_params, **inhib_params)
+        return cls(model_name, blocks_args=blocks_args, global_params=global_params, **inhib_params)
 
     @classmethod
     def get_image_size(cls, model_name):
@@ -348,6 +353,9 @@ class LCEfficientNet(_LateralConnectivityBase):
         valid_models = ['inhib_efficientnet-b' + str(i) for i in range(9)]
         if model_name not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
+
+    def __repr__(self):
+        return f"{self.model_name}_{super().__repr__()}"
 
 
 if __name__ == '__main__':
