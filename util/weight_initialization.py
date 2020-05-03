@@ -33,7 +33,10 @@ def mexican_hat(scope: int, width: torch.Tensor, damping: torch.Tensor, self_con
     """
     assert scope % 2 != 0, "Scope must have an odd number of dimensions."
     assert scope > 0, "Scope must be positive"
-    assert isinstance(width, torch.Tensor) and isinstance(damping, torch.Tensor), "Width and Damp must be tensors"
+
+    if not isinstance(width, torch.Tensor) or isinstance(damping, torch.Tensor):
+        width = torch.tensor(width, dtype=torch.float32)
+        damping = torch.tensor(damping, dtype=torch.float32)
 
     a = 2 / (torch.sqrt(3 * width) * (math.pi ** 0.25))
     start = -(scope - 1.0) / 2
@@ -59,7 +62,7 @@ def gaussian(scope: int, width: float, damping: float, self_connect: bool = True
     return gaussian_filter
 
 
-def matching_gaussian(scope: int, ricker_width: float, ricker_damping: float, self_connect: bool = True):
+def matching_gaussian(scope: int, width: float, ricker_damping: float, self_connect: bool = True):
     base_gaussian = gaussian(scope, width, 1, self_connect=self_connect)
     ricker_center_value = ricker_damping * 2 / (math.sqrt(3 * width) * (math.pi ** 0.25))
 
@@ -77,9 +80,9 @@ def stabilize_profile(profile: torch.Tensor, signal_size):
 
 
 def is_stable_profile(profile: torch.Tensor, signal_size):
-    """Check if a profile is stable by test whether largest eigenvalue is negative."""
+    """Check if a profile is stable by test whether largest eigenvalue of (J = Uz - 1) is negative."""
     tpl_matrix = toeplitz1d_circular(profile, signal_size)
-    jacobian = tpl_matrix * torch.ones(signal_size) - torch.eye(signal_size)
+    jacobian = tpl_matrix * torch.ones(signal_size) * 10 - torch.eye(signal_size)
     eigenvalues = torch.eig(jacobian)[0]
 
     return torch.max(eigenvalues[:, 0]) < 0

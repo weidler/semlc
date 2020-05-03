@@ -45,6 +45,8 @@ if __name__ == "__main__":
                     + np.roll(gaussian(depth, 6), (scope // 2)) * 0.2
                 )
 
+    tensor_in *= 100
+
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
 
     layers = [
