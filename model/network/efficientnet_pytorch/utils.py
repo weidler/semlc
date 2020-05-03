@@ -293,19 +293,23 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
     return blocks_args, global_params
 
 
-def get_inhibition_params(num_channels=32):
+def get_random_inhibition_params(strategy, optim, num_channels=32, coverage=1):
+    assert strategy is not None
+    assert optim is not None
     # range_scope = np.array([7, 15, 23, 31])
 
     # or simply random odd number >= 7
-    scope = random.randrange(7, num_channels, 2)
+    scopes = [random.randrange(7, num_channels, 2) for _ in range(coverage)]
 
     range_ricker_width = [3, 4, 6, 8, 10]
     range_damp = [0.1, 0.12, 0.14, 0.16, 0.2]
 
     inhib_params = {
-        'scope': scope,
-        'ricker_width': random.choice(range_ricker_width),
-        'damp': random.choice(range_damp)
+        'scopes': scopes,
+        'widths': [random.choice(range_ricker_width) for _ in range(coverage)],
+        'damps': [random.choice(range_damp) for _ in range(coverage)],
+        'strategy': strategy,
+        'optim': optim
     }
 
     return inhib_params

@@ -5,10 +5,10 @@ from typing import List
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torchsummary import summary
 
-from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
 from model.network.base import _LateralConnectivityBase
-from .utils import (
+from utils import (
     round_filters,
     round_repeats,
     drop_connect,
@@ -18,7 +18,7 @@ from .utils import (
     load_pretrained_weights,
     Swish,
     MemoryEfficientSwish,
-    get_inhibition_params,
+    get_random_inhibition_params,
 )
 
 
@@ -238,9 +238,9 @@ class EfficientNet(nn.Module):
 
 class LCEfficientNet(_LateralConnectivityBase):
 
-    def __init__(self, scopes: List[int], width: List[int], damp: List[float], strategy: str, optim: str,
+    def __init__(self, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
                  blocks_args=None, global_params=None):
-        super().__init__(scopes=scopes, width=width, damp=damp, strategy=strategy, optim=optim)
+        super().__init__(scopes=scopes, widths=widths, damps=damps, strategy=strategy, optim=optim)
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
         self._global_params = global_params
@@ -258,8 +258,7 @@ class LCEfficientNet(_LateralConnectivityBase):
         out_channels = round_filters(32, self._global_params)  # number of output channels
         self._conv_stem = Conv2d(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
 
-        # TODO
-        self.inhibition_layer = None
+        self.inhibition_layer = self.lateral_connect_layer_type(in_channels=out_channels)
 
         self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
@@ -332,20 +331,10 @@ class LCEfficientNet(_LateralConnectivityBase):
         return x
 
     @classmethod
-    def from_name(cls, model_name, override_params=None):
+    def from_name(cls, model_name, inhib_params, override_params=None):
         cls._check_model_name_is_valid(model_name)
         blocks_args, global_params = get_model_params(model_name, override_params)
-        return cls(blocks_args, global_params)
-
-    @classmethod
-    def from_pretrained(cls, model_name, advprop=False, num_classes=1000, in_channels=3):
-        model = cls.from_name(model_name, override_params={'num_classes': num_classes})
-        load_pretrained_weights(model, model_name, load_fc=(num_classes == 1000), advprop=advprop)
-        if in_channels != 3:
-            Conv2d = get_same_padding_conv2d(image_size=model._global_params.image_size)
-            out_channels = round_filters(32, model._global_params)
-            model._conv_stem = Conv2d(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
-        return model
+        return cls(blocks_args=blocks_args, global_params=global_params, **inhib_params)
 
     @classmethod
     def get_image_size(cls, model_name):
@@ -356,6 +345,14 @@ class LCEfficientNet(_LateralConnectivityBase):
     @classmethod
     def _check_model_name_is_valid(cls, model_name):
         """ Validates model name. """
-        valid_models = ['efficientnet-b' + str(i) for i in range(9)]
+        valid_models = ['inhib_efficientnet-b' + str(i) for i in range(9)]
         if model_name not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
+
+
+if __name__ == '__main__':
+    inhib_params = get_random_inhibition_params(strategy='CLC', optim='adaptive')
+    model = LCEfficientNet.from_name(model_name='inhib_efficientnet-b0',
+                                     inhib_params=inhib_params)
+    print(model)
+    print(summary(model, input_size=(3, 224, 224)))

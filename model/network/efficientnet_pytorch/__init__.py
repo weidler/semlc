@@ -1,5 +1,5 @@
 __version__ = "0.6.3"
-from .model import EfficientNet
+from .efficientnet import EfficientNet
 from .utils import (
     GlobalParams,
     BlockArgs,
