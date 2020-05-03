@@ -1,5 +1,8 @@
 """A copy of Luke Melas-Kyriazi's implementation (https://github.com/lukemelas/EfficientNet-PyTorch),
 only adapted to include our inhibition."""
+import os
+import sys
+
 from typing import List
 
 import torch
@@ -359,6 +362,8 @@ class LCEfficientNet(_LateralConnectivityBase):
 
 
 if __name__ == '__main__':
+
+
     inhib_params = get_random_inhibition_params(strategy='CLC', optim='adaptive')
     model = LCEfficientNet.from_name(model_name='inhib_efficientnet-b0',
                                      inhib_params=inhib_params)

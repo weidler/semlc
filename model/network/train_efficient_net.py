@@ -6,6 +6,10 @@ Evaluate on ImageNet. Note that at the moment, training is not implemented (I am
 that being said, evaluation is working.
 """
 
+import os
+import sys
+sys.path.append("./")
+
 import argparse
 import os
 import random
@@ -27,7 +31,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 
-from efficientnet_pytorch import EfficientNet
+from model.network.efficientnet_pytorch import EfficientNet
 from torchsummary import summary
 
 from model.network.efficientnet_pytorch.eff_net_utils import get_random_inhibition_params
@@ -114,7 +118,6 @@ def main():
             # TODO exploitation
             inhib_params = None
 
-
     if args.seed is not None:
         random.seed(args.seed)
         torch.manual_seed(args.seed)
@@ -164,6 +167,10 @@ def main_worker(gpu, ngpus_per_node, args, inhib_params=None):
             args.rank = args.rank * ngpus_per_node + gpu
         dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
                                 world_size=args.world_size, rank=args.rank)
+
+    if torch.cuda.is_available():
+        use_cuda = True
+        torch.set_default_tensor_type(torch.cuda.FloatTensor)
     # create model
     if 'efficientnet' in args.arch:  # NEW
         if args.pretrained:
@@ -176,6 +183,8 @@ def main_worker(gpu, ngpus_per_node, args, inhib_params=None):
             else:
                 model = EfficientNet.from_name(args.arch)
             print("=> creating model '{}'".format(args.arch))
+    if torch.cuda.is_available():
+        torch.set_default_tensor_type(torch.FloatTensor)
 
 
     else:
@@ -221,6 +230,8 @@ def main_worker(gpu, ngpus_per_node, args, inhib_params=None):
             model = torch.nn.DataParallel(model).cuda()
         else:
             model = torch.nn.DataParallel(model)
+
+    model.cuda()
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
@@ -345,6 +356,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
     # switch to train mode
     model.train()
+    model.cuda()
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
