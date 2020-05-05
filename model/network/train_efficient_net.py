@@ -251,7 +251,7 @@ def main_worker(args, inhib_params=None):
         train(train_loader, model, criterion, optimizer, epoch, args)
 
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args, logger)
+        acc1 = validate(val_loader, model, criterion, args, logger, epoch)
         logger.update_acc(acc1, epoch)
 
         # remember best acc@1 and save checkpoint
@@ -311,7 +311,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             progress.print(i)
 
 
-def validate(val_loader, model, criterion, args, logger):
+def validate(val_loader, model, criterion, args, logger, epoch):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')
@@ -346,19 +346,20 @@ def validate(val_loader, model, criterion, args, logger):
                 progress.print(i)
 
         # TODO: this should also be done with the ProgressMeter
-        print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f} Best {best:.3f}'
-              .format(top1=top1, top5=top5, best=best_acc1))
-        if logger is not None:
-            logger.log(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f} Best {best:.3f}'
-                       .format(top1=top1, top5=top5, best=best_acc1))
+        print('{:3} * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f} Best {best:.3f}'
+              .format(epoch+1, top1=top1, top5=top5, best=best_acc1))
+        if logger is not None and epoch is not None:
+            logger.log('{:3} * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f} Best {best:.3f}'
+                       .format(epoch+1, top1=top1, top5=top5, best=best_acc1))
 
     return top1.avg
 
 
 def save_checkpoint(state, is_best, logger, filename='checkpoint.pth.tar'):
-    torch.save(state, f"./output/{filename}")
+    output = "./output/"
+    torch.save(state, f"{output}{filename}")
     if is_best:
-        shutil.copyfile(f"./output/{filename}", f'{logger.process_id}_best.pth.tar')
+        shutil.copyfile(f"{output}{filename}", f'{output}{logger.process_id}_best.pth.tar')
     # additionally use our own saving, not necessary?
     # logger.save_model(epoch=state.get('epoch'), best=is_best)
 
@@ -396,7 +397,9 @@ class ProgressMeter(object):
     def print(self, batch):
         entries = [self.prefix + self.batch_fmtstr.format(batch)]
         entries += [str(meter) for meter in self.meters]
-        print('\t'.join(entries))
+        ret = '\t'.join(entries)
+        print(ret)
+        return ret
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
