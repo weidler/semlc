@@ -1,7 +1,11 @@
 """A copy of Adam Bielski's implementation (https://github.com/adambielski/CapsNet-pytorch/blob/master/net.py),
 only adapted to include our inhibition."""
+import sys
+sys.path.append("./")
 
 import math
+from typing import List
+
 import pandas as pd
 
 import torch
@@ -10,7 +14,7 @@ import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
 from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
-from model.network.base import _BaseNetwork
+from model.network.base import _BaseNetwork, _LateralConnectivityBase
 from torch.utils.data import Subset
 
 from util.eval import accuracies_from_list
@@ -93,26 +97,6 @@ class PrimaryCapsLayer(nn.Module):
         return out
 
 
-class InhibitionCapsNet(_BaseNetwork, nn.Module):
-    def __init__(self, routing_iterations, n_classes=10, inhib_scope=27, inhib_width=3, inhib_damp=0.1):
-        super(InhibitionCapsNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
-        self.inhibition_layer = ConvergedFrozenInhibition(scope=inhib_scope, ricker_width=inhib_width, damp=inhib_damp, in_channels=256)
-        self.primaryCaps = PrimaryCapsLayer(256, 32, 8, kernel_size=9, stride=2)  # outputs 6*6
-        self.num_primaryCaps = 32 * 6 * 6
-        routing_module = AgreementRouting(self.num_primaryCaps, n_classes, routing_iterations)
-        self.digitCaps = CapsLayer(self.num_primaryCaps, 8, n_classes, 16, routing_module)
-
-    def forward(self, input):
-        x = self.conv1(input)
-        x = self.inhibition_layer(x)
-        x = F.relu(x)
-        x = self.primaryCaps(x)
-        x = self.digitCaps(x)
-        probs = x.pow(2).sum(dim=2).sqrt()
-        return x, probs
-
-
 class CapsNet(_BaseNetwork, nn.Module):
     def __init__(self, routing_iterations, n_classes=10):
         super(CapsNet, self).__init__()
@@ -184,6 +168,41 @@ class MarginLoss(nn.Module):
         return losses.mean() if size_average else losses.sum()
 
 
+# CAPS NET WITH OPTION FOR LC
+
+class InhibitionCapsNet(_LateralConnectivityBase, nn.Module):
+    def __init__(self, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
+                 routing_iterations: int = 3, n_classes: int = 10):
+        super().__init__(scopes, widths, damps, strategy, optim)
+
+        # check if legal parameters
+        assert len(scopes) == 1, "Cannot have more than one LC layer in CapsNet, because there is only one conv layer."
+
+        # primary convolution
+        self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
+
+        # inhibition layer
+        self.inhibition_layer = self.lateral_connect_layer_type(num_layer=1, in_channels=256)
+
+        # primary capsules
+        self.primaryCaps = PrimaryCapsLayer(256, 32, 8, kernel_size=9, stride=2)  # outputs 6*6
+        self.num_primaryCaps = 32 * 6 * 6
+        routing_module = AgreementRouting(self.num_primaryCaps, n_classes, routing_iterations)
+
+        # output class capsules
+        self.digitCaps = CapsLayer(self.num_primaryCaps, 8, n_classes, 16, routing_module)
+
+    def forward(self, input):
+        x = self.conv1(input)
+        x = self.inhibition_layer(x)
+        x = F.relu(x)
+        x = self.primaryCaps(x)
+        x = self.digitCaps(x)
+        probs = x.pow(2).sum(dim=2).sqrt()
+
+        return x, probs
+
+
 if __name__ == '__main__':
     import argparse
     import torch.optim as optim
@@ -192,7 +211,7 @@ if __name__ == '__main__':
 
     # Training settings
     parser = argparse.ArgumentParser(description='CapsNet with MNIST')
-    parser.add_argument("strategy", type=str, choices=['capsnet', 'capsnet_inhib'])
+    parser.add_argument("strategy", type=str, choices=['baseline', 'lc'])
     parser.add_argument("-i", type=int, default=5)
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
@@ -212,6 +231,14 @@ if __name__ == '__main__':
     parser.add_argument('--routing_iterations', type=int, default=3)
     parser.add_argument('--with_reconstruction', action='store_true', default=False)
     parser.add_argument('--save_freq', type=int, default=50)
+
+    # lc parameters
+    parser.add_argument('--scope', type=int, default=255, help='scope of the connectivity profile wavelet')
+    parser.add_argument('--width', type=float, default=12.0, help='width of the connectivity profile wavelet')
+    parser.add_argument('--damp', type=float, default=0.2, help='damping of the connectivity profile wavelet')
+    parser.add_argument('--lc-strat', type=str, default="CLC", help='connectivity strategy')
+    parser.add_argument('--optim', type=str, default="frozen", help='optimization of the profile')
+
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -244,7 +271,6 @@ if __name__ == '__main__':
     if args.cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
         print(f"USE CUDA: YES.")
-
 
 
     def train(epoch, logger):
@@ -305,10 +331,12 @@ if __name__ == '__main__':
     accuracies = []
 
     for i in range(0, args.i):
-        if args.strategy == 'capsnet':
+        if args.strategy == 'baseline':
             model = CapsNet(args.routing_iterations)
-        elif args.strategy == 'capsnet_inhib':
-            model = InhibitionCapsNet(args.routing_iterations)
+        elif args.strategy == 'lc':
+            model = InhibitionCapsNet(scopes=[args.scope], widths=[args.width], damps=[args.damp],
+                                      strategy=args.lc_strat, optim=args.optim,
+                                      routing_iterations=args.routing_iterations)
 
         if args.with_reconstruction:
             reconstruction_model = ReconstructionNet(16, 10)
@@ -320,10 +348,10 @@ if __name__ == '__main__':
 
         logger = Logger(model, experiment_code=f"{args.strategy}_{i}")
 
-        model.load_state_dict(torch.load('output/15802478382228594699_best.model', map_location=lambda storage, loc: storage))
+        # model.load_state_dict(torch.load('output/15802478382228594699_best.model', map_location=lambda storage, loc: storage))
 
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
-        optimizer.load_state_dict(torch.load('./output/15802478382228594699_best.opt', map_location=lambda storage, loc: storage))
+        # optimizer.load_state_dict(torch.load('./output/15802478382228594699_best.opt', map_location=lambda storage, loc: storage))
 
         scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, patience=15, min_lr=1e-6)
 

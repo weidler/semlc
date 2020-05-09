@@ -12,6 +12,11 @@ _deprecated/logs/
 output/**/*.txt
 output/**/*.loss
 output/**/*.model
+output/**/*.log
+output/**/*.pth.tar
+
+data/imagenet/*
+data/mnist/*
 
 # Created by https://www.gitignore.io/api/python,pycharm
 # Edit at https://www.gitignore.io/?templates=python,pycharm
