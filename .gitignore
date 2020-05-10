@@ -3,7 +3,6 @@ _deprecated/results/**/*.loss
 _deprecated/results/**/*.acc
 _deprecated/results/**/*.txt
 _deprecated/results/**/*.png
-data/cifar10/*
 generated/
 _deprecated/logs/
 .idea/
@@ -14,9 +13,11 @@ output/**/*.loss
 output/**/*.model
 output/**/*.log
 output/**/*.pth.tar
+output/**/*.acc
 
 data/imagenet/*
 data/mnist/*
+data/cifar10/*
 
 # Created by https://www.gitignore.io/api/python,pycharm
 # Edit at https://www.gitignore.io/?templates=python,pycharm

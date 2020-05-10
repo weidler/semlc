@@ -1,5 +1,4 @@
-"""
-A copy of Luke Melas-Kyriazi's implementation (https://github.com/lukemelas/EfficientNet-PyTorch),
+""" A copy of Luke Melas-Kyriazi's implementation (https://github.com/lukemelas/EfficientNet-PyTorch),
 only adapted to include our inhibition.
 
 Evaluate on ImageNet. Note that at the moment, training is not implemented (I am working on it).
