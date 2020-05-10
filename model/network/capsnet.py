@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
 from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
-from model.network.base import _BaseNetwork, _LateralConnectivityBase
+from model.network.base import BaseNetwork, BaseNetwork
 from torch.utils.data import Subset
 
 from util.eval import accuracies_from_list
@@ -97,7 +97,7 @@ class PrimaryCapsLayer(nn.Module):
         return out
 
 
-class CapsNet(_BaseNetwork, nn.Module):
+class CapsNet(BaseNetwork, nn.Module):
     def __init__(self, routing_iterations, n_classes=10):
         super(CapsNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
@@ -170,7 +170,7 @@ class MarginLoss(nn.Module):
 
 # CAPS NET WITH OPTION FOR LC
 
-class InhibitionCapsNet(_LateralConnectivityBase, nn.Module):
+class InhibitionCapsNet(BaseNetwork, nn.Module):
     def __init__(self, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
                  routing_iterations: int = 3, n_classes: int = 10):
         super().__init__(scopes, widths, damps, strategy, optim)
