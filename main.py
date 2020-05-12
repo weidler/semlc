@@ -34,7 +34,6 @@ with open('default_config.json') as f:
 def get_config(args):
     # optionally overwrite config
     if args.scopes:
-        print([int(x) for x in args.scopes.split(',')])
         scopes = [int(x) for x in args.scopes.split(',')]
         assert len(scopes) == args.coverage, \
             f"number of scopes ({len(scopes)}) does not match coverage {args.coverage}"
@@ -49,6 +48,12 @@ def get_config(args):
         assert len(damps) == args.coverage, \
             f"number of damps ({len(damps)}) does not match coverage {args.coverage}"
         CONFIG[args.strategy][args.optim]['damps'] = damps
+    else:
+        assert args.coverage == len(CONFIG[args.strategy][args.optim]['scopes']) == \
+               len(CONFIG[args.strategy][args.optim]['widths']) == \
+               len(CONFIG[args.strategy][args.optim]['damps']), \
+               f"coverage ({args.coverage}) does not match configuration. Please check coverage param " \
+               f"and change or overwrite config with arguments -s, -w, -d."
 
     return CONFIG
 
@@ -108,7 +113,7 @@ def run(args):
             scopes = get_params(args, 'scopes')
             widths = get_params(args, 'widths')
             damps = get_params(args, 'damps')
-            print(scopes, widths, damps)
+            print('CONFIG:', scopes, widths, damps)
 
             network = AlexNetLC(scopes, widths, damps, strategy=strategy, optim=optim)
 
@@ -141,16 +146,15 @@ if __name__ == '__main__':
     strategies = ["CLC", "SSLC", "CLC-G", "SSLC-G"] + old_strategies
     optims = ["adaptive", "frozen", "parametric"]
 
-    parser = argparse.ArgumentParser(usage='EXAMPLE: \n$ main.py CLC frozen\n\noptionally overwrite default params\n'
-                                           '$ main.py CLC frozen -c 3 -s "1,3,5" -w "2,3,4" --damps "0.5,0.2,0.3"'
-                                           '$ main.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 --damps 0.5,0.2,0.3\n')
+    parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ main.py CLC frozen\n\noptionally overwrite default params\n'
+                                           '$ main.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
     parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("optim", type=str, choices=optims)
     parser.add_argument("-s", "--scopes", dest="scopes", type=str, help="overwrite default scopes")
     parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths")
     parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps")
-    parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage", default=1)
-    parser.add_argument("-i", type=int, default=1, help="the number of iterations")
+    parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)
+    parser.add_argument("-i", type=int, default=1, help="the number of iterations, default=1")
     args = parser.parse_args()
 
     run(args)
