@@ -1,46 +1,53 @@
 from typing import List, Dict, Union
 
+import torch
+from torchsummary import summary
 from torch import nn
 
 from model.inhibition_layer import SingleShotInhibition, ConvergedFrozenInhibition, ConvergedInhibition, \
     ParametricInhibition
-from model.network.base import _BaseNetwork
+from model.network.base import BaseNetwork, BaseNetwork
 
 
-class _AlexNetBase(_BaseNetwork, nn.Module):
+class _AlexNetBase(BaseNetwork):
     """The abstract Baseline class for CIFAR-10 reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, scopes: List[int] = None, widths: List[int] = None, damps: List[float] = None,
+                 strategy: str = None, optim: str = None, self_connection: bool = False, pad: str = "circular"):
+        super().__init__(scopes, widths, damps, strategy, optim, self_connection, pad)
 
         self.features = nn.Sequential()
+        self.layer_output_channels = [64, 64, 64, 32]
 
         # CONVOLUTION 1
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2)
+        self.conv1 = nn.Conv2d(3, self.layer_output_channels[0], kernel_size=5, stride=1, padding=2)
         nn.init.normal_(self.conv1.weight, 0, 0.0001)
         self.relu1 = nn.ReLU(inplace=True)
         self.pool1 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.bnorm1 = nn.BatchNorm2d(64)
+        self.bnorm1 = nn.BatchNorm2d(self.layer_output_channels[0])
 
         # CONVOLUTION 2
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2)
+        self.conv2 = nn.Conv2d(self.layer_output_channels[0],
+                               self.layer_output_channels[1], kernel_size=5, stride=1, padding=2)
         nn.init.normal_(self.conv2.weight, 0, 0.01)
         self.relu2 = nn.ReLU(inplace=True)
-        self.bnorm2 = nn.BatchNorm2d(64)
+        self.bnorm2 = nn.BatchNorm2d(self.layer_output_channels[1])
         self.pool2 = nn.AvgPool2d(kernel_size=3, stride=2)
 
         # CONVOLUTION 3
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(self.layer_output_channels[1],
+                     self.layer_output_channels[2], kernel_size=3, stride=1, padding=1)
         nn.init.normal_(self.conv3.weight, 0, 0.04)
         self.relu3 = nn.ReLU(inplace=True)
 
         # CONVOLUTION 4
-        self.conv4 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
+        self.conv4 = nn.Conv2d(self.layer_output_channels[2],
+                               self.layer_output_channels[3], kernel_size=3, stride=1, padding=1)
         nn.init.normal_(self.conv4.weight, 0, 0.04)
         self.relu4 = nn.ReLU(inplace=True)
 
         # FULL CONNECTED
-        self.classifier = nn.Linear(32 * 5 * 5, 10)
+        self.classifier = nn.Linear(self.layer_output_channels[3] * 5 * 5, 10)
         nn.init.normal_(self.classifier.weight, 0, 0.01)
 
     def forward(self, x):
@@ -98,7 +105,9 @@ class Baseline(_AlexNetBase):
 
 
 class BaselineCMap(_AlexNetBase):
-    """AlexNet Baseline with Local Response Normalization reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
+    """AlexNet Baseline with Local Response Normalization reconstructed from
+    https://code.google.com/archive/p/cuda-convnet/
+    """
 
     def __init__(self):
         super().__init__()
@@ -123,6 +132,27 @@ class BaselineCMap(_AlexNetBase):
 
         self.features.add_module("conv_4", self.conv4)
         self.features.add_module("relu_4", self.relu4)
+
+
+class AlexNetLC(_AlexNetBase):
+
+    def __init__(self, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
+                 self_connection: bool = False, pad: str = "circular"):
+        super().__init__(scopes, widths, damps, strategy, optim, self_connection, pad)
+
+        inhibition_layers = {}
+        for i in range(1, self.coverage + 1):
+            inhibition_layers.update({f"inhib_{i}": self.lateral_connect_layer_type(i,
+                                                                                    self.layer_output_channels[i - 1])})
+
+        self.build_module(inhibition_layers)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.contiguous().view(x.size(0), 32 * 5 * 5)
+        x = self.classifier(x)
+
+        return x
 
 
 class SingleShotInhibitionNetwork(_AlexNetBase):
@@ -254,5 +284,10 @@ class ParametricInhibitionNetwork(_AlexNetBase):
 
 
 if __name__ == "__main__":
-    net = ParametricInhibitionNetwork(scopes=[27, 27, 27], width=3, damp=0.1)
-    print(net.features)
+    net_a = AlexNetLC([27, 27, 27, 27], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], strategy="CLC", optim="adaptive")
+    net_b = AlexNetLC([27, 27, 27, 27], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], strategy="CLC-G", optim="frozen")
+    net_c = Baseline()
+
+    print(net_a.features)
+    print(net_b.features)
+    print(net_c.features)

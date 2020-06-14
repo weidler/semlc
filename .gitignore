@@ -14,6 +14,7 @@ output/**/*.model
 output/**/*.log
 output/**/*.pth.tar
 output/**/*.acc
+output/**/*.opt
 
 data/imagenet/*
 data/mnist/*

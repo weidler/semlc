@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 from model.inhibition_layer import ConvergedFrozenInhibition
-from model.network.base import _BaseNetwork
+from model.network.base import BaseNetwork
 
 
 __all__ = [
@@ -18,7 +18,7 @@ __all__ = [
 from ..inhibition_module import InhibitionModule
 
 
-class VGG(_BaseNetwork, nn.Module):
+class VGG(BaseNetwork, nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True):
         super(VGG, self).__init__()

@@ -5,8 +5,8 @@ from model.inhibition_layer import ParametricInhibition, ConvergedInhibition, Co
     SingleShotInhibition, SingleShotGaussian, ConvergedGaussian
 
 
-class _BaseNetwork:
-    """Superclass for uniform representation string for easier logging and debugging"""
+class BaseNetwork(nn.Module):
+    """Improved Superclass ensuring equal structure and init of future baselines"""
 
     def __repr__(self):
         ret = ""
@@ -16,22 +16,14 @@ class _BaseNetwork:
             ret += ","
         return f"{self.__class__.__name__},{ret[:-1]}"
 
-
-class _LateralConnectivityBase(_BaseNetwork, nn.Module):
-    """Improved Superclass ensuring equal structure and init of future baselines"""
-
-    def __init__(self, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
-                 self_connection: bool = False, pad: str = "circular"):
+    def __init__(self, scopes: List[int] = None, widths: List[int] = None, damps: List[float] = None, strategy: str = None,
+                 optim: str = None, self_connection: bool = False, pad: str = "circular"):
         super().__init__()
-        assert strategy in ["CLC", "SSLC", "CLC-G", "SSLC-G"]
-        assert optim in ["adaptive", "frozen", "parametric"]
-        assert len(scopes) == len(widths) == len(damps)
-        assert pad in ["circular", "zeros"]
+
         self.strategy = strategy
         self.scopes = scopes
         self.widths = widths
         self.damps = damps
-        self.coverage = len(scopes)
         self.freeze = optim == "frozen"
         self.optim = optim
         self.self_connection = self_connection
@@ -39,6 +31,22 @@ class _LateralConnectivityBase(_BaseNetwork, nn.Module):
         self.is_circular = pad == "circular"
 
         self.logger = None
+
+        self.is_lc = False
+
+        if all(v is None for v in [scopes, widths, damps, strategy, optim]):
+            pass
+        elif None in [scopes, widths, damps, strategy, optim] and not all(v is None for v in [scopes, widths, damps, strategy, optim]):
+            raise ValueError(f"Provided incomplete information to build LC Network.")
+        else:
+            assert strategy in ["CLC", "SSLC", "CLC-G", "SSLC-G"]
+            assert optim in ["adaptive", "frozen", "parametric"]
+            assert len(scopes) == len(widths) == len(damps)
+            assert pad in ["circular", "zeros"]
+
+            self.coverage = len(scopes)
+
+            self.is_lc = True
 
     def lateral_connect_layer_type(self, num_layer: int = 1, in_channels=None):
         """
@@ -51,6 +59,9 @@ class _LateralConnectivityBase(_BaseNetwork, nn.Module):
 
         :return:                the LC layer
         """
+        if not self.is_lc:
+            raise AttributeError("Network does not allow LC layers.")
+
         idx = num_layer - 1
         if self.strategy == "CLC":
             if self.optim == "adaptive":
@@ -96,13 +107,14 @@ class _LateralConnectivityBase(_BaseNetwork, nn.Module):
 
 
 if __name__ == '__main__':
-    tests = [_LateralConnectivityBase(scopes=[27], widths=[3], damps=[0.1], strategy="CLC", optim="frozen"),
-             _LateralConnectivityBase(scopes=[27], widths=[3], damps=[0.1], strategy="CLC", optim="adaptive"),
-             _LateralConnectivityBase(scopes=[27], widths=[3], damps=[0.1], strategy="CLC", optim="parametric"),
-             _LateralConnectivityBase(scopes=[27], widths=[3], damps=[0.1], strategy="SSLC", optim="frozen"),
-             _LateralConnectivityBase(scopes=[27], widths=[3], damps=[0.1], strategy="SSLC", optim="adaptive"),
-             _LateralConnectivityBase(scopes=[27], widths=[3], damps=[0.1], strategy="CLC-G", optim="frozen"),
-             _LateralConnectivityBase(scopes=[27], widths=[3], damps=[0.1], strategy="SSLC-G", optim="frozen")]
+    tests = [BaseNetwork(scopes=[27], widths=[3], damps=[0.1], strategy="CLC", optim="frozen"),
+             BaseNetwork(scopes=[27], widths=[3], damps=[0.1], strategy="CLC", optim="adaptive"),
+             BaseNetwork(scopes=[27], widths=[3], damps=[0.1], strategy="CLC", optim="parametric"),
+             BaseNetwork(scopes=[27], widths=[3], damps=[0.1], strategy="SSLC", optim="frozen"),
+             BaseNetwork(scopes=[27], widths=[3], damps=[0.1], strategy="SSLC", optim="adaptive"),
+             BaseNetwork(scopes=[27], widths=[3], damps=[0.1], strategy="CLC-G", optim="frozen"),
+             BaseNetwork(scopes=[27], widths=[3], damps=[0.1], strategy="SSLC-G", optim="frozen"),
+             BaseNetwork()]
 
     for model in tests:
         # in channels only used for frozen, but passed for test anyway

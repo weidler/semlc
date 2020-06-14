@@ -10,7 +10,7 @@ from torch import nn
 from torch.nn import functional as F
 from torchsummary import summary
 
-from model.network.base import _LateralConnectivityBase
+from model.network.base import BaseNetwork
 from model.network.efficientnet_pytorch.eff_net_utils import (
     round_filters,
     round_repeats,
@@ -243,7 +243,7 @@ class EfficientNet(nn.Module):
         return self.model_name
 
 
-class LCEfficientNet(_LateralConnectivityBase):
+class LCEfficientNet(BaseNetwork):
 
     def __init__(self, model_name, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
                  blocks_args=None, global_params=None):
