@@ -31,7 +31,18 @@ with open('default_config.json') as f:
     CONFIG = json.load(f).get('CONFIG', {})
 
 
+def get_hp_params(args):
+    if args.hpopt:
+        with open('hp_params.json') as hp:
+            conf = json.load(hp).get(args.hpopt)
+
+        CONFIG[args.strategy][args.optim]['widths'] = conf['widths']
+        CONFIG[args.strategy][args.optim]['damps'] = conf['damps']
+
+
 def get_config(args):
+    # check for HP optmisation
+    get_hp_params(args)
     # optionally overwrite config
     if args.scopes:
         scopes = [int(x) for x in args.scopes.split(',')]
@@ -123,7 +134,8 @@ def run(args):
         if use_cuda:
             network.cuda()
 
-        logger = Logger(network, experiment_code=f"{strategy}_{i}")
+        experiment_code = f"{strategy}_{args.hpopt}" if args.hpopt else f"{strategy}_{i}"
+        logger = Logger(network, experiment_code=experiment_code)
 
         train(net=network,
               num_epoch=180,
@@ -146,7 +158,9 @@ if __name__ == '__main__':
     strategies = ["CLC", "SSLC", "CLC-G", "SSLC-G"] + old_strategies
     optims = ["adaptive", "frozen", "parametric"]
 
-    parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ main.py CLC frozen\n\noptionally overwrite default params\n'
+    parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ main.py CLC frozen\n\noptionally do HP optimisation '
+                                           'using hp_params.json \n(index 23 in this example)\n'
+                                           '$ main.py CLC frozen -p 23\n\noptionally overwrite default params\n'
                                            '$ main.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
     parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("optim", type=str, choices=optims)
@@ -155,6 +169,7 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps")
     parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)
     parser.add_argument("-i", type=int, default=1, help="the number of iterations, default=1")
+    parser.add_argument("-p", "--hpopt", type=str, help="hp optimisation with given index")
     args = parser.parse_args()
 
     run(args)
