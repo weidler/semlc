@@ -7,7 +7,7 @@
         "damps": [0.2]
       },
       "frozen": {
-        "scopes": [27],
+        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       }
@@ -19,19 +19,19 @@
         "damps": [0.2]
       },
       "frozen": {
-        "scopes": [27],
+        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       }
     },
     "CLC": {
       "adaptive": {
-        "scopes": [27],
+        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       },
       "frozen": {
-        "scopes": [45],
+        "scopes": [63],
         "widths": [3],
         "damps": [0.2]
       },
@@ -43,12 +43,12 @@
     },
     "CLC-G": {
       "adaptive": {
-        "scopes": [27],
+        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       },
       "frozen": {
-        "scopes": [45],
+        "scopes": [63],
         "widths": [3],
         "damps": [0.2]
       },
