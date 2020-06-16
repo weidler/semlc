@@ -106,7 +106,7 @@ class Logger:
 
 
 if __name__ == "__main__":
-    net = SingleShotInhibitionNetwork(scopes=[9], width=int(4), damp=0.1, freeze=True)
+    net = SingleShotInhibitionNetwork()
     base = Baseline()
 
     logger = Logger(base)

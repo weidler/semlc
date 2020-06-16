@@ -16,14 +16,16 @@ class SingleShotInhibition(InhibitionModule, nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: float, damp: float, learn_weights=False, pad="circular",
+    def __init__(self, in_channels: int, ricker_width: float, damp: float, learn_weights=False, pad="circular",
                  self_connection: bool = False):
         super().__init__()
 
         assert pad in ["circular", "zeros"]
 
         self.learn_weights = learn_weights
-        self.scope = scope
+
+        self.in_channels = in_channels
+        self.scope = self.in_channels - 1
         self.damp = damp
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
@@ -64,11 +66,10 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: int, damp: float, pad="circular",
-                 self_connection: bool = False):
+    def __init__(self, in_channels: int, ricker_width: int, damp: float, pad="circular", self_connection: bool = False):
         super().__init__()
-        super()
-        self.scope = scope
+        self.in_channels = in_channels
+        self.scope = self.in_channels - 1
         self.damp = damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
@@ -109,11 +110,11 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular",
+    def __init__(self, in_channels: int, ricker_width: float, damp: float = 0.12, pad="circular",
                  self_connection: bool = False):
         super().__init__()
-        self.scope = scope
         self.in_channels = in_channels
+        self.scope = self.in_channels - 1
         self.damp = damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
@@ -155,18 +156,19 @@ class ParametricInhibition(InhibitionModule, nn.Module):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, scope: int, initial_ricker_width: float, initial_damp: float, in_channels: int,
-                 pad="circular", self_connection: bool = False):
+    def __init__(self, in_channels: int, ricker_width: float, initial_damp: float, pad="circular",
+                 self_connection: bool = False):
         super().__init__()
-        self.scope = scope
         self.in_channels = in_channels
+        self.scope = self.in_channels - 1
+
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
 
         # parameters
         damp = torch.tensor(initial_damp, dtype=torch.float32)
-        width = torch.tensor(initial_ricker_width, dtype=torch.float32)
+        width = torch.tensor(ricker_width, dtype=torch.float32)
 
         # inhibition filter
         self.register_parameter("damp", nn.Parameter(damp))
@@ -197,10 +199,11 @@ class ParametricInhibition(InhibitionModule, nn.Module):
 # GAUSSIAN FILTER
 
 class SingleShotGaussian(SingleShotInhibition):
-    def __init__(self, scope: int, width: int, damp: float, pad="circular", self_connection: bool = False):
-        super().__init__(scope, width, damp, False, pad, self_connection)
+    def __init__(self, in_channels: int, ricker_width: int, damp: float, pad: str = "circular",
+                 self_connection: bool = False):
+        super().__init__(in_channels=in_channels, ricker_width=ricker_width, damp=damp, learn_weights=False,
+                         pad=pad, self_connection=self_connection)
 
-    @property
     def name(self):
         return f"SSLC-G"
 
@@ -211,9 +214,9 @@ class SingleShotGaussian(SingleShotInhibition):
 
 class ConvergedGaussian(ConvergedFrozenInhibition):
 
-    def __init__(self, scope: int, ricker_width: float, in_channels: int, damp: float = 0.12, pad="circular",
+    def __init__(self, in_channels: int, ricker_width: float, damp: float = 0.12, pad="circular",
                  self_connection: bool = False):
-        super().__init__(scope, ricker_width, in_channels, damp, pad, self_connection)
+        super().__init__(in_channels, ricker_width, damp, pad, self_connection)
 
     @property
     def name(self):

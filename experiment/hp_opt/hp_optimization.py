@@ -181,8 +181,7 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, learn_rate=0.01, test
             print("starting",
                   f"str: {strategy} freeze: {strategy == 'toeplitz'} sc: {int(scope)} w: {int(ricker_width)} d: {damp}")
             # fix scope when applying depth > 1
-            net = ConvergedInhibitionNetwork(scopes=[int(scope)], width=int(ricker_width), damp=damp,
-                                             freeze=strategy == 'toeplitz' or strategy == 'once')
+            net = ConvergedInhibitionNetwork()
 
             if use_cuda:
                 net.cuda()

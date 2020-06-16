@@ -63,13 +63,13 @@ def make_layers(depth, scope):
     return [
         nn.Conv2d(depth, depth, 3, 1, padding=1),
         # Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True),
-        SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=True),
-        SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=False),
+        SingleShotInhibition(wavelet_width, damp=damping, learn_weights=True),
+        SingleShotInhibition(wavelet_width, damp=damping, learn_weights=False),
         FFTConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
         FFTConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
-        ConvergedInhibition(scope, wavelet_width, damp=damping),
-        ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
-        ParametricInhibition(scope, wavelet_width, damping, in_channels=depth),
+        ConvergedInhibition(wavelet_width, damp=damping),
+        ConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
+        ParametricInhibition(in_channels=depth, ricker_width=wavelet_width, initial_damp=damping),
     ]
 
 

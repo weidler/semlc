@@ -126,7 +126,7 @@ def run(args):
             damps = get_params(args, 'damps')
             print('CONFIG:', scopes, widths, damps)
 
-            network = AlexNetLC(scopes, widths, damps, strategy=strategy, optim=optim)
+            network = AlexNetLC(widths, damps, strategy=strategy, optim=optim)
 
         print(network)
         print(network.features)

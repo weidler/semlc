@@ -75,8 +75,7 @@ def run(strategy: str, runs: int, iterations: int):
             train_set = Subset(trainval_set, indices=train_indices)
 
             if strategy == "converged_full_hp":
-                network = ConvergedInhibitionNetwork(scopes, widths, damps, freeze=False,
-                                                     coverage=coverage)
+                network = ConvergedInhibitionNetwork(widths, damps)
                 networks.append(network)
 
             print(f"{networks[i].__class__.__name__}_{i + 1}")

@@ -245,9 +245,9 @@ class EfficientNet(nn.Module):
 
 class LCEfficientNet(BaseNetwork):
 
-    def __init__(self, model_name, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
-                 blocks_args=None, global_params=None):
-        super().__init__(scopes=scopes, widths=widths, damps=damps, strategy=strategy, optim=optim)
+    def __init__(self, widths: List[int] = None, damps: List[int] = None, strategy: List[float] = None,
+                 optim: str = None, self_connection: str = False, pad="circular"):
+        super().__init__(widths=widths, damps=damps, strategy=strategy, optim=optim)
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
         self.model_name = model_name

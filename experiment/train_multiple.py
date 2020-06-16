@@ -59,54 +59,51 @@ def run(strategy: str, iterations: int):
         elif strategy == "cmap":
             network = BaselineCMap()
         elif strategy == "ss":
-            network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False)
+            network = SingleShotInhibitionNetwork(8, 0.2)
         elif strategy == "ss_self":
-            network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, self_connection=True)
+            network = SingleShotInhibitionNetwork(8, 0.2, self_connection=True)
         elif strategy == "ss_zeros":
-            network = SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, pad="zeros")
+            network = SingleShotInhibitionNetwork(8, 0.2, pad="zeros")
         elif strategy == "ss_full":
-            network = SingleShotInhibitionNetwork([63, 63, 63, 31], [8, 8, 8, 8], [0.2, 0.2, 0.2, 0.2], freeze=False,
-                                                  coverage=4)
+            network = SingleShotInhibitionNetwork([8, 8, 8, 8], [0.2, 0.2, 0.2, 0.2])
         elif strategy == "ss_freeze":
-            network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True)
+            network = SingleShotInhibitionNetwork(3, 0.1)
         elif strategy == "ss_freeze_self":
-            network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, self_connection=True)
+            network = SingleShotInhibitionNetwork(3, 0.1, self_connection=True)
         elif strategy == "ss_freeze_zeros":
-            network = SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, pad="zeros")
+            network = SingleShotInhibitionNetwork(3, 0.1, pad="zeros")
         elif strategy == "converged":
-            network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False)
+            network = ConvergedInhibitionNetwork(3, 0.1)
         elif strategy == "converged_self":
-            network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, self_connection=True)
+            network = ConvergedInhibitionNetwork(3, 0.1, self_connection=True)
         elif strategy == "converged_zeros":
-            network = ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, pad="zeros")
+            network = ConvergedInhibitionNetwork(3, 0.1, pad="zeros")
         elif strategy == "converged_full":
-            network = ConvergedInhibitionNetwork([27, 27, 27, 27], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], freeze=False,
-                                                 coverage=4)
+            network = ConvergedInhibitionNetwork([3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1])
         elif strategy == "converged_cov_12":
-            network = ConvergedInhibitionNetwork([27, 27], [3, 3], [0.1, 0.1], freeze=False, coverage=2)
+            network = ConvergedInhibitionNetwork([3, 3], [0.1, 0.1])
         elif strategy == "converged_cov_123":
-            network = ConvergedInhibitionNetwork([27, 27, 27], [3, 3, 3], [0.1, 0.1, 0.1], freeze=False, coverage=3)
+            network = ConvergedInhibitionNetwork([3, 3, 3], [0.1, 0.1, 0.1])
         elif strategy == "converged_freeze":
-            network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True)  # toeplitz
+            network = ConvergedInhibitionNetwork(3, 0.2)  # toeplitz
         elif strategy == "converged_freeze_self":
-            network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, self_connection=True)
+            network = ConvergedInhibitionNetwork(3, 0.2, self_connection=True)
         elif strategy == "converged_freeze_zeros":
-            network = ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, pad="zeros")
+            network = ConvergedInhibitionNetwork(3, 0.2, pad="zeros")
         elif strategy == "converged_freeze_full":
-            network = ConvergedInhibitionNetwork([45, 45, 45, 23], [3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2], freeze=True,
-                                                 coverage=4)
+            network = ConvergedInhibitionNetwork([3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2])
         elif strategy == "parametric":
-            network = ParametricInhibitionNetwork([45], 3, 0.2)
+            network = ParametricInhibitionNetwork(3, 0.2)
         elif strategy == "parametric_self":
-            network = ParametricInhibitionNetwork([45], 3, 0.2, self_connection=True)
+            network = ParametricInhibitionNetwork(3, 0.2, self_connection=True)
         elif strategy == "parametric_zeros":
-            network = ParametricInhibitionNetwork([45], 3, 0.2, pad="zeros")
+            network = ParametricInhibitionNetwork(3, 0.2, pad="zeros")
         elif strategy == "parametric_full":
-            network = ParametricInhibitionNetwork([63, 63, 63, 31], [3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2], coverage=4)
+            network = ParametricInhibitionNetwork([3, 3, 3, 3], [0.2, 0.2, 0.2, 0.2])
         elif strategy == "parametric_cov_12":
-            network = ParametricInhibitionNetwork([63, 63], [3, 3], [0.2, 0.2], coverage=2)
+            network = ParametricInhibitionNetwork([3, 3], [0.2, 0.2])
         elif strategy == "parametric_cov_123":
-            network = ParametricInhibitionNetwork([63, 63, 63], [3, 3, 3], [0.2, 0.2, 0.2], coverage=3)
+            network = ParametricInhibitionNetwork([3, 3, 3], [0.2, 0.2, 0.2])
 
         elif strategy == "vgg19":
             network = vgg19()

@@ -23,14 +23,14 @@ class FFTConvergedInhibition(nn.Module, InhibitionModule):
     def name(self):
         return "Converged Adaptive (FFT)"
 
-    def __init__(self, scope: int, ricker_width: float, damp: float, in_channels: int, learn_weights: bool = True):
+    def __init__(self, ricker_width: float, damp: float, in_channels: int, learn_weights: bool = True):
         super().__init__()
-        self.scope = scope
         self.in_channels = in_channels
+        self.scope = self.in_channels - 1
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp, self_connect=False)
+        inhibition_filter = weight_initialization.mexican_hat(self.scope, width=ricker_width, damping=damp, self_connect=False)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter, requires_grad=learn_weights))
 
         # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
@@ -61,14 +61,14 @@ class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
     def name(self):
         return "Converged Frozen (FFT)"
 
-    def __init__(self, scope: int, ricker_width: int, in_channels: int, damp: float = 0.12):
+    def __init__(self, ricker_width: int, in_channels: int, damp: float = 0.12):
         super().__init__()
-        self.scope = scope
         self.in_channels = in_channels
+        self.scope = self.in_channels - 1
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        self.inhibition_filter = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp,
+        self.inhibition_filter = weight_initialization.mexican_hat(self.scope, width=ricker_width, damping=damp,
                                                                    self_connect=False)
         self.inhibition_filter = pad_roll(self.inhibition_filter.view(1, 1, -1), self.in_channels, self.scope)
         self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))

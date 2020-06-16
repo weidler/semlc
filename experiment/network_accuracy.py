@@ -51,32 +51,32 @@ all_nets = {
     'cmap': [BaselineCMap() for i in range(1, num_nets + 1)],
 
     # ssi
-    'ss': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False) for i in range(1, num_nets + 1)],
-    'ss_freeze': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True) for i in range(1, num_nets + 1)],
-    'ss_freeze_zeros': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, pad="zeros") for i in range(1, num_nets + 1)],
-    'ss_freeze_self': [SingleShotInhibitionNetwork([27], 3, 0.1, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
-    'ss_zeros': [SingleShotInhibitionNetwork([63], 8, 0.2, freeze=False, pad="zeros") for i in range(1, num_nets + 1)],
-    'ss_self': [SingleShotInhibitionNetwork([63], 3, 0.1, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
+    'ss': [SingleShotInhibitionNetwork(8, 0.2) for i in range(1, num_nets + 1)],
+    'ss_freeze': [SingleShotInhibitionNetwork(3, 0.1) for i in range(1, num_nets + 1)],
+    'ss_freeze_zeros': [SingleShotInhibitionNetwork(3, 0.1, pad="zeros") for i in range(1, num_nets + 1)],
+    'ss_freeze_self': [SingleShotInhibitionNetwork(3, 0.1, self_connection=True) for i in range(1, num_nets + 1)],
+    'ss_zeros': [SingleShotInhibitionNetwork(8, 0.2, pad="zeros") for i in range(1, num_nets + 1)],
+    'ss_self': [SingleShotInhibitionNetwork(3, 0.1, self_connection=True) for i in range(1, num_nets + 1)],
 
     # converged
-    'converged': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False) for i in range(1, num_nets + 1)],
-    'converged_freeze': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True) for i in range(1, num_nets + 1)],
-    'converged_zeros': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, pad="zeros") for i in range(1, num_nets + 1)],
-    'converged_freeze_zeros': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, pad="zeros") for i in range(1, num_nets + 1)],
-    'converged_self': [ConvergedInhibitionNetwork([27], 3, 0.1, freeze=False, self_connection=True) for i in range(1, num_nets + 1)],
-    'converged_freeze_self': [ConvergedInhibitionNetwork([45], 3, 0.2, freeze=True, self_connection=True) for i in range(1, num_nets + 1)],
-    'converged_cov_12': [ConvergedInhibitionNetwork([27, 27], [3, 3], [0.1, 0.1], freeze=False, coverage=2) for i in range(1, num_nets + 1)],
-    'converged_cov_123': [ConvergedInhibitionNetwork([27, 27, 27], [3, 3, 3], [0.1, 0.1, 0.1], freeze=False, coverage=3) for i in range(1, num_nets + 1)],
-    'converged_full': [ConvergedInhibitionNetwork([27, 27, 27, 27], [3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1], freeze=False, coverage=4) for i in range(1, num_nets + 1)],
-    'converged_full_best': [ConvergedInhibitionNetwork([27, 63, 45, 31], [3, 10, 3, 10], [0.12, 0.1, 0.14, 0.12], freeze=False, coverage=4) for i in range(1, num_nets + 1)],
+    'converged': [ConvergedInhibitionNetwork(3, 0.1) for i in range(1, num_nets + 1)],
+    'converged_freeze': [ConvergedInhibitionNetwork(3, 0.2) for i in range(1, num_nets + 1)],
+    'converged_zeros': [ConvergedInhibitionNetwork(3, 0.1, pad="zeros") for i in range(1, num_nets + 1)],
+    'converged_freeze_zeros': [ConvergedInhibitionNetwork(3, 0.2, pad="zeros") for i in range(1, num_nets + 1)],
+    'converged_self': [ConvergedInhibitionNetwork(3, 0.1, self_connection=True) for i in range(1, num_nets + 1)],
+    'converged_freeze_self': [ConvergedInhibitionNetwork(3, 0.2, self_connection=True) for i in range(1, num_nets + 1)],
+    'converged_cov_12': [ConvergedInhibitionNetwork([3, 3], [0.1, 0.1]) for i in range(1, num_nets + 1)],
+    'converged_cov_123': [ConvergedInhibitionNetwork([3, 3, 3], [0.1, 0.1, 0.1]) for i in range(1, num_nets + 1)],
+    'converged_full': [ConvergedInhibitionNetwork([3, 3, 3, 3], [0.1, 0.1, 0.1, 0.1]) for i in range(1, num_nets + 1)],
+    'converged_full_best': [ConvergedInhibitionNetwork([3, 10, 3, 10], [0.12, 0.1, 0.14, 0.12]) for i in range(1, num_nets + 1)],
 
 
     # parametric
-    'parametric': [ParametricInhibitionNetwork([45], 3, 0.2) for i in range(1, num_nets + 1)],
-    'parametric_zeros': [ParametricInhibitionNetwork([45], 3, 0.2, pad="zeros") for i in range(1, num_nets + 1)],
-    'parametric_self': [ParametricInhibitionNetwork([45], 3, 0.2, self_connection=True) for i in range(1, num_nets + 1)],
-    'parametric_12': [ParametricInhibitionNetwork([63, 63], [3, 3], [0.2, 0.2], coverage=2) for i in range(1, num_nets + 1)],
-    'parametric_123': [ParametricInhibitionNetwork([63, 63, 63], [3, 3, 3], [0.2, 0.2, 0.2], coverage=3) for i in range(1, num_nets + 1)],
+    'parametric': [ParametricInhibitionNetwork(3, 0.2) for i in range(1, num_nets + 1)],
+    'parametric_zeros': [ParametricInhibitionNetwork(3, 0.2, pad="zeros") for i in range(1, num_nets + 1)],
+    'parametric_self': [ParametricInhibitionNetwork(3, 0.2, self_connection=True) for i in range(1, num_nets + 1)],
+    'parametric_12': [ParametricInhibitionNetwork([3, 3], [0.2, 0.2]) for i in range(1, num_nets + 1)],
+    'parametric_123': [ParametricInhibitionNetwork([3, 3, 3], [0.2, 0.2, 0.2]) for i in range(1, num_nets + 1)],
 
     # vgg
     'vgg19': vgg19(),

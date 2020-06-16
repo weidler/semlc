@@ -50,28 +50,29 @@ if __name__ == "__main__":
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
 
     layers = [
-        SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=True, pad="zeros",
+        SingleShotInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="zeros",
                              self_connection=self_connect),
-        SingleShotInhibition(scope, wavelet_width, damp=damping, learn_weights=True, pad="circular",
+        SingleShotInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="circular",
                              self_connection=self_connect),
 
         # circular padding
-        ConvergedInhibition(scope, wavelet_width, damp=damping, self_connection=self_connect),
-        ConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth, self_connection=self_connect),
-        ParametricInhibition(scope, wavelet_width, initial_damp=damping, self_connection=self_connect,
-                             in_channels=depth),
+        ConvergedInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        ConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping,
+                                  self_connection=self_connect),
+        ParametricInhibition(in_channels=depth, ricker_width=wavelet_width, initial_damp=damping,
+                             self_connection=self_connect),
 
-        FFTConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
-        FFTConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
+        FFTConvergedInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
+        FFTConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
 
         # zero padding
-        # ConvergedInhibition(scope, wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
-        # ConvergedFrozenInhibition(scope, wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
+        # ConvergedInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
+        # ConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
 
-        ConvergedGaussian(scope, wavelet_width, damp=damping, self_connection=self_connect, in_channels=depth),
-        SingleShotGaussian(scope, wavelet_width, damp=damping, pad="circular", self_connection=self_connect),
-        # RecurrentInhibition(scope, wavelet_width, damp=damping, self_connection=self_connect),
-        # RecurrentInhibition(scope, wavelet_width, damp=damping, self_connection=self_connect),
+        ConvergedGaussian(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        SingleShotGaussian(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="circular", self_connection=self_connect),
+        # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
     ]
 
     line_styles = [".", "-", "-", "--", ".-", "."]

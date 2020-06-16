@@ -92,34 +92,31 @@ cfgs = {
 
 
 def vgg11(batch_norm=False):
-    return VGG(make_layers(cfgs['A'], batch_norm=batch_norm))
+    return VGG()
 
 
 def vgg13(batch_norm=False):
-    return VGG(make_layers(cfgs['B'], batch_norm=batch_norm))
+    return VGG()
 
 
 def vgg16(batch_norm=False):
-    return VGG(make_layers(cfgs['D'], batch_norm=batch_norm))
+    return VGG()
 
 
 def vgg16_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False):
-    inhib_layers = [ConvergedFrozenInhibition(scope=27,
-                                              ricker_width=4, damp=0.12,
-                                              in_channels=64, pad=padding, self_connection=self_connection)]
-    return VGG(make_layers(cfgs['DI'], batch_norm=batch_norm, inhibition_layers=inhib_layers), num_classes=num_classes)
+    inhib_layers = [ConvergedFrozenInhibition(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
+                                              self_connection=self_connection)]
+    return VGG()
 
 
 def vgg19(batch_norm=False, num_classes=10):
-    return VGG(make_layers(cfgs['E'], batch_norm=batch_norm), num_classes=num_classes)
+    return VGG()
 
 
 def vgg19_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False):
-    inhib_layers = [ConvergedFrozenInhibition(scope=27,
-                                              ricker_width=4, damp=0.12,
-                                              in_channels=64, pad=padding, self_connection=self_connection),
-                    ConvergedFrozenInhibition(scope=27,
-                                              ricker_width=4, damp=0.12,
-                                              in_channels=64, pad=padding, self_connection=self_connection)
+    inhib_layers = [ConvergedFrozenInhibition(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
+                                              self_connection=self_connection),
+                    ConvergedFrozenInhibition(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
+                                              self_connection=self_connection)
                     ]
-    return VGG(make_layers(cfgs['EI'], batch_norm=batch_norm, inhibition_layers=inhib_layers), num_classes=num_classes)
+    return VGG()

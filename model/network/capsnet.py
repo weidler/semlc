@@ -1,20 +1,18 @@
 """A copy of Adam Bielski's implementation (https://github.com/adambielski/CapsNet-pytorch/blob/master/net.py),
 only adapted to include our inhibition."""
 import sys
+
 sys.path.append("./")
 
 import math
 from typing import List
-
-import pandas as pd
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
-from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition
-from model.network.base import BaseNetwork, BaseNetwork
+from model.network.base import BaseNetwork
 from torch.utils.data import Subset
 
 from util.eval import accuracies_from_list
@@ -98,6 +96,7 @@ class PrimaryCapsLayer(nn.Module):
 
 
 class CapsNet(BaseNetwork, nn.Module):
+
     def __init__(self, routing_iterations, n_classes=10):
         super(CapsNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
@@ -171,12 +170,11 @@ class MarginLoss(nn.Module):
 # CAPS NET WITH OPTION FOR LC
 
 class InhibitionCapsNet(BaseNetwork, nn.Module):
-    def __init__(self, scopes: List[int], widths: List[int], damps: List[float], strategy: str, optim: str,
-                 routing_iterations: int = 3, n_classes: int = 10):
-        super().__init__(scopes, widths, damps, strategy, optim)
+    def __init__(self, widths: List[int], damps: List[float], strategy: str, optim: str, n_classes: int = 10):
+        super().__init__(widths, damps, strategy, optim)
 
         # check if legal parameters
-        assert len(scopes) == 1, "Cannot have more than one LC layer in CapsNet, because there is only one conv layer."
+        assert len(widths) == 1, "Cannot have more than one LC layer in CapsNet, because there is only one conv layer."
 
         # primary convolution
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
@@ -187,7 +185,7 @@ class InhibitionCapsNet(BaseNetwork, nn.Module):
         # primary capsules
         self.primaryCaps = PrimaryCapsLayer(256, 32, 8, kernel_size=9, stride=2)  # outputs 6*6
         self.num_primaryCaps = 32 * 6 * 6
-        routing_module = AgreementRouting(self.num_primaryCaps, n_classes, routing_iterations)
+        routing_module = AgreementRouting(self.num_primaryCaps, n_classes, 3)
 
         # output class capsules
         self.digitCaps = CapsLayer(self.num_primaryCaps, 8, n_classes, 16, routing_module)
@@ -260,8 +258,8 @@ if __name__ == '__main__':
         , batch_size=args.batch_size, shuffle=True, **kwargs)
 
     test_set = datasets.MNIST('./data/mnist', train=False, transform=transforms.Compose([
-            transforms.ToTensor()
-        ]))
+        transforms.ToTensor()
+    ]))
 
     test_loader = torch.utils.data.DataLoader(
         test_set,
@@ -332,11 +330,9 @@ if __name__ == '__main__':
 
     for i in range(0, args.i):
         if args.strategy == 'baseline':
-            model = CapsNet(args.routing_iterations)
+            model = CapsNet()
         elif args.strategy == 'lc':
-            model = InhibitionCapsNet(scopes=[args.scope], widths=[args.width], damps=[args.damp],
-                                      strategy=args.lc_strat, optim=args.optim,
-                                      routing_iterations=args.routing_iterations)
+            model = InhibitionCapsNet(widths=[args.width], damps=[args.damp], strategy=args.lc_strat, optim=args.optim)
 
         if args.with_reconstruction:
             reconstruction_model = ReconstructionNet(16, 10)
@@ -374,8 +370,9 @@ if __name__ == '__main__':
 
             scheduler.step(test_loss)
             torch.save(model.state_dict(),
-                       './output/capsnet/{:02d}_{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(i, epoch, args.routing_iterations,
-                                                                                 args.with_reconstruction))
+                       './output/capsnet/{:02d}_{:03d}_model_dict_{}routing_reconstruction{}.pth'.format(i, epoch,
+                                                                                                         args.routing_iterations,
+                                                                                                         args.with_reconstruction))
             if epoch > 0 and epoch % args.save_freq == 0:
                 logger.save_model(epoch + 1)
                 logger.save_optimizer(optimizer, epoch + 1)

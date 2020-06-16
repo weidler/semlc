@@ -165,8 +165,7 @@ if __name__ == "__main__":
             for scope, ricker_width, damp in configurations:
                 print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
                 # fix scope when applying depth > 1
-                net = ConvergedInhibitionNetwork(scopes=[int(scope)], width=int(ricker_width), damp=damp,
-                                                 freeze=strategy == 'toeplitz')
+                net = ConvergedInhibitionNetwork()
 
                 freeze='_freeze' if strategy=='toeplitz' else ''
                 net.load_state_dict(torch.load(f"../saved_models/0{i}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/ConvergedInhibitionNetwork{freeze}_final.model"))
