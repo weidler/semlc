@@ -22,4 +22,4 @@ module load cudatoolkit/10.0.130_3.22-7.0.1.0_5.2__gdfb4ce5
 # load virtual environment
 source ${HOME}/lcvenv/bin/activate
 
-python3 -u model/network/train_efficient_net.py data/imagenet/ -j=0 -a=efficientnet-b0 --opt_inh --gpu 0
+python3 -uO main.py CLC frozen
