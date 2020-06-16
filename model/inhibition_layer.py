@@ -98,7 +98,7 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
         tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
         # convolve by toeplitz
-        return convolve_3d_toeplitz(tpl_inv, activations)
+        return convolve_3d_toeplitz(-tpl_inv, activations)
 
 
 class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
@@ -142,7 +142,7 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
                                                  self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        return convolve_3d_toeplitz(self.tpl_inv, activations)
+        return convolve_3d_toeplitz(-self.tpl_inv, activations)
 
 
 # PARAMETRIC
