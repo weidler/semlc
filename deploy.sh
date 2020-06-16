@@ -1,16 +1,15 @@
 #!/bin/bash
 
-#SBATCH --job-name=lcexp_en_base
+#SBATCH --job-name=minus
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=admin@tonioweidler.de
 #SBATCH --time=24:00:00
-#SBATCH --nodes=3
+#SBATCH --nodes=1
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=12
 #SBATCH --partition=normal
 #SBATCH --constraint=gpu
-#SBATCH --hint=nomultithread
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
