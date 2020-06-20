@@ -1,9 +1,6 @@
 """
 A script for all main experiments that allows running multiple experiments of the same strategy
 """
-# hopefully now unecessary
-# import sys
-# sys.path.append("./")
 
 import json
 
@@ -77,6 +74,31 @@ def get_params(args, param):
     return parameter
 
 
+def get_network(strategy, optim, args):
+    network = None
+    if strategy == "baseline":
+        network = Baseline()
+    elif strategy == "cmap":
+        network = BaselineCMap()
+    elif strategy == "vgg19":
+        network = vgg19()
+    elif strategy == "vgg19_inhib":
+        network = vgg19_inhib()
+    elif strategy == "vgg19_inhib_self":
+        network = vgg19_inhib(self_connection=True)
+    else:
+        get_config(args)
+        print(args)
+        scopes = get_params(args, 'scopes')
+        widths = get_params(args, 'widths')
+        damps = get_params(args, 'damps')
+        print('CONFIG:', scopes, widths, damps)
+
+        network = AlexNetLC(widths, damps, strategy=strategy, optim=optim)
+
+    return network
+
+
 def run(args):
     strategy = args.strategy
     optim = args.optim
@@ -108,25 +130,7 @@ def run(args):
         val_set = Subset(trainval_set, indices=val_indices)
         train_set = Subset(trainval_set, indices=train_indices)
 
-        network = None
-        if strategy == "baseline":
-            network = Baseline()
-        elif strategy == "cmap":
-            network = BaselineCMap()
-        elif strategy == "vgg19":
-            network = vgg19()
-        elif strategy == "vgg19_inhib":
-            network = vgg19_inhib()
-        elif strategy == "vgg19_inhib_self":
-            network = vgg19_inhib(self_connection=True)
-        else:
-            get_config(args)
-            scopes = get_params(args, 'scopes')
-            widths = get_params(args, 'widths')
-            damps = get_params(args, 'damps')
-            print('CONFIG:', scopes, widths, damps)
-
-            network = AlexNetLC(widths, damps, strategy=strategy, optim=optim)
+        network = get_network(strategy, optim, args)
 
         print(network)
         print(network.features)
@@ -134,7 +138,7 @@ def run(args):
         if use_cuda:
             network.cuda()
 
-        experiment_code = f"{strategy}_{args.hpopt}" if args.hpopt else f"{strategy}_{i}"
+        experiment_code = f"{strategy}_{optim}_hp_{args.hpopt}" if args.hpopt else f"{strategy}_{optim}_{i}"
         logger = Logger(network, experiment_code=experiment_code)
 
         train(net=network,
