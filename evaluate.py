@@ -39,8 +39,8 @@ strategies = ["CLC", "SSLC", "CLC-G", "SSLC-G"] + old_strategies
 optims = ["adaptive", "frozen", "parametric"]
 
 parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ main.py CLC frozen\n\noptionally evaluate HP optimisation '
-                                       'using hp_params.json \n(index 23 in this example)\n'
-                                       '$ main.py CLC frozen -p 23\n\nor all 50 HP opts at once (sequentially)'
+                                       'using hp_params.json (index 23 in this example)\n'
+                                       '$ main.py CLC frozen -p 23\n\nor all 50 HP opts at once (sequentially)\n'
                                        '$ main.py CLC frozen -pa 50\n\noptionally overwrite default params\n'
                                        '$ main.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
 parser.add_argument("strategy", type=str, choices=strategies)
