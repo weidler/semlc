@@ -2,6 +2,10 @@
 NUM=48
 ITER=10
 
+# clean start.sh
+true > start.sh
+
+# generate
 for i in $(seq 0 $(($NUM-1)));
 do
     head -n -1 deploycpu.sh > deploy_${i}.sh;
