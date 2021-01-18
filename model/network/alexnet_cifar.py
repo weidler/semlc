@@ -4,8 +4,8 @@ import torch
 from torchsummary import summary
 from torch import nn
 
-from model.inhibition_layer import SingleShotInhibition, ConvergedFrozenInhibition, ConvergedInhibition, \
-    ParametricInhibition
+from model.semantic_layers import SingleShotSemLC, ConvergedFrozenSemLC, ConvergedSemLC, \
+    ParametricSemLC
 from model.network.base import BaseNetwork, BaseNetwork
 
 
@@ -179,8 +179,8 @@ class SingleShotInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update(
-                {f"inhib_{i}": SingleShotInhibition(ricker_width=self.width[i - 1], damp=self.damp[i - 1],
-                                                    learn_weights=not freeze, pad=pad, self_connection=self_connection)})
+                {f"inhib_{i}": SingleShotSemLC(ricker_width=self.width[i - 1], damp=self.damp[i - 1],
+                                               learn_weights=not freeze, pad=pad, self_connection=self_connection)})
 
         self.build_module(inhibition_layers)
 
@@ -209,13 +209,13 @@ class ConvergedInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update({f"inhib_{i}":
-                                          ConvergedInhibition(in_channels=self.layer_output_channels[i - 1],
-                                                              ricker_width=self.width[i - 1], damp=self.damp[i - 1],
-                                                              pad=pad, self_connection=self_connection) if not self.freeze else
-                                          ConvergedFrozenInhibition(in_channels=self.layer_output_channels[i - 1],
-                                                                    ricker_width=self.width[i - 1],
-                                                                    damp=self.damp[i - 1], pad=pad,
-                                                                    self_connection=self_connection)})
+                                          ConvergedSemLC(in_channels=self.layer_output_channels[i - 1],
+                                                         ricker_width=self.width[i - 1], damp=self.damp[i - 1],
+                                                         pad=pad, self_connection=self_connection) if not self.freeze else
+                                          ConvergedFrozenSemLC(in_channels=self.layer_output_channels[i - 1],
+                                                               ricker_width=self.width[i - 1],
+                                                               damp=self.damp[i - 1], pad=pad,
+                                                               self_connection=self_connection)})
 
         self.build_module(inhibition_layers)
 
@@ -250,10 +250,10 @@ class ParametricInhibitionNetwork(_AlexNetBase):
         inhibition_layers = {}
         for i in range(1, coverage + 1):
             inhibition_layers.update(
-                {f"inhib_{i}": ParametricInhibition(in_channels=self.layer_output_channels[i - 1],
-                                                    ricker_width=self.width[i - 1],
-                                                    initial_damp=self.damp[i - 1], pad=pad,
-                                                    self_connection=self_connection)})
+                {f"inhib_{i}": ParametricSemLC(in_channels=self.layer_output_channels[i - 1],
+                                               ricker_width=self.width[i - 1],
+                                               initial_damp=self.damp[i - 1], pad=pad,
+                                               self_connection=self_connection)})
             # TODO more general in_channels parameter
 
         self.build_module(inhibition_layers)

@@ -7,7 +7,7 @@ from scipy.signal import gaussian
 from torch import nn, optim
 from torch.nn.functional import mse_loss
 
-from model.inhibition_layer import ConvergedInhibition, ConvergedFrozenInhibition, ParametricInhibition
+from model.semantic_layers import ConvergedSemLC, ConvergedFrozenSemLC, ParametricSemLC
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -61,10 +61,10 @@ for b in range(batches):
             tensor_in[b, :, i, j] = torch.from_numpy(gaussian(3, 6))
 
 simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
-inhibitor_tpl = ConvergedInhibition(wavelet_width, damp=damping)
-inhibitor_tpl_freeze = ConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping)
-inhibitor_parametrized = ParametricInhibition(in_channels=depth, ricker_width=wavelet_width,
-                                              initial_damp=damping)
+inhibitor_tpl = ConvergedSemLC(wavelet_width, damp=damping)
+inhibitor_tpl_freeze = ConvergedFrozenSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping)
+inhibitor_parametrized = ParametricSemLC(in_channels=depth, ricker_width=wavelet_width,
+                                         initial_damp=damping)
 
 for test_layer in [simple_conv, inhibitor_tpl, inhibitor_tpl_freeze, inhibitor_parametrized]:
     net = nn.Sequential(

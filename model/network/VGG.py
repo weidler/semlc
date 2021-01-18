@@ -7,7 +7,7 @@ import math
 import torch
 import torch.nn as nn
 
-from model.inhibition_layer import ConvergedFrozenInhibition
+from model.semantic_layers import ConvergedFrozenSemLC
 from model.network.base import BaseNetwork
 
 
@@ -15,7 +15,7 @@ __all__ = [
     'VGG', 'vgg11', 'vgg13', 'vgg16', 'vgg16_inhib', 'vgg19', 'vgg19_inhib',
 ]
 
-from ..inhibition_module import InhibitionModule
+from ..inhibition_module import BaseSemLC
 
 
 class VGG(BaseNetwork, nn.Module):
@@ -24,7 +24,7 @@ class VGG(BaseNetwork, nn.Module):
         super(VGG, self).__init__()
         self.features = features
 
-        inhibition_layers = [layer for layer in self.features.children() if isinstance(layer, InhibitionModule)]
+        inhibition_layers = [layer for layer in self.features.children() if isinstance(layer, BaseSemLC)]
         self.is_circular = [layer.is_circular for layer in inhibition_layers]
         self.self_connection = [layer.self_connection for layer in inhibition_layers]
         self.damp = [layer.damp for layer in inhibition_layers]
@@ -104,8 +104,8 @@ def vgg16(batch_norm=False):
 
 
 def vgg16_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False):
-    inhib_layers = [ConvergedFrozenInhibition(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
-                                              self_connection=self_connection)]
+    inhib_layers = [ConvergedFrozenSemLC(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
+                                         self_connection=self_connection)]
     return VGG()
 
 
@@ -114,9 +114,9 @@ def vgg19(batch_norm=False, num_classes=10):
 
 
 def vgg19_inhib(batch_norm=False, num_classes=10, padding='circular', self_connection=False):
-    inhib_layers = [ConvergedFrozenInhibition(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
-                                              self_connection=self_connection),
-                    ConvergedFrozenInhibition(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
-                                              self_connection=self_connection)
+    inhib_layers = [ConvergedFrozenSemLC(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
+                                         self_connection=self_connection),
+                    ConvergedFrozenSemLC(in_channels=64, ricker_width=4, damp=0.12, pad=padding,
+                                         self_connection=self_connection)
                     ]
     return VGG()

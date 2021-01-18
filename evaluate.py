@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 
-from main import get_network
+from run import build_network
 from util.eval import accuracies_from_list, accuracy_from_data_loader
 
 # Random seeding is very important, since without the random cropping may be different
@@ -38,11 +38,11 @@ old_strategies = ["baseline", "cmap", "vgg19", "vgg19_inhib", "vgg19_inhib_self"
 strategies = ["CLC", "SSLC", "CLC-G", "SSLC-G"] + old_strategies
 optims = ["adaptive", "frozen", "parametric"]
 
-parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ main.py CLC frozen\n\noptionally evaluate HP optimisation '
+parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ run.py CLC frozen\n\noptionally evaluate HP optimisation '
                                        'using hp_params.json (index 23 in this example)\n'
-                                       '$ main.py CLC frozen -p 23\n\nor all 50 HP opts at once (sequentially)\n'
-                                       '$ main.py CLC frozen -pa 50\n\noptionally overwrite default params\n'
-                                       '$ main.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
+                                       '$ run.py CLC frozen -p 23\n\nor all 50 HP opts at once (sequentially)\n'
+                                       '$ run.py CLC frozen -pa 50\n\noptionally overwrite default params\n'
+                                       '$ run.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
 parser.add_argument("strategy", type=str, choices=strategies)
 parser.add_argument("optim", type=str, choices=optims)
 parser.add_argument("-s", "--scopes", dest="scopes", type=str, help="overwrite default scopes")
@@ -64,7 +64,7 @@ def evaluate_exp(filenames, strategy, optim, args):
     accuracies = []
     for i, row in tqdm(enumerate(filenames), disable=True):
         filename = f"{model_path}{row}_best.model"
-        network = get_network(strategy, optim, args)
+        network = build_network(strategy, optim, args)
         network.load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
         data_loader = DataLoader(test_set, batch_size=128,
                                  shuffle=False, num_workers=0)

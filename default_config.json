@@ -2,58 +2,48 @@
   "CONFIG": {
     "SSLC": {
       "adaptive": {
-        "scopes": [63],
         "widths": [8],
         "damps": [0.2]
       },
       "frozen": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       }
     },
     "SSLC-G": {
       "adaptive": {
-        "scopes": [63],
         "widths": [8],
         "damps": [0.2]
       },
       "frozen": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       }
     },
     "CLC": {
       "adaptive": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       },
       "frozen": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.2]
       },
       "parametric": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.2]
       }
     },
     "CLC-G": {
       "adaptive": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.1]
       },
       "frozen": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.2]
       },
       "parametric": {
-        "scopes": [63],
         "widths": [3],
         "damps": [0.2]
       }

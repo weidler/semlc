@@ -1,8 +1,8 @@
 from typing import List
 from torch import nn
 
-from model.inhibition_layer import ParametricInhibition, ConvergedInhibition, ConvergedFrozenInhibition, \
-    SingleShotInhibition, SingleShotGaussian, ConvergedGaussian
+from model.semantic_layers import ParametricSemLC, ConvergedSemLC, ConvergedFrozenSemLC, \
+    SingleShotSemLC, ConvergedGaussianSemLC
 
 
 class BaseNetwork(nn.Module):
@@ -38,7 +38,7 @@ class BaseNetwork(nn.Module):
         elif None in [widths, damps, strategy, optim] and not all(v is None for v in [widths, damps, strategy, optim]):
             raise ValueError(f"Provided incomplete information to build LC Network.")
         else:
-            assert strategy in ["CLC", "SSLC", "CLC-G", "SSLC-G"]
+            assert strategy in ["CLC", "SSLC", "CLC-G"]
             assert optim in ["adaptive", "frozen", "parametric"]
             assert pad in ["circular", "zeros"]
 
@@ -63,26 +63,22 @@ class BaseNetwork(nn.Module):
         idx = num_layer - 1
         if self.strategy == "CLC":
             if self.optim == "adaptive":
-                return ConvergedInhibition(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx])
+                return ConvergedSemLC(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx])
             elif self.optim == "frozen":
                 assert in_channels is not None, "in_channels is required for frozen optimisation"
-                return ConvergedFrozenInhibition(in_channels=in_channels, ricker_width=self.widths[idx],
-                                                 damp=self.damps[idx])
+                return ConvergedFrozenSemLC(in_channels=in_channels, ricker_width=self.widths[idx],
+                                            damp=self.damps[idx])
             elif self.optim == "parametric":
-                return ParametricInhibition(in_channels=in_channels, ricker_width=self.widths[idx],
-                                            initial_damp=self.damps[idx])
+                return ParametricSemLC(in_channels=in_channels, ricker_width=self.widths[idx],
+                                       initial_damp=self.damps[idx])
         elif self.strategy == "SSLC":
             if self.optim == "adaptive":
-                return SingleShotInhibition(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx], learn_weights=True)
+                return SingleShotSemLC(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx], learn_weights=True)
             elif self.optim == "frozen":
-                return SingleShotInhibition(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx])
+                return SingleShotSemLC(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx])
         elif self.strategy == "CLC-G":
             assert in_channels is not None, "in_channels is required for frozen optimisation"
-            return ConvergedGaussian(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx])
-        elif self.strategy == "SSLC-G":
-            return SingleShotGaussian(in_channels=in_channels,
-                                      ricker_width=self.widths[idx],
-                                      damp=self.damps[idx])
+            return ConvergedGaussianSemLC(in_channels=in_channels, ricker_width=self.widths[idx], damp=self.damps[idx])
 
         raise AttributeError("lateral connectivity type not supported")
 

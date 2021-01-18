@@ -1,25 +1,18 @@
-"""
-A script for all main experiments that allows running multiple experiments of the same strategy
-"""
+"""A script for all main experiments that allows running multiple experiments of the same strategy."""
 
 import json
 
-from torch.utils.data import Subset
-
-
-from model.network.VGG import vgg19, vgg19_inhib
-
 import torch
-
 import torchvision
 from torch import nn
+from torch.utils.data import Subset
 from torchvision import transforms
 
+from model.network.VGG import vgg19, vgg19_inhib
 from model.network.alexnet_cifar import BaselineCMap, Baseline, AlexNetLC
-from util.train import train
 from util.eval import accuracy
-
 from util.ourlogging import Logger
+from util.train import train
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -40,12 +33,8 @@ def get_hp_params(args):
 def get_config(args):
     # check for HP optmisation
     get_hp_params(args)
+
     # optionally overwrite config
-    if args.scopes:
-        scopes = [int(x) for x in args.scopes.split(',')]
-        assert len(scopes) == args.coverage, \
-            f"number of scopes ({len(scopes)}) does not match coverage {args.coverage}"
-        CONFIG[args.strategy][args.optim]['scopes'] = scopes
     if args.widths:
         widths = [int(x) for x in args.widths.split(',')]
         assert len(widths) == args.coverage, \
@@ -57,25 +46,22 @@ def get_config(args):
             f"number of damps ({len(damps)}) does not match coverage {args.coverage}"
         CONFIG[args.strategy][args.optim]['damps'] = damps
     else:
-        assert args.coverage == len(CONFIG[args.strategy][args.optim]['scopes']) == \
-               len(CONFIG[args.strategy][args.optim]['widths']) == \
-               len(CONFIG[args.strategy][args.optim]['damps']), \
-               f"coverage ({args.coverage}) does not match configuration. Please check coverage param " \
-               f"and change or overwrite config with arguments -s, -w, -d."
+        assert args.coverage == len(CONFIG[args.strategy][args.optim]['widths']) == len(
+            CONFIG[args.strategy][args.optim]['damps']), \
+            f"coverage ({args.coverage}) does not match configuration. Please check coverage param " \
+            f"and change or overwrite config with arguments -s, -w, -d."
 
     return CONFIG
 
 
 def get_params(args, param):
-    assert param in ['scopes', 'widths', 'damps'], f"invalid param {param}"
+    assert param in ['widths', 'damps'], f"invalid param {param}"
     parameter = CONFIG[args.strategy][args.optim][param]
-    # parameter = [parameter[0] for _ in range(args.coverage)]
 
     return parameter
 
 
-def get_network(strategy, optim, args):
-    network = None
+def build_network(strategy, optim, args):
     if strategy == "baseline":
         network = Baseline()
     elif strategy == "cmap":
@@ -88,11 +74,9 @@ def get_network(strategy, optim, args):
         network = vgg19_inhib(self_connection=True)
     else:
         get_config(args)
-        print(args)
-        scopes = get_params(args, 'scopes')
         widths = get_params(args, 'widths')
         damps = get_params(args, 'damps')
-        print('CONFIG:', scopes, widths, damps)
+        print('CONFIG:', widths, damps)
 
         network = AlexNetLC(widths, damps, strategy=strategy, optim=optim)
 
@@ -117,8 +101,7 @@ def run(args):
     transform = transforms.Compose([transforms.RandomCrop(crop, padding),
                                     transforms.RandomHorizontalFlip(),
                                     transforms.ToTensor(),
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                    ])
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     # load data
     trainval_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=True, download=True, transform=transform)
@@ -130,7 +113,7 @@ def run(args):
         val_set = Subset(trainval_set, indices=val_indices)
         train_set = Subset(trainval_set, indices=train_indices)
 
-        network = get_network(strategy, optim, args)
+        network = build_network(strategy, optim, args)
 
         print(network)
         print(network.features)
@@ -162,13 +145,12 @@ if __name__ == '__main__':
     strategies = ["CLC", "SSLC", "CLC-G", "SSLC-G"] + old_strategies
     optims = ["adaptive", "frozen", "parametric"]
 
-    parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ main.py CLC frozen\n\noptionally do HP optimisation '
+    parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ run.py CLC frozen\n\noptionally do HP optimisation '
                                            'using hp_params.json \n(index 23 in this example)\n'
-                                           '$ main.py CLC frozen -p 23\n\noptionally overwrite default params\n'
-                                           '$ main.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
+                                           '$ run.py CLC frozen -p 23\n\noptionally overwrite default params\n'
+                                           '$ run.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
     parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("optim", type=str, choices=optims)
-    parser.add_argument("-s", "--scopes", dest="scopes", type=str, help="overwrite default scopes")
     parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths")
     parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps")
     parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)

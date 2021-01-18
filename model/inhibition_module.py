@@ -1,10 +1,10 @@
 import abc
 from typing import List
 
-from torch import Tensor
+from torch import Tensor, nn
 
 
-class InhibitionModule(abc.ABC):
+class BaseSemLC(nn.Module, abc.ABC):
 
     @property
     @abc.abstractmethod
@@ -35,7 +35,7 @@ class InhibitionModule(abc.ABC):
 
     def __repr__(self):
         params = []
-        for p in ["scope", "width", "damp", "self_connection", "is_circular", "in_channels"]:
+        for p in ["width", "damp", "self_connection", "is_circular", "in_channels"]:
             if p in self.__dict__.keys():
                 params.append(f"{p}={str(self.__dict__[p])}")
         return f"{self.__class__.__name__}({', '.join(params)})"

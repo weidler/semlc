@@ -5,12 +5,12 @@ from torch import nn
 import torch
 
 from util.convolution import pad_roll, convolve_3d_fourier
-from model.inhibition_module import InhibitionModule
+from model.inhibition_module import BaseSemLC
 from util import weight_initialization
 from util.complex import div_complex
 
 
-class FFTConvergedInhibition(nn.Module, InhibitionModule):
+class FFTConvergedInhibition(nn.Module, BaseSemLC):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms.
 
@@ -47,7 +47,7 @@ class FFTConvergedInhibition(nn.Module, InhibitionModule):
         return convolve_3d_fourier(kernel, activations, self.kronecker_delta)
 
 
-class FFTConvergedFrozenInhibition(nn.Module, InhibitionModule):
+class FFTConvergedFrozenInhibition(nn.Module, BaseSemLC):
     """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms. Filter is frozen, implementation is optimized
     towards speed taking this into account.

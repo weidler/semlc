@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 from torch import nn
 
 from model.fft_inhibition_layer import FFTConvergedFrozenInhibition, FFTConvergedInhibition
-from model.inhibition_layer import SingleShotInhibition, ConvergedInhibition, \
-    ConvergedFrozenInhibition, ParametricInhibition, SingleShotGaussian, ConvergedGaussian
+from model.semantic_layers import SingleShotSemLC, ConvergedSemLC, \
+    ConvergedFrozenSemLC, ParametricSemLC, SingleShotGaussian, ConvergedGaussianSemLC
 
 
 def lateral_pass_plot(layer, signal, line_style="."):
@@ -50,26 +50,26 @@ if __name__ == "__main__":
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
 
     layers = [
-        SingleShotInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="zeros",
-                             self_connection=self_connect),
-        SingleShotInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="circular",
-                             self_connection=self_connect),
+        SingleShotSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="zeros",
+                        self_connection=self_connect),
+        SingleShotSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="circular",
+                        self_connection=self_connect),
 
         # circular padding
-        ConvergedInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
-        ConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping,
-                                  self_connection=self_connect),
-        ParametricInhibition(in_channels=depth, ricker_width=wavelet_width, initial_damp=damping,
+        ConvergedSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        ConvergedFrozenSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping,
                              self_connection=self_connect),
+        ParametricSemLC(in_channels=depth, ricker_width=wavelet_width, initial_damp=damping,
+                        self_connection=self_connect),
 
         FFTConvergedInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
         FFTConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
 
         # zero padding
-        # ConvergedInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
-        # ConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
+        # ConvergedSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
+        # ConvergedFrozenSemLC(in_channels=depth, ricker_width=wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
 
-        ConvergedGaussian(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        ConvergedGaussianSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
         SingleShotGaussian(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="circular", self_connection=self_connect),
         # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
         # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),

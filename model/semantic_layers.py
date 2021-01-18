@@ -1,15 +1,15 @@
 import torch
 from torch import nn
 
-from model.inhibition_module import InhibitionModule
+from model.inhibition_module import BaseSemLC
 from util import weight_initialization, ricker
 from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
 
 
 # SINGLE SHOT
 
-class SingleShotInhibition(InhibitionModule, nn.Module):
-    """SSLC Layer.
+class SingleShotSemLC(BaseSemLC):
+    """One step Semantic lateral connectivity Layer.
     
     Input shape:
         N x C x H x W
@@ -23,33 +23,31 @@ class SingleShotInhibition(InhibitionModule, nn.Module):
         assert pad in ["circular", "zeros"]
 
         self.learn_weights = learn_weights
-
         self.in_channels = in_channels
-        self.scope = self.in_channels - 1
         self.damp = damp
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
         self.width = ricker_width
 
-        inhibition_filter = self._make_filter()
-        self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter, requires_grad=learn_weights))
-        self.inhibition_filter.requires_grad = learn_weights
+        lateral_filter = self._make_filter()
+        self.register_parameter("lateral_filter", nn.Parameter(lateral_filter, requires_grad=learn_weights))
+        self.lateral_filter.requires_grad = learn_weights
 
     @property
     def name(self):
         return f"SSLC {'Frozen' if not self.learn_weights else 'Adaptive'}"
 
     def _make_filter(self):
-        return weight_initialization.mexican_hat(self.scope, damping=torch.tensor(self.damp, dtype=torch.float32),
+        return weight_initialization.mexican_hat(self.in_channels - 1, damping=torch.tensor(self.damp, dtype=torch.float32),
                                                  width=torch.tensor(self.width, dtype=torch.float32),
                                                  self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
         if self.is_circular:
-            tpl = toeplitz1d_circular(self.inhibition_filter, activations.shape[1])
+            tpl = toeplitz1d_circular(self.lateral_filter, activations.shape[1])
         else:
-            tpl = toeplitz1d_zero(self.inhibition_filter, activations.shape[1])
+            tpl = toeplitz1d_zero(self.lateral_filter, activations.shape[1])
 
         # convolve by toeplitz
         return (0 if self.self_connection else activations) + convolve_3d_toeplitz(tpl, activations)
@@ -57,9 +55,9 @@ class SingleShotInhibition(InhibitionModule, nn.Module):
 
 # CONVERGED
 
-class ConvergedInhibition(InhibitionModule, nn.Module):
-    """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
-    using the inverse of a Toeplitz matrix.
+class ConvergedSemLC(BaseSemLC):
+    """Semantic lateral connectivity layer using the single operation convergence point strategy. Convergence point is
+    determined using the inverse of a Toeplitz matrix.
 
     Input shape:
         N x C x H x W
@@ -69,7 +67,6 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
     def __init__(self, in_channels: int, ricker_width: int, damp: float, pad="circular", self_connection: bool = False):
         super().__init__()
         self.in_channels = in_channels
-        self.scope = self.in_channels - 1
         self.damp = damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
@@ -77,12 +74,12 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
         self.width = ricker_width
 
         # inhibition filter
-        inhibition_filter = weight_initialization.mexican_hat(self.scope,
+        lateral_filter = weight_initialization.mexican_hat(self.in_channels - 1,
                                                               width=torch.tensor(ricker_width, dtype=torch.float32),
                                                               damping=torch.tensor(damp, dtype=torch.float32),
                                                               self_connect=self_connection)
-        self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter, requires_grad=True))
-        self.inhibition_filter.requires_grad = True
+        self.register_parameter("lateral_filter", nn.Parameter(lateral_filter, requires_grad=True))
+        self.lateral_filter.requires_grad = True
 
     @property
     def name(self):
@@ -91,9 +88,9 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
         if self.is_circular:
-            tpl = toeplitz1d_circular(self.inhibition_filter, activations.shape[1])
+            tpl = toeplitz1d_circular(self.lateral_filter, activations.shape[1])
         else:
-            tpl = toeplitz1d_zero(self.inhibition_filter, activations.shape[1])
+            tpl = toeplitz1d_zero(self.lateral_filter, activations.shape[1])
 
         tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
@@ -101,8 +98,8 @@ class ConvergedInhibition(InhibitionModule, nn.Module):
         return convolve_3d_toeplitz(-tpl_inv, activations)
 
 
-class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
-    """Inhibition layer using the single operation convergence point strategy. Convergence point is determined
+class ConvergedFrozenSemLC(BaseSemLC):
+    """Semantic lateral connectivity layer using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
     Input shape:
@@ -114,7 +111,6 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
                  self_connection: bool = False):
         super().__init__()
         self.in_channels = in_channels
-        self.scope = self.in_channels - 1
         self.damp = damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
@@ -122,13 +118,13 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
         self.width = ricker_width
 
         # inhibition filter
-        self.inhibition_filter = self._make_filter()
+        self.lateral_filter = self._make_filter()
 
         # construct filter toeplitz
         if self.is_circular:
-            tpl = toeplitz1d_circular(self.inhibition_filter, self.in_channels)
+            tpl = toeplitz1d_circular(self.lateral_filter, self.in_channels)
         else:
-            tpl = toeplitz1d_zero(self.inhibition_filter, self.in_channels)
+            tpl = toeplitz1d_zero(self.lateral_filter, self.in_channels)
 
         self.tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
@@ -137,7 +133,7 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
         return f"CLC Frozen"
 
     def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.mexican_hat(self.scope, width=torch.tensor(self.width, dtype=torch.float32),
+        return weight_initialization.mexican_hat(self.in_channels - 1, width=torch.tensor(self.width, dtype=torch.float32),
                                                  damping=torch.tensor(self.damp, dtype=torch.float32),
                                                  self_connect=self.self_connection)
 
@@ -147,8 +143,8 @@ class ConvergedFrozenInhibition(InhibitionModule, nn.Module):
 
 # PARAMETRIC
 
-class ParametricInhibition(InhibitionModule, nn.Module):
-    """Inhibition layer using the single operation convergence point strategy with trainable parameters
+class ParametricSemLC(BaseSemLC):
+    """Semantic lateral connectivity layer using the single operation convergence point strategy with trainable parameters
     damping and width factor. Convergence point is determined using the inverse of a Toeplitz matrix.
 
     Input shape:
@@ -160,7 +156,6 @@ class ParametricInhibition(InhibitionModule, nn.Module):
                  self_connection: bool = False):
         super().__init__()
         self.in_channels = in_channels
-        self.scope = self.in_channels - 1
 
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
@@ -181,14 +176,14 @@ class ParametricInhibition(InhibitionModule, nn.Module):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        self.inhibition_filter = ricker.ricker(scope=self.scope, width=self.width, damp=self.damp,
+        self.lateral_filter = ricker.ricker(scope=self.in_channels - 1, width=self.width, damp=self.damp,
                                                self_connect=self.self_connection)
 
         # construct filter toeplitz
         if self.is_circular:
-            tpl = toeplitz1d_circular(self.inhibition_filter, self.in_channels)
+            tpl = toeplitz1d_circular(self.lateral_filter, self.in_channels)
         else:
-            tpl = toeplitz1d_zero(self.inhibition_filter, self.in_channels)
+            tpl = toeplitz1d_zero(self.lateral_filter, self.in_channels)
 
         tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
 
@@ -198,21 +193,7 @@ class ParametricInhibition(InhibitionModule, nn.Module):
 
 # GAUSSIAN FILTER
 
-class SingleShotGaussian(SingleShotInhibition):
-    def __init__(self, in_channels: int, ricker_width: int, damp: float, pad: str = "circular",
-                 self_connection: bool = False):
-        super().__init__(in_channels=in_channels, ricker_width=ricker_width, damp=damp, learn_weights=False,
-                         pad=pad, self_connection=self_connection)
-
-    def name(self):
-        return f"SSLC-G"
-
-    def _make_filter(self):
-        return weight_initialization.gaussian(self.scope, damping=self.damp, width=self.width,
-                                              self_connect=self.self_connection)
-
-
-class ConvergedGaussian(ConvergedFrozenInhibition):
+class ConvergedGaussianSemLC(ConvergedFrozenSemLC):
 
     def __init__(self, in_channels: int, ricker_width: float, damp: float = 0.12, pad="circular",
                  self_connection: bool = False):
@@ -223,5 +204,5 @@ class ConvergedGaussian(ConvergedFrozenInhibition):
         return f"CLC-G"
 
     def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.gaussian(self.scope, width=self.width, damping=self.damp,
+        return weight_initialization.gaussian(self.in_channels - 1, width=self.width, damping=self.damp,
                                               self_connect=self.self_connection)

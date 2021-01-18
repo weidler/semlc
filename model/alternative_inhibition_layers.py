@@ -7,13 +7,13 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from torch import nn, __init__
 
-from model.inhibition_module import InhibitionModule
+from model.inhibition_module import BaseSemLC
 from util import weight_initialization
 
 import torch
 
 
-class Conv3DSingleShotInhibition(nn.Module, InhibitionModule):
+class Conv3DSingleShotInhibition(BaseSemLC):
     """Nice Inhibition Layer. """
 
     def __init__(self, scope: int, ricker_width: int, damp: float, padding: str = "zeros", learn_weights=False,
@@ -74,7 +74,7 @@ class Conv3DSingleShotInhibition(nn.Module, InhibitionModule):
 
 
 @DeprecationWarning
-class Conv3DRecurrentInhibition(nn.Module, InhibitionModule):
+class Conv3DRecurrentInhibition(BaseSemLC):
     """Nice Inhibition Layer. """
     axs_convergence: List[Axes]
     fig_convergence: plt.Figure
