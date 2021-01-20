@@ -10,6 +10,7 @@ from torchvision import transforms
 
 from model.network.VGG import vgg19, vgg19_inhib
 from model.network.alexnet_cifar import BaselineCMap, Baseline, AlexNetLC
+from model.network.base import BaseNetwork
 from util.eval import accuracy
 from util.ourlogging import Logger
 from util.train import train
@@ -31,7 +32,7 @@ def get_hp_params(args):
 
 
 def get_config(args):
-    # check for HP optmisation
+    # check for HP optimization
     get_hp_params(args)
 
     # optionally overwrite config
@@ -61,7 +62,7 @@ def get_params(args, param):
     return parameter
 
 
-def build_network(strategy, optim, args):
+def build_network(strategy, optim, args) -> BaseNetwork:
     if strategy == "baseline":
         network = Baseline()
     elif strategy == "cmap":
@@ -114,9 +115,7 @@ def run(args):
         train_set = Subset(trainval_set, indices=train_indices)
 
         network = build_network(strategy, optim, args)
-
-        print(network)
-        print(network.features)
+        print(f"Starting training of network {network.__class__.__name__}. Strategy: {strategy}.")
 
         if use_cuda:
             network.cuda()
@@ -151,6 +150,7 @@ if __name__ == '__main__':
                                            '$ run.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
     parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("optim", type=str, choices=optims)
+    parser.add_argument("--data", type=str, default="cifar10", choices=["cifar10", "mnist"], help="dataset to use")
     parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths")
     parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps")
     parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)

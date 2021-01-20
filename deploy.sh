@@ -17,7 +17,12 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 module load cray-python
 
 # load virtual environment
-source ${HOME}/lcvenv/bin/activate
+source ${HOME}/virtualenvs/lcvenv/bin/activate
 
 # start job
-python3 -O run.py CLC frozen
+if test -z "$SCRIPTCOMMAND"
+then
+  python3 -O run.py CLC frozen
+else
+  eval $SCRIPTCOMMAND
+fi
