@@ -1,7 +1,7 @@
 from typing import List
 from torch import nn
 
-from model.semantic_layers import ParametricSemLC, ConvergedSemLC, ConvergedFrozenSemLC, \
+from layers.semantic_layers import ParametricSemLC, ConvergedSemLC, ConvergedFrozenSemLC, \
     SingleShotSemLC, ConvergedGaussianSemLC
 
 
@@ -48,14 +48,14 @@ class BaseNetwork(nn.Module):
 
     def lateral_connect_layer_type(self, num_layer: int = 1, in_channels=None):
         """
-        returns an LC layer determined by strategy and optim,
+        returns an LC layers determined by strategy and optim,
         CLC-G and SSLC-G do not care about optim, they will always be frozen,
         SSLC has no parametric optim
 
-        :param num_layer:       the number of the LC layer, starting at 1
+        :param num_layer:       the number of the LC layers, starting at 1
         :param in_channels:     obligatory for frozen optimisations
 
-        :return:                the LC layer
+        :return:                the LC layers
         """
         if not self.is_lc:
             raise AttributeError("Network does not allow LC layers.")
@@ -84,6 +84,17 @@ class BaseNetwork(nn.Module):
 
     def forward(self, x):
         raise NotImplementedError
+
+    def serialize_meta(self):
+        return {
+            "network_type": self.__class__.__name__,
+            "input_channels": self.input_channels,
+            "input_width": self.input_width,
+            "input_height": self.input_height,
+            "is_lateral": self.is_lateral,
+            "lateral_type": self.lateral_type,
+            "complex_cells": self.is_complex
+        }
 
 
 if __name__ == '__main__':

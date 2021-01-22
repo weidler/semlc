@@ -1,0 +1,192 @@
+{% extends "layout.html" %}
+{% block title %} Experiment {% endblock %}
+
+<!-- Page Content -->
+{% block inpage_title %}
+    <span class="display-4">
+        Analysis<br>
+    </span>
+    <span class="display-3">
+        <span style="font-weight: 900">{{ info.network }}:</span> {{ info.dataset.name }}
+    </span>
+    <br>
+
+    <tag class="red"><i class="fas fa-brain"></i> {{ info.network }}</tag>
+    |
+    <tag class="blue"><i class="fas fa-database"></i> {{ info.dataset.name }}</tag>
+    <tag class="green"><i class="fas fa-project-diagram"></i> {{ info.lateral_type }}</tag>
+
+{% endblock %}
+
+{% block side_nav %}
+    <ul class="list-unstyled components">
+        <li class="active-w"><a href="#statistics-view">Training Statistics</a></li>
+        <li><a href="#hp-view">Hyperparameters</a></li>
+    </ul>
+{% endblock %}
+
+{% block page_controls %}
+    <div class="reload-button">
+        <button type="button" id="refresh" class="btn btn-circle btn-sm">
+            <i class="fas fa-sync"></i>
+        </button>
+    </div>
+{% endblock %}
+
+{% block page_content %}
+
+    {% if not info.evaluation %}
+        <div class="row justify-content-center">
+            <button type="button" class="btn btn-lg btn-success btn-important" id="evaluate-btn"><i
+                    class="fas fa-star"></i>
+                Evaluate {{ info.ids|length }} Experiments
+            </button>
+        </div>
+    {% endif %}
+
+    <div class="topic-group" id="statistics-view">
+        <div class="row justify-content-center align-bottom">
+            <div class="col col-6">
+                <div id="validation-accuracy-plot" style="width:100%">
+                    {{ info.val_accuracy[0]|safe }}
+                    {{ info.val_accuracy[1]|safe }}
+                </div>
+            </div>
+
+            <div class="col col-6">
+                <div id="loss-plot" style="width:100%;">
+                    {{ info.loss_progress_plot[0]|safe }}
+                    {{ info.loss_progress_plot[1]|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="topic-group" id="evaluation-view">
+        <div class="row justify-content-center align-bottom">
+
+            <div class="col col-6 align-bottom">
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                    {% for v in info.evaluated_settings %}
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {{ 'active' if (loop.index == 1) else '' }}" id="pills-{{ v }}-tab"
+                               data-toggle="pill" href="#eval-{{ v }}-plot"
+                               role="tab" aria-controls="eval-{{ v }}-plot"
+                               aria-selected="{{ 'true' if loop.index == 0 else 'false' }}">{{ v }} </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="tab-content">
+                    {% for v in info.evaluated_settings %}
+                        <div id="eval-{{ v }}-plot" class="tab-pane fade {{ 'show active' if loop.index == 1 else '' }}"
+                             role="tabpanel" aria-labelledby="eval-{{ v }}-plot-tab"
+                             style="width:100%; height:500px;"></div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="topic-group" id="hp-view">
+        <div class="row justify-content-center">
+            <div class="col col-6">
+                <h4 align="center" class="sub-title">Performance</h4>
+
+                <table class="table table-striped" title="Statistics">
+                    <thead>
+                    <tr>
+                        <th scope="col"></th>
+                        <th scope="col">Validation</th>
+                        <th scope="col">Test</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Accuracy</td>
+                        <td>{{ info.mean_best_val_acc }}</td>
+                        <td>{{ info.evaluation.mean_test_acc if info.evaluation else 'Not all experiments evaluated.' }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Epoch of Best Accuracy</td>
+                        <td>{{ info.mean_best_val_acc_epoch }}</td>
+                        <td> - </td>
+                    </tr>
+
+                    <tr>
+                        <td>Mean Lowest Loss</td>
+                        <td>{{ info.mean_best_loss }}</td>
+                        <td> - </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col col-6">
+                <h4 align="center" class="sub-title">Meta Statistics</h4>
+
+                <table class="table table-striped" title="Hyperparameters">
+                    <thead>
+                    <tr>
+                        <th scope="col">Statistic</th>
+                        <th scope="col">Value</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Mean Training Duration</td>
+                        <td>{{ info.mean_train_time }} seconds</td>
+                    </tr>
+
+                    <tr>
+                        <td>Mean Epoch Duration</td>
+                        <td>{{ info.mean_epoch_time }} seconds</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js_footer %}
+    <script type="text/javascript" src="https://mpld3.github.io/js/d3.v3.min.js"></script>
+    <script>
+        $('.carousel').carousel();
+
+        $("nav ul li").on("click", function () {
+            $("nav").find(".active-w").removeClass("active-w");
+            $(this).addClass("active-w");
+        });
+
+        $(".reload-button").on("click", function () {
+            location.reload();
+        });
+
+        $("#agentId").on("click", function () {
+            /* Get the text field */
+            let copyText = $("#copyText")[0];
+            copyText.select();
+            document.execCommand("copy");
+        });
+
+        $("#evaluate-btn").on("click", function () {
+                $.ajax({
+                    url: "{{ url_for("evaluate_experiments") }}",
+                    type: "POST",
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify({'ids': '{{ info.ids | tojson }}'}),
+                    success: function () {
+                        {#location.reload();#}
+                    },
+                    error: function (jqXhr, textStatus, errorMessage) {
+                        console.log(errorMessage);
+                    }
+                });
+            }
+        )
+
+    </script>
+{% endblock %}

@@ -15,8 +15,8 @@ import numpy as np
 from torchvision import transforms, datasets
 
 from util.eval import accuracy
-from util.ourlogging import Logger
-from model.network.alexnet_cifar import ConvergedInhibitionNetwork
+from util.log import Logger
+from networks import ConvergedInhibitionNetwork
 
 use_cuda = False
 if torch.cuda.is_available():
@@ -26,7 +26,7 @@ if torch.cuda.is_available():
 print(f"USE CUDA: {use_cuda}.")
 
 strategies = ["converged", "toeplitz", "once", "once_learned"]
-# scope is specific to each layer
+# scope is specific to each layers
 range_scope = np.array([[9, 27, 45, 63],
                         [9, 27, 45, 63],
                         [9, 27, 45, 63],

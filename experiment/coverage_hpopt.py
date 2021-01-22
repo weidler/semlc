@@ -15,11 +15,11 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_cifar import ConvergedInhibitionNetwork
+from networks import ConvergedInhibitionNetwork
 from util.train import train
 from util.eval import accuracy, accuracy_with_confidence
 
-from util.ourlogging import Logger
+from util.log import Logger
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False

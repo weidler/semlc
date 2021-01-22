@@ -4,7 +4,6 @@ torchvision
 
 cycler
 kiwisolver
-matplotlib
 numpy
 pandas
 Pillow
@@ -14,3 +13,11 @@ pytz
 scipy
 six
 tqdm
+simplejson
+
+# visualization and webapp
+matplotlib
+seaborn
+bokeh
+flask_jsglue
+flask

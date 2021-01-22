@@ -1,4 +1,4 @@
-"""visually compares the ordering imposed by the network with the suggested ordering by the two-opt"""
+"""visually compares the ordering imposed by the networks with the suggested ordering by the two-opt"""
 
 import matplotlib as mp
 import matplotlib.pyplot as plt

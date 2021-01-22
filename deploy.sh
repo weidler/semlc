@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=sslc_cpu
+#SBATCH --job-name=semlc
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-core=1

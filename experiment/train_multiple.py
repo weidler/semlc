@@ -7,7 +7,7 @@ from torch.utils.data import Subset
 
 sys.path.append("./")
 
-from model.network.VGG import vgg19, vgg19_inhib
+from networks import vgg19, vgg19_inhib
 
 import torch
 
@@ -15,12 +15,12 @@ import torchvision
 from torch import nn
 from torchvision import transforms
 
-from model.network.alexnet_cifar import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork, \
+from networks import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork, \
     ParametricInhibitionNetwork
 from util.train import train
 from util.eval import accuracy
 
-from util.ourlogging import Logger
+from util.log import Logger
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -127,7 +127,7 @@ def run(strategy: str, iterations: int):
               criterion=nn.CrossEntropyLoss(),
               logger=logger,
               val_set=val_set,
-              # optimizer=SGD(network.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),  # for VGG
+              # optimizer=SGD(networks.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4),  # for VGG
               # learn_rate=0.05  # for VGG
               learn_rate=0.001,
               verbose=False)

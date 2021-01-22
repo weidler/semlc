@@ -11,7 +11,7 @@ from torchvision import transforms, datasets
 import pandas as pd
 
 from util.eval import accuracy, accuracy_from_data_loader
-from model.network.alexnet_cifar import ConvergedInhibitionNetwork
+from networks import ConvergedInhibitionNetwork
 
 #torch.random.manual_seed(12311)
 #np.random.seed(12311)
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     _, valid_loader, test_set, valid_set = get_train_valid_loaders("../data/cifar10/", batch_size)
     strategies = ["converged", "toeplitz"]# "once", "once_learned"]
     # strategies = ["once"]
-    # scope is specific to each layer
+    # scope is specific to each layers
     range_scope = np.array([[9, 27, 45, 63],
                             [9, 27, 45, 63],
                             [9, 27, 45, 63],

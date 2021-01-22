@@ -1,11 +1,11 @@
-"""Tests the accuracy on a given model or an average over a set of models"""
+"""Tests the accuracy on a given layers or an average over a set of models"""
 
 import random
 import sys
 
 from torch.utils.data import DataLoader
 
-from model.network.VGG import vgg19, vgg19_inhib
+from networks import vgg19, vgg19_inhib
 
 sys.path.append("./")
 import numpy
@@ -15,7 +15,7 @@ from torchvision import transforms
 import pandas as pd
 from tqdm import tqdm
 
-from model.network.alexnet_cifar import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork, \
+from networks import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork, \
     ParametricInhibitionNetwork
 from util.eval import accuracies_from_list, accuracy_from_data_loader
 
@@ -37,7 +37,7 @@ print(f"USE CUDA: {use_cuda}.")
 keychain = "./output/keychain.txt"
 model_path = "./output/"
 
-df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
+df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'layers', 'datetime'])
 
 # SET UP NETS AND SETTINGS
 
@@ -114,7 +114,7 @@ for random_transform_test in [False, True]:
             print(strategy, len(filenames))
 
             for i, row in tqdm(enumerate(filenames), disable=True):
-                filename = f"{model_path}{row}_best.model"
+                filename = f"{model_path}{row}_best.layers"
                 all_nets[strategy][i].load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
                 data_loader = DataLoader(test_set, batch_size=128,
                                          shuffle=False, num_workers=0)

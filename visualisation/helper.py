@@ -1,24 +1,24 @@
 import pandas as pd
 import torch
 
-from model.network.VGG import vgg19, vgg19_inhib
-from model.network.alexnet_cifar import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork, \
+from networks import vgg19, vgg19_inhib
+from networks import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork, \
     ParametricInhibitionNetwork
 
 # files to saved models and keychain
 keychain = "./output/keychain.txt"
 path = "./output/"
 
-df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
+df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'layers', 'datetime'])
 
 
 def get_net(strategy: str):
     """
-    loads the model with pre-defined hyper parameters for a given strategy
+    loads the layers with pre-defined hyper parameters for a given strategy
 
     :param strategy:                the strategy
 
-    :return:                        the model
+    :return:                        the layers
     """
 
     all_nets = {
@@ -75,16 +75,16 @@ def get_all_model_paths(strategy: str):
 
 def get_one_model(strategy: str, index=0):
     """
-    returns a model with loaded state dictionary at the specified index of all saved models
+    returns a layers with loaded state dictionary at the specified index of all saved models
 
     :param strategy:            the strategy
     :param index:               the index
 
-    :return:                    the model with loaded state dictionary
+    :return:                    the layers with loaded state dictionary
     """
 
     model_path = get_all_model_paths(strategy).iloc[index]
-    filename = f"{path}{model_path}_best.model"
+    filename = f"{path}{model_path}_best.layers"
     model = get_net(strategy)
     model.load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
     return model

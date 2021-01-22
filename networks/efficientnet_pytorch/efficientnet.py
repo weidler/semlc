@@ -1,7 +1,5 @@
 """A copy of Luke Melas-Kyriazi's implementation (https://github.com/lukemelas/EfficientNet-PyTorch),
 only adapted to include our inhibition."""
-import os
-import sys
 
 from typing import List
 
@@ -10,8 +8,8 @@ from torch import nn
 from torch.nn import functional as F
 from torchsummary import summary
 
-from model.network.base import BaseNetwork
-from model.network.efficientnet_pytorch.eff_net_utils import (
+from networks import BaseNetwork
+from networks.efficientnet_pytorch.eff_net_utils import (
     round_filters,
     round_repeats,
     drop_connect,
@@ -34,7 +32,7 @@ class MBConvBlock(nn.Module):
         global_params (namedtuple): GlobalParam, see above
 
     Attributes:
-        has_se (bool): Whether the block contains a Squeeze and Excitation layer.
+        has_se (bool): Whether the block contains a Squeeze and Excitation layers.
     """
 
     def __init__(self, block_args, global_params):
@@ -63,7 +61,7 @@ class MBConvBlock(nn.Module):
             kernel_size=k, stride=s, bias=False)
         self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
 
-        # Squeeze and Excitation layer, if desired
+        # Squeeze and Excitation layers, if desired
         if self.has_se:
             num_squeezed_channels = max(1, int(self._block_args.input_filters * self._block_args.se_ratio))
             self._se_reduce = Conv2d(in_channels=oup, out_channels=num_squeezed_channels, kernel_size=1)
@@ -111,14 +109,14 @@ class MBConvBlock(nn.Module):
 
 class EfficientNet(nn.Module):
     """
-    An EfficientNet model. Most easily loaded with the .from_name or .from_pretrained methods
+    An EfficientNet layers. Most easily loaded with the .from_name or .from_pretrained methods
 
     Args:
         blocks_args (list): A list of BlockArgs to construct blocks
         global_params (namedtuple): A set of GlobalParams shared between blocks
 
     Example:
-        model = EfficientNet.from_pretrained('efficientnet-b0')
+        layers = EfficientNet.from_pretrained('efficientnet-b0')
 
     """
 
@@ -167,7 +165,7 @@ class EfficientNet(nn.Module):
         self._conv_head = Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
         self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
-        # Final linear layer
+        # Final linear layers
         self._avg_pooling = nn.AdaptiveAvgPool2d(1)
         self._dropout = nn.Dropout(self._global_params.dropout_rate)
         self._fc = nn.Linear(out_channels, self._global_params.num_classes)
@@ -180,7 +178,7 @@ class EfficientNet(nn.Module):
             block.set_swish(memory_efficient)
 
     def extract_features(self, inputs):
-        """ Returns output of the final convolution layer """
+        """ Returns output of the final convolution layers """
 
         # Stem
         x = self._swish(self._bn0(self._conv_stem(inputs)))
@@ -198,12 +196,12 @@ class EfficientNet(nn.Module):
         return x
 
     def forward(self, inputs):
-        """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
+        """ Calls extract_features to extract features, applies final linear layers, and returns logits. """
         bs = inputs.size(0)
         # Convolution layers
         x = self.extract_features(inputs)
 
-        # Pooling and final linear layer
+        # Pooling and final linear layers
         x = self._avg_pooling(x)
         x = x.view(bs, -1)
         x = self._dropout(x)
@@ -234,7 +232,7 @@ class EfficientNet(nn.Module):
 
     @classmethod
     def _check_model_name_is_valid(cls, model_name):
-        """ Validates model name. """
+        """ Validates layers name. """
         valid_models = ['efficientnet-b'+str(i) for i in range(9)]
         if model_name not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
@@ -294,7 +292,7 @@ class LCEfficientNet(BaseNetwork):
         self._conv_head = Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
         self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
-        # Final linear layer
+        # Final linear layers
         self._avg_pooling = nn.AdaptiveAvgPool2d(1)
         self._dropout = nn.Dropout(self._global_params.dropout_rate)
         self._fc = nn.Linear(out_channels, self._global_params.num_classes)
@@ -307,7 +305,7 @@ class LCEfficientNet(BaseNetwork):
             block.set_swish(memory_efficient)
 
     def extract_features(self, inputs):
-        """ Returns output of the final convolution layer """
+        """ Returns output of the final convolution layers """
 
         x = self._conv_stem(inputs)
         x = self.inhibition_layer(x)
@@ -326,12 +324,12 @@ class LCEfficientNet(BaseNetwork):
         return x
 
     def forward(self, inputs):
-        """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
+        """ Calls extract_features to extract features, applies final linear layers, and returns logits. """
         bs = inputs.size(0)
         # Convolution layers
         x = self.extract_features(inputs)
 
-        # Pooling and final linear layer
+        # Pooling and final linear layers
         x = self._avg_pooling(x)
         x = x.view(bs, -1)
         x = self._dropout(x)
@@ -352,7 +350,7 @@ class LCEfficientNet(BaseNetwork):
 
     @classmethod
     def _check_model_name_is_valid(cls, model_name):
-        """ Validates model name. """
+        """ Validates layers name. """
         valid_models = ['inhib_efficientnet-b' + str(i) for i in range(9)]
         if model_name not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))

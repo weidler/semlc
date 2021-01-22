@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from model.inhibition_module import BaseSemLC
+from layers.inhibition_module import BaseSemLC
 from util import weight_initialization, ricker
 from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
 
@@ -56,7 +56,7 @@ class SingleShotSemLC(BaseSemLC):
 # CONVERGED
 
 class ConvergedSemLC(BaseSemLC):
-    """Semantic lateral connectivity layer using the single operation convergence point strategy. Convergence point is
+    """Semantic lateral connectivity layers using the single operation convergence point strategy. Convergence point is
     determined using the inverse of a Toeplitz matrix.
 
     Input shape:
@@ -99,7 +99,7 @@ class ConvergedSemLC(BaseSemLC):
 
 
 class ConvergedFrozenSemLC(BaseSemLC):
-    """Semantic lateral connectivity layer using the single operation convergence point strategy. Convergence point is determined
+    """Semantic lateral connectivity layers using the single operation convergence point strategy. Convergence point is determined
     using the inverse of a Toeplitz matrix.
 
     Input shape:
@@ -144,7 +144,7 @@ class ConvergedFrozenSemLC(BaseSemLC):
 # PARAMETRIC
 
 class ParametricSemLC(BaseSemLC):
-    """Semantic lateral connectivity layer using the single operation convergence point strategy with trainable parameters
+    """Semantic lateral connectivity layers using the single operation convergence point strategy with trainable parameters
     damping and width factor. Convergence point is determined using the inverse of a Toeplitz matrix.
 
     Input shape:

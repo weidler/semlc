@@ -13,9 +13,9 @@ class BaseSemLC(nn.Module, abc.ABC):
 
     def sort_filters_in_layer(self, layer: int = 0):
         """
-        sorts the filters in a given layer according to the two_opt TSP alogrithm
+        sorts the filters in a given layers according to the two_opt TSP alogrithm
 
-        :param layer: the number of the layer
+        :param layer: the number of the layers
 
         :return: the sorted filters
         """
@@ -26,8 +26,8 @@ class BaseSemLC(nn.Module, abc.ABC):
 
     def get_filters_from_layer(self, layer: int = 0):
         """
-        returns the filters from the given layer
-        :param layer:           the layer
+        returns the filters from the given layers
+        :param layer:           the layers
 
         :return:                the tensor of filters
         """

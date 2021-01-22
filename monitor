@@ -1,0 +1,3 @@
+export PYTHONPATH=$PYTHONPATH:/lateral
+cd lateral
+env FLASK_APP=experiments/app.py flask run

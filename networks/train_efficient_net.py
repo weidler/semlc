@@ -5,9 +5,8 @@ Evaluate on ImageNet. Note that at the moment, training is not implemented (I am
 that being said, evaluation is working.
 """
 
-import os
 import sys
-sys.path.append("./")
+sys.path.append("/")
 
 import argparse
 import os
@@ -28,18 +27,18 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 
-from model.network.efficientnet_pytorch import EfficientNet
+from networks import EfficientNet
 from torchsummary import summary
 
-from model.network.efficientnet_pytorch.eff_net_utils import get_random_inhibition_params
-from model.network.efficientnet_pytorch.efficientnet import LCEfficientNet
-from util.ourlogging import Logger
+from networks.efficientnet_pytorch.eff_net_utils import get_random_inhibition_params
+from networks import LCEfficientNet
+from util.log import Logger
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR', default='./data/imagenet/',
                     help='path to dataset')
 parser.add_argument('-a', '--arch', metavar='ARCH', default='efficientnet-b0',
-                    help='model architecture (default: efficientnet-b0)')
+                    help='layers architecture (default: efficientnet-b0)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=90, type=int, metavar='N',
@@ -63,9 +62,9 @@ parser.add_argument('-p', '--print-freq', default=10, type=int,
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
-                    help='evaluate model on validation set')
+                    help='evaluate layers on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
-                    help='use pre-trained model')
+                    help='use pre-trained layers')
 parser.add_argument('--seed', default=None, type=int,
                     help='seed for initializing training. ')
 parser.add_argument('--image_size', default=224, type=int,
@@ -79,7 +78,7 @@ parser.add_argument('--strategy', default='CLC', type=str,
 parser.add_argument('--optim', default='frozen', type=str,
                     help='the inhibition optim')
 parser.add_argument('--save_freq', default=10, type=int,
-                    help='the model saving frequency (default: 10)')
+                    help='the layers saving frequency (default: 10)')
 
 best_acc1 = 0
 USE_CUDA = False
@@ -129,25 +128,25 @@ def main_worker(args, inhib_params=None):
         use_cuda = True
         torch.set_default_tensor_type(torch.cuda.FloatTensor)
     '''
-    # create model
+    # create layers
     if 'efficientnet' in args.arch:  # NEW
         if args.pretrained:
             model = EfficientNet.from_pretrained(args.arch, advprop=args.advprop)
-            print("=> using pre-trained model '{}'".format(args.arch))
+            print("=> using pre-trained layers '{}'".format(args.arch))
         else:
             if 'inhib' in args.arch:
                 assert inhib_params is not None, 'no given inhib params'
                 model = LCEfficientNet.from_name(args.arch, inhib_params=inhib_params)
             else:
                 model = EfficientNet.from_name(args.arch)
-            print("=> creating model '{}'".format(args.arch))
+            print("=> creating layers '{}'".format(args.arch))
 
     else:
         if args.pretrained:
-            print("=> using pre-trained model '{}'".format(args.arch))
+            print("=> using pre-trained layers '{}'".format(args.arch))
             model = models.__dict__[args.arch](pretrained=True)
         else:
-            print("=> creating model '{}'".format(args.arch))
+            print("=> creating layers '{}'".format(args.arch))
             model = models.__dict__[args.arch]()
     '''
     if torch.cuda.is_available():

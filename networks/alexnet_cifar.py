@@ -1,12 +1,10 @@
 from typing import List, Dict, Union
 
-import torch
-from torchsummary import summary
 from torch import nn
 
-from model.semantic_layers import SingleShotSemLC, ConvergedFrozenSemLC, ConvergedSemLC, \
+from layers.semantic_layers import SingleShotSemLC, ConvergedFrozenSemLC, ConvergedSemLC, \
     ParametricSemLC
-from model.network.base import BaseNetwork, BaseNetwork
+from networks import BaseNetwork
 
 
 class _AlexNetBase(BaseNetwork):
@@ -60,7 +58,7 @@ class _AlexNetBase(BaseNetwork):
     def build_module(self, inhibition_layers: Dict[str, nn.Module]):
         """
         composes the module with optional specified inhibition layers as dictionary with 'inhib_{i}' as key,
-         starting at i=1. Layers will be added after the i-th convolutional layer.
+         starting at i=1. Layers will be added after the i-th convolutional layers.
 
         :param inhibition_layers: a dictionary with inhibition layers and 'inhib_{i}' as key, starting with i=1
 

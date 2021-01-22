@@ -2,7 +2,9 @@
 only adapted to include our inhibition."""
 import sys
 
-sys.path.append("./")
+from networks.base import BaseNetwork
+
+sys.path.append("/")
 
 import math
 from typing import List
@@ -12,11 +14,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
-from model.network.base import BaseNetwork
 from torch.utils.data import Subset
 
 from util.eval import accuracies_from_list
-from util.ourlogging import Logger
+from util.log import ExperimentLogger
 
 
 def squash(x):
@@ -174,12 +175,12 @@ class InhibitionCapsNet(BaseNetwork, nn.Module):
         super().__init__(widths, damps, strategy, optim)
 
         # check if legal parameters
-        assert len(widths) == 1, "Cannot have more than one LC layer in CapsNet, because there is only one conv layer."
+        assert len(widths) == 1, "Cannot have more than one LC layers in CapsNet, because there is only one conv layers."
 
         # primary convolution
         self.conv1 = nn.Conv2d(1, 256, kernel_size=9, stride=1)
 
-        # inhibition layer
+        # inhibition layers
         self.inhibition_layer = self.lateral_connect_layer_type(num_layer=1, in_channels=256)
 
         # primary capsules
@@ -221,7 +222,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 0.01)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
-    parser.add_argument("--no-inhibition", action="store_true", default=False, help="disables Inhibition layer")
+    parser.add_argument("--no-inhibition", action="store_true", default=False, help="disables Inhibition layers")
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
@@ -344,7 +345,7 @@ if __name__ == '__main__':
 
         logger = Logger(model, experiment_code=f"{args.strategy}_{i}")
 
-        # model.load_state_dict(torch.load('output/15802478382228594699_best.model', map_location=lambda storage, loc: storage))
+        # layers.load_state_dict(torch.load('output/15802478382228594699_best.layers', map_location=lambda storage, loc: storage))
 
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
         # optimizer.load_state_dict(torch.load('./output/15802478382228594699_best.opt', map_location=lambda storage, loc: storage))

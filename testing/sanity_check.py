@@ -7,7 +7,7 @@ from scipy.signal import gaussian
 from torch import nn, optim
 from torch.nn.functional import mse_loss
 
-from model.semantic_layers import ConvergedSemLC, ConvergedFrozenSemLC, ParametricSemLC
+from layers.semantic_layers import ConvergedSemLC, ConvergedFrozenSemLC, ParametricSemLC
 
 use_cuda = False
 if torch.cuda.is_available():

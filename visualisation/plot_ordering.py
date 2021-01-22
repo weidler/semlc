@@ -12,11 +12,11 @@ def create_plot(net, part, cmap, plot_sequence=False, num_layer=0, point_size=4)
     """
     creates one plot containing the original filter sequence against the suggested filter sequence by the 2-opt algorithm
 
-    :param net:                 the network
+    :param net:                 the networks
     :param part:                the part of the plot
     :param cmap:                the color map
     :param plot_sequence:       whether to emphasize ordered sub sequences or not
-    :param num_layer:           the index of the layer in the network features
+    :param num_layer:           the index of the layers in the networks features
     :param point_size:          the size of the plotted points
 
     """
@@ -61,8 +61,8 @@ def get_orderings(net, num_layer=0):
     to be a neighbour of Filter 1 (i.e. to be at index 2) and vice versa:
     The function therefore returns ([1, 2, 3, ...], [1, 3, 2, ...]); filter 2 is now at index 3 and vice versa.
 
-    :param net:             the network
-    :param num_layer:       the index of the layer in the network features
+    :param net:             the networks
+    :param num_layer:       the index of the layers in the networks features
 
     :return:                a tuple with the original and
     """

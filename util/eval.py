@@ -12,7 +12,7 @@ from tqdm import tqdm
 def accuracy(net, data_set, batch_size):
     """
     computes the accuracy with confidence interval from a given test set
-    :param net:             the network
+    :param net:             the networks
     :param data_set:        the set to be tested on
     :param batch_size:      the batch size
 
@@ -26,7 +26,7 @@ def accuracy(net, data_set, batch_size):
 def accuracy_from_data_loader(net, data_loader):
     """Computes the accuracy with confidence interval from a given data loader
 
-    :param net:             the network
+    :param net:             the networks
     :param data_loader:     the data loader to use
 
     :return:                mean accuracy and confidence interval
@@ -62,7 +62,7 @@ def accuracy_with_confidence(networks: List[nn.Module], data: Dataset, batchsize
     This way, for multiple training runs with random initialization of on architecture, the resulting networks can be
     evaluated for accuracy with more confidence about the true power of the architecture.
 
-    :param networks:        list of network modules
+    :param networks:        list of networks modules
     :param data:            test data set
     :param batchsize:       batchsize for testruns
     :param confidence:      confidence that mean lies in interval, given at range [0, 1]
@@ -108,9 +108,9 @@ def accuracies_from_list(accuracies: List, confidence: float = 0.95, dec: int = 
 
 
 def validate(net, val_loader, optimizer, criterion):
-    """Validate the network on the given validation data loader
+    """Validate the networks on the given validation data loader
 
-    :param net:             the network
+    :param net:             the networks
     :param val_loader:      the validation data loader
     :param optimizer:       the optimizer
     :param criterion:       the loss criterion

@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from torch import nn, __init__
 
-from model.inhibition_module import BaseSemLC
+from layers.inhibition_module import BaseSemLC
 from util import weight_initialization
 
 import torch

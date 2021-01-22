@@ -1,0 +1,198 @@
+{% extends "layout.html" %}
+
+{% block title %} Overview {% endblock %}
+{% block inpage_title %}
+    <h1 class="display-3"> Experiment Overview </h1>
+{% endblock %}
+
+{% block side_nav %}
+    <ul class="list-unstyled components">
+        <li class="active-w"><a href="#bookmark-view">Bookmarked Experiments</a></li>
+        <li><a href="#all-view">Other Experiments</a></li>
+    </ul>
+{% endblock %}
+
+{% block page_controls %}
+    <div class="reload-button">
+        <button type="button" id="refresh" class="btn btn-sm btn-circle">
+            <i class="fas fa-sync"></i>
+        </button>
+    </div>
+
+    <div>
+        <button type="button" class="btn btn-sm btn-warning" id="clear-empty"><i class="fas fa-trash-alt"></i>
+            Clear All Empty
+        </button>
+
+        <button type="button" class="btn btn-sm btn-warning" id="clear-short"><i class="fas fa-trash-alt"></i>
+            Clear All Short
+        </button>
+
+        <button type="button" class="btn btn-sm btn-danger" id="clear-unfinished"><i class="fas fa-trash-alt"></i>
+            Clear All Unfinished
+        </button>
+
+        <button type="button" class="btn btn-sm btn-danger" id="clear-group"><i class="fas fa-times-circle"></i>
+            Delete Selected Group
+        </button>
+    </div>
+{% endblock %}
+
+{% block page_content %}
+
+    <div class="row justify-content-center">
+        <button type="button" class="btn btn-lg btn-primary analysis-btn" id="analyze"><i class="fas fa-chart-bar"></i>
+            Analyze <span class="count"> x </span> Experiments
+        </button>
+    </div>
+
+     <div class="topic-group" id="all-view">
+        <div id="group-filter">
+            {% for group in info.groups|sort %}
+                <button type="button" class="btn btn-light btn-group-filter" value="{{ group }}">{{ group }} ({{ info.groups[group] }})</button>
+            {% endfor %}
+        </div>
+
+        <table class="table table-hover" id="all-view-table">
+            <thead class="thead-dark">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Model ID</th>
+                <th scope="col">Network</th>
+                <th scope="col">LC Approach</th>
+                <th scope="col">Dataset</th>
+                <th scope="col">Group</th>
+                <th scope="col">Host</th>
+                <th scope="col">Epochs</th>
+                <th scope="col">Peak</th>
+                <th scope="col">Action</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            {% for exp, info in exps.items()|sort(reverse=true) %}
+                <tr class="exp-row {{ "table-success" if info.is_success else ("table-info" if info.success == "maybe" else "") }}">
+                    <th scope="row">{{ loop.index }}</th>
+                    <td class="id-col">{{ exp }}</td>
+                    <td class="network-col"><strong>{{ info.network }}</strong></td>
+                    <td><strong>{{ info.lateral_type }}</strong></td>
+                    <td>{{ info.dataset }}</td>
+                    <td>{{ info.group }}</td>
+                    <td>{{ info.host }}</td>
+                    <td>{{ info.epochs }} {{ '<span class="check"><i class="fas fa-check-circle"></i></span>'|safe if info.ended_naturally else '' }}</td>
+                    <td>{{ info.peak }}</td>
+                    <td class="actions">
+                        <span class="delete-item"><i class="fas fa-trash-alt"></i></span>
+                    </td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+    </div>
+{% endblock %}
+
+{% block js_footer %}
+    <script>
+
+        // ACTIONS
+        $("tr.exp-row > td:not(.actions)").on("click", function () {
+            window.location = 'experiment/' + $(this).parent().find("td.id-col").text();
+        });
+
+        $("#clear-empty").on("click", function () {
+            $.get({
+                url: "{{ url_for("clear_all_empty") }}",
+                success: function (data) {
+                    alert("Cleared " + data["deleted"] + " experiments.");
+                    location.reload();
+                },
+                error: function () {
+                    alert("Failed to delete.")
+                }
+            });
+        });
+
+        $("#clear-short").on("click", function () {
+            $.get({
+                url: "{{ url_for("clear_all_short") }}",
+                success: function (data) {
+                    alert("Cleared " + data["deleted"] + " experiments.");
+                    location.reload();
+                },
+                error: function () {
+                    alert("Failed to delete.")
+                }
+            });
+        });
+
+        $("#clear-unfinished").on("click", function () {
+            $.get({
+                url: "{{ url_for("clear_all_unfinished") }}",
+                success: function (data) {
+                    alert("Cleared " + data["deleted"] + " experiments.");
+                    location.reload();
+                },
+                error: function () {
+                    alert("Failed to delete.")
+                }
+            });
+        });
+
+        $("#clear-group").on("click", function () {
+            let active_group = $("#group-filter").find(".btn-info");
+
+            if (active_group.length > 0) {
+                $.get({
+                    url: "{{ url_for("clear_group") }}",
+                    type: "POST",
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify({'group': active_group.val()}),
+                    success: function (data) {
+                        alert("Cleared " + data["deleted"] + " experiments.");
+                        location.reload();
+                    },
+                    error: function () {
+                        alert("Failed to delete.")
+                    }
+                });
+            }
+        });
+
+        // DATA TABLE
+        let experiment_table = $("#all-view-table");
+        let exp_dt = experiment_table.DataTable({"pageLength": 30});
+        $(".analysis-btn").find(".count").text(exp_dt.$("tr", {'search': 'applied'}).length)
+        exp_dt.on("search.dt", function () {
+            $(".analysis-btn").find(".count").text(exp_dt.$("tr", {'search': 'applied'}).length)
+        })
+
+        $("#analyze").on("click", function () {
+            let selected_rows = exp_dt.$("tr", {'search': 'applied'});
+            let selected_exp_ids = selected_rows.find(".id-col").map(function () {
+                return $.trim($(this).text());
+            }).get()
+
+
+            window.location = 'analyze/?' + $.param(selected_exp_ids.map(function (x) {
+                return {name: "id", value: x}
+            }));
+        })
+
+        $(".btn-group-filter").on("click", function () {
+            if ($(this).hasClass("btn-light")) {
+                $(".btn-group-filter").addClass("btn-light").removeClass("btn-info");
+                $(this).addClass("btn-info").removeClass("btn-light");
+                exp_dt.column(5).search('^' + $(this).val() +'$', true, false).draw();
+                $("#clear-group").prop('disabled', false);
+            } else {
+                $(this).addClass("btn-light").removeClass("btn-info");
+                exp_dt.column(5).search("", true, false).draw();
+                $("#clear-group").prop('disabled', true);
+            }
+        })
+
+    </script>
+{% endblock %}

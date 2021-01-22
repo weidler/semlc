@@ -8,11 +8,11 @@ from torch import nn
 from torch.utils.data import Subset
 from torchvision import transforms
 
-from model.network.VGG import vgg19, vgg19_inhib
-from model.network.alexnet_cifar import BaselineCMap, Baseline, AlexNetLC
-from model.network.base import BaseNetwork
+from networks import vgg19, vgg19_inhib
+from networks import BaselineCMap, Baseline, AlexNetLC
+from networks import BaseNetwork
 from util.eval import accuracy
-from util.ourlogging import Logger
+from util.log import ExperimentLogger
 from util.train import train
 
 torch.backends.cudnn.deterministic = True
@@ -120,8 +120,7 @@ def run(args):
         if use_cuda:
             network.cuda()
 
-        experiment_code = f"{strategy}_{optim}_hp_{args.hpopt}" if args.hpopt else f"{strategy}_{optim}_{i}"
-        logger = Logger(network, experiment_code=experiment_code)
+        logger = ExperimentLogger(network, trainval_set)
 
         train(net=network,
               num_epoch=180,

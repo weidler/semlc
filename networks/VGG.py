@@ -4,18 +4,17 @@
 from typing import List
 
 import math
-import torch
 import torch.nn as nn
 
-from model.semantic_layers import ConvergedFrozenSemLC
-from model.network.base import BaseNetwork
+from layers.semantic_layers import ConvergedFrozenSemLC
+from networks import BaseNetwork
 
 
 __all__ = [
     'VGG', 'vgg11', 'vgg13', 'vgg16', 'vgg16_inhib', 'vgg19', 'vgg19_inhib',
 ]
 
-from ..inhibition_module import BaseSemLC
+from layers.inhibition_module import BaseSemLC
 
 
 class VGG(BaseNetwork, nn.Module):

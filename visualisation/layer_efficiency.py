@@ -13,10 +13,10 @@ from torch import nn, optim
 from torch.nn.functional import mse_loss
 from tqdm import tqdm
 
-from model.semantic_layers import ConvergedSemLC, ConvergedFrozenSemLC, \
+from layers.semantic_layers import ConvergedSemLC, ConvergedFrozenSemLC, \
     SingleShotSemLC, ParametricSemLC
-from model.fft_inhibition_layer import FFTConvergedInhibition, FFTConvergedFrozenInhibition
-from model.alternative_inhibition_layers import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
+from layers.fft_inhibition_layer import FFTConvergedInhibition, FFTConvergedFrozenInhibition
+from layers.alternative_inhibition_layers import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
 
 use_cuda = False
 if torch.cuda.is_available():

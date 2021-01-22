@@ -3,8 +3,8 @@ import torch
 from matplotlib import pyplot as plt
 from torch import nn
 
-from model.fft_inhibition_layer import FFTConvergedFrozenInhibition, FFTConvergedInhibition
-from model.semantic_layers import SingleShotSemLC, ConvergedSemLC, \
+from layers.fft_inhibition_layer import FFTConvergedFrozenInhibition, FFTConvergedInhibition
+from layers.semantic_layers import SingleShotSemLC, ConvergedSemLC, \
     ConvergedFrozenSemLC, ParametricSemLC, SingleShotGaussian, ConvergedGaussianSemLC
 
 

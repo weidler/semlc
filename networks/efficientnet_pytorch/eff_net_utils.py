@@ -1,5 +1,5 @@
 """
-This file contains helper functions for building the model and for loading model parameters.
+This file contains helper functions for building the layers and for loading layers parameters.
 These helper functions are built to mirror those in the official TensorFlow implementation.
 """
 
@@ -19,13 +19,13 @@ from torch.utils import model_zoo
 ########################################################################
 
 
-# Parameters for the entire model (stem, all blocks, and head)
+# Parameters for the entire layers (stem, all blocks, and head)
 GlobalParams = collections.namedtuple('GlobalParams', [
     'batch_norm_momentum', 'batch_norm_epsilon', 'dropout_rate',
     'num_classes', 'width_coefficient', 'depth_coefficient',
     'depth_divisor', 'min_depth', 'drop_connect_rate', 'image_size'])
 
-# Parameters for an individual model block
+# Parameters for an individual layers block
 BlockArgs = collections.namedtuple('BlockArgs', [
     'kernel_size', 'num_repeat', 'input_filters', 'output_filters',
     'expand_ratio', 'id_skip', 'stride', 'se_ratio'])
@@ -161,7 +161,7 @@ class Identity(nn.Module):
 
 
 def efficientnet_params(model_name):
-    """ Map EfficientNet model name to parameter coefficients. """
+    """ Map EfficientNet layers name to parameter coefficients. """
     params_dict = {
         # Coefficients:   width,depth,res,dropout
         'efficientnet-b0': (1.0, 1.0, 224, 0.2),
@@ -239,7 +239,7 @@ class BlockDecoder(object):
     @staticmethod
     def decode(string_list):
         """
-        Decodes a list of string notations to specify blocks inside the network.
+        Decodes a list of string notations to specify blocks inside the networks.
 
         :param string_list: a list of strings, each string is a notation of block
         :return: a list of BlockArgs namedtuples of block args
@@ -266,7 +266,7 @@ class BlockDecoder(object):
 
 def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.2,
                  drop_connect_rate=0.2, image_size=None, num_classes=1000):
-    """ Creates a efficientnet model. """
+    """ Creates a efficientnet layers. """
 
     blocks_args = [
         'r1_k3_s11_e1_i32_o16_se0.25', 'r2_k3_s22_e6_i16_o24_se0.25',
@@ -316,14 +316,14 @@ def get_random_inhibition_params(strategy, optim, num_channels=32, coverage=1):
 
 
 def get_model_params(model_name, override_params):
-    """ Get the block args and global params for a given model """
+    """ Get the block args and global params for a given layers """
     if model_name.startswith(('efficientnet', 'inhib_efficientnet')):
         w, d, s, p = efficientnet_params(model_name)
         # note: all models have drop connect rate = 0.2
         blocks_args, global_params = efficientnet(
             width_coefficient=w, depth_coefficient=d, dropout_rate=p, image_size=s)
     else:
-        raise NotImplementedError('model name is not pre-defined: %s' % model_name)
+        raise NotImplementedError('layers name is not pre-defined: %s' % model_name)
     if override_params:
         # ValueError will be raised here if override_params has fields not included in global_params.
         global_params = global_params._replace(**override_params)

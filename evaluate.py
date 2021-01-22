@@ -1,4 +1,4 @@
-"""Tests the accuracy on a given model or an average over a set of models"""
+"""Tests the accuracy on a given layers or an average over a set of models"""
 
 import argparse
 import random
@@ -32,7 +32,7 @@ print(f"USE CUDA: {use_cuda}.")
 keychain = "./output/keychain.txt"
 model_path = "./output/"
 
-df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'model', 'datetime'])
+df = pd.read_csv(keychain, sep="\t", names=['id', 'group', 'layers', 'datetime'])
 
 old_strategies = ["baseline", "cmap", "vgg19", "vgg19_inhib", "vgg19_inhib_self"]
 strategies = ["CLC", "SSLC", "CLC-G", "SSLC-G"] + old_strategies
@@ -63,7 +63,7 @@ def evaluate_exp(filenames, strategy, optim, args):
 
     accuracies = []
     for i, row in tqdm(enumerate(filenames), disable=True):
-        filename = f"{model_path}{row}_best.model"
+        filename = f"{model_path}{row}_best.layers"
         network = build_network(strategy, optim, args)
         network.load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
         data_loader = DataLoader(test_set, batch_size=128,
