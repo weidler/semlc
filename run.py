@@ -87,7 +87,15 @@ def run(args):
         network = build_network(args.network, input_shape=(image_channels, image_height, image_width),
                                 n_classes=n_classes, lc=lc_layer_function, init_std=args.init_std)
         network.to(device)
-        logger = ExperimentLogger(network, train_data)
+
+        if args.auto_group:
+            args.group = "-".join(list(map(lambda s: s.lower(), [
+                network.__class__.__name__,
+                args.data,
+                *([args.strategy] if args.strategy is not None else []),
+            ])))
+        logger_args = dict(group=args.group) if args.group is not None else dict()
+        logger = ExperimentLogger(network, train_data, **logger_args)
 
         print(f"Model of type '{network.__class__.__name__}'{f' with lateral connections' if network.is_lateral else ''} "
               f"created with id {logger.id} in group {args.group}."
