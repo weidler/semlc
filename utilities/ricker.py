@@ -10,7 +10,7 @@ def ricker(width: torch.Tensor, damp: torch.Tensor, scope: int, self_connect: bo
 
     :param width:               the width of the wavelet
     :param damp:                the damping factor
-    :param scope:               the scope
+    :param scope:               the size
     :param self_connect:        whether to form a connection of a neuron to itself
 
     :return:                    the wavelet
@@ -36,7 +36,7 @@ def dif_of_gauss(width, std, scope):
 
     :param width:       the width of the wavelet
     :param std:         the standard deviation
-    :param scope:       the scope
+    :param scope:       the size
 
     :return:            the wavelet
 
@@ -50,19 +50,19 @@ def dif_of_gauss(width, std, scope):
     # gaus2 = torch.tensor([(math.e ** -(((j - width)/ (stdb))**2)/2) for j in vec])
     gaus2 = torch.tensor(
         [((1 / (stdb * (math.sqrt(2 * math.pi)))) * (math.e ** -(((j - width) / stdb) ** 2) / 2)) for j in vec])
-    # dog = [(((1/(scope*(math.sqrt(2*math.pi))))*(math.e**-((j-width)**2)/(2*scope**2))))-(((1/(scopeb*(math.sqrt(2*math.pi))))*(math.e**-((j-width)**2)/(2*scopeb**2)))) for j in vec]
+    # dog = [(((1/(size*(math.sqrt(2*math.pi))))*(math.e**-((j-width)**2)/(2*size**2))))-(((1/(scopeb*(math.sqrt(2*math.pi))))*(math.e**-((j-width)**2)/(2*scopeb**2)))) for j in vec]
     dog = torch.sub(gaus1, gaus2)
     return dog
 
 
 if __name__ == "__main__":
-    from util.weight_initialization import mexican_hat
+    from core.weight_initialization import ricker_wavelet
 
     scope = 27
     width = 3
     damping = 0.1
 
-    mh = mexican_hat(scope, width, damping)
+    mh = ricker_wavelet(scope, width, damping)
     rickered = ricker(torch.tensor(width, dtype=torch.float32), torch.tensor(damping, dtype=torch.float32), scope=scope)
     dog = dif_of_gauss(width=width, std=width, scope=scope)
 

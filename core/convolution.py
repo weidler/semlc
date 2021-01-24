@@ -2,7 +2,7 @@ import math
 
 import torch
 
-from util.complex import div_complex
+from utilities.complex import div_complex
 
 
 def pad_roll(k: torch.Tensor, in_channels, scope):

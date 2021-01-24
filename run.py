@@ -5,15 +5,14 @@ import json
 import torch
 import torchvision
 from torch import nn
-from torch.utils.data import Subset
+from torch.utils.data import Subset, random_split, DataLoader
 from torchvision import transforms
 
-from networks import vgg19, vgg19_inhib
-from networks import BaselineCMap, Baseline, AlexNetLC
-from networks import BaseNetwork
-from util.eval import accuracy
-from util.log import ExperimentLogger
-from util.train import train
+from networks.util import build_network, AVAILABLE_NETWORKS, prepare_lc_builder
+from utilities.data import get_number_of_classes
+from utilities.eval import accuracy
+from utilities.log import ExperimentLogger
+from utilities.train import train_model
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -62,99 +61,80 @@ def get_params(args, param):
     return parameter
 
 
-def build_network(strategy, optim, args) -> BaseNetwork:
-    if strategy == "baseline":
-        network = Baseline()
-    elif strategy == "cmap":
-        network = BaselineCMap()
-    elif strategy == "vgg19":
-        network = vgg19()
-    elif strategy == "vgg19_inhib":
-        network = vgg19_inhib()
-    elif strategy == "vgg19_inhib_self":
-        network = vgg19_inhib(self_connection=True)
-    else:
-        get_config(args)
-        widths = get_params(args, 'widths')
-        damps = get_params(args, 'damps')
-        print('CONFIG:', widths, damps)
-
-        network = AlexNetLC(widths, damps, strategy=strategy, optim=optim)
-
-    return network
-
-
 def run(args):
-    strategy = args.strategy
-    optim = args.optim
-    iterations = args.i
+    crop = 24
 
-    crop = 32 if "vgg" in strategy else 24
-    padding = 4 if "vgg" in strategy else None
+    # (de-)activate GPU utilization
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if args.force_device is not None and args.force_device != "":
+        if args.force_device in ["gpu", "cuda"]:
+            args.force_device = "cuda"
+        device = torch.device(args.force_device)
+    print(f"Optimizing on device '{device}'")
 
-    use_cuda = False
-    if torch.cuda.is_available():
-        use_cuda = True
-        torch.set_default_tensor_type(torch.cuda.FloatTensor)
-    print(f"USE CUDA: {use_cuda}.")
-
-    # transformation
-    transform = transforms.Compose([transforms.RandomCrop(crop, padding),
+    # transform for data
+    transform = transforms.Compose([transforms.RandomCrop(crop),
                                     transforms.RandomHorizontalFlip(),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     # load data
-    trainval_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=True, download=True, transform=transform)
-    test_set = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
+    train_data = torchvision.datasets.CIFAR10("./data/cifar10/", train=True, download=True, transform=transform)
+    test_data = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
 
-    for i in range(0, iterations):
-        val_indices = list(range(int((i % 10) * len(trainval_set) / 10), int(((i % 10) + 1) * len(trainval_set) / 10)))
-        train_indices = list(filter(lambda x: x not in val_indices, list(range(len(trainval_set)))))
-        val_set = Subset(trainval_set, indices=val_indices)
-        train_set = Subset(trainval_set, indices=train_indices)
+    for i in range(0, args.i):
+        train_set, validation_set = random_split(train_data, [int(len(train_data) * 0.9),
+                                                              len(train_data) - int(len(train_data) * 0.9)])
 
-        network = build_network(strategy, optim, args)
-        print(f"Starting training of network {network.__class__.__name__}. Strategy: {strategy}.")
+        train_set_loader = DataLoader(train_set, batch_size=128, shuffle=True, num_workers=2, )
+        validation_set_loader = DataLoader(validation_set, batch_size=128, shuffle=True, num_workers=2)
+        image_channels, image_width, image_height = next(iter(train_set_loader))[0].shape[1:]
+        n_classes = get_number_of_classes(train_data)
 
-        if use_cuda:
-            network.cuda()
+        lc_layer_function = prepare_lc_builder(args.strategy, args.widths, args.damps)
+        network = build_network(args.network, input_shape=(image_channels, image_height, image_width),
+                                n_classes=n_classes, lc=lc_layer_function, init_std=args.init_std)
+        network.to(device)
+        logger = ExperimentLogger(network, train_data)
 
-        logger = ExperimentLogger(network, trainval_set)
+        print(f"Model of type '{network.__class__.__name__}'{f' with lateral connections' if network.is_lateral else ''} "
+              f"created with id {logger.id} in group {args.group}."
+              f"\n\nStarting Training on {train_data.__class__.__name__} with {len(train_set)} samples distributed over {len(train_set_loader)} batches."
+              f"\nOptimizing for {args.e} epochs and validating on {len(validation_set)} samples every epoch.")
 
-        train(net=network,
-              num_epoch=180,
-              train_set=train_set,
-              batch_size=128,
-              criterion=nn.CrossEntropyLoss(),
-              logger=logger,
-              val_set=val_set,
-              learn_rate=0.001,
-              verbose=False)
+        train_model(model=network,
+                    train_set_loader=train_set_loader,
+                    val_set_loader=validation_set_loader,
+                    n_epochs=args.e,
+                    logger=logger,
+                    device=device)
 
         network.eval()
-        logger.log(f"\nFinal Test Accuracy: {accuracy(network, test_set, 128)}")
+        print(f"\nFinal Test Accuracy: {accuracy(network, test_data, 128)}")
 
 
 if __name__ == '__main__':
     import argparse
 
-    old_strategies = ["baseline", "cmap", "vgg19", "vgg19_inhib", "vgg19_inhib_self"]
-    strategies = ["CLC", "SSLC", "CLC-G", "SSLC-G"] + old_strategies
-    optims = ["adaptive", "frozen", "parametric"]
+    strategies = ["cmap", "semlc", "adaptive-semlc", "parametric-semlc", "singleshot-semlc"]
 
     parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ run.py CLC frozen\n\noptionally do HP optimisation '
                                            'using hp_params.json \n(index 23 in this example)\n'
                                            '$ run.py CLC frozen -p 23\n\noptionally overwrite default params\n'
                                            '$ run.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
+    parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)
     parser.add_argument("strategy", type=str, choices=strategies)
-    parser.add_argument("optim", type=str, choices=optims)
     parser.add_argument("--data", type=str, default="cifar10", choices=["cifar10", "mnist"], help="dataset to use")
-    parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths")
-    parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps")
+    parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths", default=3)
+    parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps", default=0.2)
     parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)
+    parser.add_argument("-e", type=int, default=180, help="Number of epochs per model.")
+    parser.add_argument("--init-std", type=float, help="std for weight initialization")
+
     parser.add_argument("-i", type=int, default=1, help="the number of iterations, default=1")
     parser.add_argument("-p", "--hpopt", type=str, help="hp optimisation with given index")
-    args = parser.parse_args()
+    parser.add_argument("--group", type=str, default=None, help="A group identifier, just for organizing.")
+    parser.add_argument("--auto-group", action="store_true", help="Construct group name automatically based on parameters.")
+    parser.add_argument("--force-device", type=str, choices=["cuda", "gpu", "cpu"])
 
-    run(args)
+    run(parser.parse_args())

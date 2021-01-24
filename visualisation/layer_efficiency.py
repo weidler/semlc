@@ -13,7 +13,7 @@ from torch import nn, optim
 from torch.nn.functional import mse_loss
 from tqdm import tqdm
 
-from layers.semantic_layers import ConvergedSemLC, ConvergedFrozenSemLC, \
+from layers.semantic_layers import AdaptiveSemLC, SemLC, \
     SingleShotSemLC, ParametricSemLC
 from layers.fft_inhibition_layer import FFTConvergedInhibition, FFTConvergedFrozenInhibition
 from layers.alternative_inhibition_layers import Conv3DSingleShotInhibition, Conv3DRecurrentInhibition
@@ -62,13 +62,13 @@ def make_passes(layer, n):
 def make_layers(depth, scope):
     return [
         nn.Conv2d(depth, depth, 3, 1, padding=1),
-        # Conv3DSingleShotInhibition(scope, wavelet_width, damp=damping, padding="zeros", learn_weights=True),
+        # Conv3DSingleShotInhibition(size, wavelet_width, damp=damping, padding="zeros", learn_weights=True),
         SingleShotSemLC(wavelet_width, damp=damping, learn_weights=True),
         SingleShotSemLC(wavelet_width, damp=damping, learn_weights=False),
         FFTConvergedInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
         FFTConvergedFrozenInhibition(scope, wavelet_width, damp=damping, in_channels=depth),
-        ConvergedSemLC(wavelet_width, damp=damping),
-        ConvergedFrozenSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping),
+        AdaptiveSemLC(wavelet_width, damp=damping),
+        SemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping),
         ParametricSemLC(in_channels=depth, ricker_width=wavelet_width, initial_damp=damping),
     ]
 

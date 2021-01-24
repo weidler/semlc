@@ -17,10 +17,10 @@ from torchvision import transforms
 
 from networks import BaselineCMap, Baseline, SingleShotInhibitionNetwork, ConvergedInhibitionNetwork, \
     ParametricInhibitionNetwork
-from util.train import train
-from util.eval import accuracy
+from utilities.train import train
+from utilities.eval import accuracy
 
-from util.log import Logger
+from utilities.log import Logger
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False

@@ -4,7 +4,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 from torch import Tensor
-from util.filter_ordering import two_opt, mse
+from utilities.filter_ordering import two_opt, mse
 from visualisation.filter_weights_visualization import get_ordering_difference
 
 

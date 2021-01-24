@@ -5,10 +5,10 @@ from typing import List
 
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from torch import nn, __init__
+from torch import nn
 
 from layers.inhibition_module import BaseSemLC
-from util import weight_initialization
+from core import weight_initialization
 
 import torch
 
@@ -38,7 +38,7 @@ class Conv3DSingleShotInhibition(BaseSemLC):
         )
 
         # apply gaussian
-        self.convolver.weight.data = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp)
+        self.convolver.weight.data = weight_initialization.ricker_wavelet(scope, width=ricker_width, damping=damp)
         self.convolver.weight.data = self.convolver.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure
@@ -104,7 +104,7 @@ class Conv3DRecurrentInhibition(BaseSemLC):
         )
 
         # apply gaussian
-        self.W_rec.weight.data = weight_initialization.mexican_hat(scope, width=ricker_width, damping=damp)
+        self.W_rec.weight.data = weight_initialization.ricker_wavelet(scope, width=ricker_width, damping=damp)
         self.W_rec.weight.data = self.W_rec.weight.data.view(1, 1, -1, 1, 1)
 
         # freeze weights if desired to retain initialized structure
@@ -143,8 +143,8 @@ class Conv3DRecurrentInhibition(BaseSemLC):
 def pad_shift_zero(k: torch.Tensor, in_channels, scope):
     """Shift and Zero-pad filter to the right such that filter's center is at i=0 but convolutional padding is zeros not
     circular padding."""
-    # pad_left = torch.zeros((1, 1, (in_channels - scope) // 2), dtype=k.dtype)
-    # pad_right = torch.zeros((1, 1, (in_channels - scope) - pad_left.shape[-1]), dtype=k.dtype)
+    # pad_left = torch.zeros((1, 1, (in_channels - size) // 2), dtype=k.dtype)
+    # pad_right = torch.zeros((1, 1, (in_channels - size) - pad_left.shape[-1]), dtype=k.dtype)
     # return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
     assert len(k.shape) == 3
 

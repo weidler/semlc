@@ -12,7 +12,7 @@ from torchvision import transforms
 from tqdm import tqdm
 
 from run import build_network
-from util.eval import accuracies_from_list, accuracy_from_data_loader
+from utilities.eval import accuracies_from_list, accuracy_from_data_loader
 
 # Random seeding is very important, since without the random cropping may be different
 torch.manual_seed(12311)

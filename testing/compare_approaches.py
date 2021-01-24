@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 from torch import nn
 
 from layers.fft_inhibition_layer import FFTConvergedFrozenInhibition, FFTConvergedInhibition
-from layers.semantic_layers import SingleShotSemLC, ConvergedSemLC, \
-    ConvergedFrozenSemLC, ParametricSemLC, SingleShotGaussian, ConvergedGaussianSemLC
+from layers.semantic_layers import SingleShotSemLC, AdaptiveSemLC, \
+    SemLC, ParametricSemLC, SingleShotGaussian, GaussianSemLC
 
 
 def lateral_pass_plot(layer, signal, line_style="."):
@@ -56,9 +56,9 @@ if __name__ == "__main__":
                         self_connection=self_connect),
 
         # circular padding
-        ConvergedSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
-        ConvergedFrozenSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping,
-                             self_connection=self_connect),
+        AdaptiveSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        SemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping,
+              self_connection=self_connect),
         ParametricSemLC(in_channels=depth, ricker_width=wavelet_width, initial_damp=damping,
                         self_connection=self_connect),
 
@@ -66,10 +66,10 @@ if __name__ == "__main__":
         FFTConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
 
         # zero padding
-        # ConvergedSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
-        # ConvergedFrozenSemLC(in_channels=depth, ricker_width=wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
+        # AdaptiveSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
+        # SemLC(in_channels=depth, ricker_width=wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
 
-        ConvergedGaussianSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        GaussianSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
         SingleShotGaussian(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="circular", self_connection=self_connect),
         # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
         # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),

@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 from networks import SingleShotInhibitionNetwork, BaselineCMap, Baseline, ConvergedInhibitionNetwork, \
     ParametricInhibitionNetwork
-from util.eval import accuracies_from_list, accuracy_from_data_loader
+from utilities.eval import accuracies_from_list, accuracy_from_data_loader
 
 # Random seeding is very important, since without the random cropping may be different
 torch.manual_seed(12311)

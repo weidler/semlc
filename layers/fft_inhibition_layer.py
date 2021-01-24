@@ -4,10 +4,10 @@ hence this is sort of deprecated but kept here for speed demonstration."""
 from torch import nn
 import torch
 
-from util.convolution import pad_roll, convolve_3d_fourier
+from core.convolution import pad_roll, convolve_3d_fourier
 from layers.inhibition_module import BaseSemLC
-from util import weight_initialization
-from util.complex import div_complex
+from core import weight_initialization
+from utilities.complex import div_complex
 
 
 class FFTConvergedInhibition(nn.Module, BaseSemLC):
@@ -30,7 +30,7 @@ class FFTConvergedInhibition(nn.Module, BaseSemLC):
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        inhibition_filter = weight_initialization.mexican_hat(self.scope, width=ricker_width, damping=damp, self_connect=False)
+        inhibition_filter = weight_initialization.ricker_wavelet(self.scope, width=ricker_width, damping=damp, self_connect=False)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter, requires_grad=learn_weights))
 
         # kronecker delta with mass at i=0 is identity to convolution with focus at i=0
@@ -68,8 +68,8 @@ class FFTConvergedFrozenInhibition(nn.Module, BaseSemLC):
         self.damp = damp
 
         # inhibition filter, focused at i=0
-        self.inhibition_filter = weight_initialization.mexican_hat(self.scope, width=ricker_width, damping=damp,
-                                                                   self_connect=False)
+        self.inhibition_filter = weight_initialization.ricker_wavelet(self.scope, width=ricker_width, damping=damp,
+                                                                      self_connect=False)
         self.inhibition_filter = pad_roll(self.inhibition_filter.view(1, 1, -1), self.in_channels, self.scope)
         self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))
 

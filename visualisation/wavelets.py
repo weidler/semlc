@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy
 
-from util.weight_initialization import mexican_hat
+from core.weight_initialization import ricker_wavelet
 
 x = numpy.array(list(range(99))) - 49
 for width in [2, 5, 10, 14]:
-    y = mexican_hat(99, width).view(-1).numpy()
+    y = ricker_wavelet(99, width).view(-1).numpy()
     plt.plot(x, y, label=f"\u03C3={width}")
 
 plt.xlabel("Relative Filter Position")

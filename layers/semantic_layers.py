@@ -1,14 +1,56 @@
 import torch
 from torch import nn
 
-from layers.inhibition_module import BaseSemLC
-from util import weight_initialization, ricker
-from util.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
+from core import weight_initialization
+from layers.base import BaseSemLCLayer
+from core.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
 
 
-# SINGLE SHOT
+class SemLC(BaseSemLCLayer):
+    """Semantic lateral connectivity layers using the single operation convergence point strategy. Convergence point is
+    determined using the inverse of a Toeplitz matrix.
 
-class SingleShotSemLC(BaseSemLC):
+    Input shape:
+        N x C x H x W
+        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
+    """
+
+    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
+                 pad="circular", self_connection: bool = False):
+        super().__init__(hooked_conv, ricker_width, ricker_damp)
+        self.damp = ricker_damp
+        assert pad in ["circular", "zeros"]
+        self.is_circular = pad == "circular"
+        self.self_connection = self_connection
+        self.width = ricker_width
+
+        # inhibition filter
+        self.lateral_filter = self._make_filter()
+
+        # construct filter toeplitz
+        if self.is_circular:
+            self.tpl = toeplitz1d_circular(self.lateral_filter, self.in_channels)
+        else:
+            self.tpl = toeplitz1d_zero(self.lateral_filter, self.in_channels)
+
+        tpl_inv = (self.tpl - torch.eye(*self.tpl.shape)).inverse()
+        self.register_buffer("tpl_inv", tpl_inv)  # register so that its moved to correct devices
+
+    @property
+    def name(self):
+        return f"SemLC"
+
+    def _make_filter(self) -> torch.Tensor:
+        return weight_initialization.ricker_wavelet(self.in_channels - 1,
+                                                    width=torch.tensor(self.width, dtype=torch.float32),
+                                                    damping=torch.tensor(self.damp, dtype=torch.float32),
+                                                    self_connect=self.self_connection)
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        return ((-activations).permute(0, 2, 3, 1) @ self.tpl_inv.unsqueeze(0)).permute(0, 3, 1, 2).contiguous()
+
+
+class SingleShotSemLC(BaseSemLCLayer):
     """One step Semantic lateral connectivity Layer.
     
     Input shape:
@@ -16,15 +58,14 @@ class SingleShotSemLC(BaseSemLC):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, in_channels: int, ricker_width: float, damp: float, learn_weights=False, pad="circular",
-                 self_connection: bool = False):
-        super().__init__()
+    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12, learn_weights=False,
+                 pad="circular", self_connection: bool = False):
+        super().__init__(hooked_conv)
 
         assert pad in ["circular", "zeros"]
 
         self.learn_weights = learn_weights
-        self.in_channels = in_channels
-        self.damp = damp
+        self.damp = ricker_damp
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
         self.width = ricker_width
@@ -35,12 +76,13 @@ class SingleShotSemLC(BaseSemLC):
 
     @property
     def name(self):
-        return f"SSLC {'Frozen' if not self.learn_weights else 'Adaptive'}"
+        return f"SingleShot {'Frozen' if not self.learn_weights else 'Adaptive'}"
 
     def _make_filter(self):
-        return weight_initialization.mexican_hat(self.in_channels - 1, damping=torch.tensor(self.damp, dtype=torch.float32),
-                                                 width=torch.tensor(self.width, dtype=torch.float32),
-                                                 self_connect=self.self_connection)
+        return weight_initialization.ricker_wavelet(self.in_channels - 1,
+                                                    damping=torch.tensor(self.damp, dtype=torch.float32),
+                                                    width=torch.tensor(self.width, dtype=torch.float32),
+                                                    self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
@@ -50,12 +92,11 @@ class SingleShotSemLC(BaseSemLC):
             tpl = toeplitz1d_zero(self.lateral_filter, activations.shape[1])
 
         # convolve by toeplitz
-        return (0 if self.self_connection else activations) + convolve_3d_toeplitz(tpl, activations)
+        return ((0 if self.self_connection else activations)
+                + (activations.permute(0, 2, 3, 1) @ tpl.unsqueeze(0)).permute(0, 3, 1, 2).contiguous())
 
 
-# CONVERGED
-
-class ConvergedSemLC(BaseSemLC):
+class AdaptiveSemLC(BaseSemLCLayer):
     """Semantic lateral connectivity layers using the single operation convergence point strategy. Convergence point is
     determined using the inverse of a Toeplitz matrix.
 
@@ -64,26 +105,26 @@ class ConvergedSemLC(BaseSemLC):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, in_channels: int, ricker_width: int, damp: float, pad="circular", self_connection: bool = False):
-        super().__init__()
-        self.in_channels = in_channels
-        self.damp = damp
+    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
+                 pad="circular", self_connection: bool = False):
+        super().__init__(hooked_conv)
+        self.damp = ricker_damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
         self.width = ricker_width
 
         # inhibition filter
-        lateral_filter = weight_initialization.mexican_hat(self.in_channels - 1,
+        lateral_filter = weight_initialization.ricker_wavelet(self.in_channels - 1,
                                                               width=torch.tensor(ricker_width, dtype=torch.float32),
-                                                              damping=torch.tensor(damp, dtype=torch.float32),
+                                                              damping=torch.tensor(ricker_damp, dtype=torch.float32),
                                                               self_connect=self_connection)
         self.register_parameter("lateral_filter", nn.Parameter(lateral_filter, requires_grad=True))
         self.lateral_filter.requires_grad = True
 
     @property
     def name(self):
-        return f"CLC Adaptive"
+        return f"Adaptive SemLC"
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
@@ -98,52 +139,7 @@ class ConvergedSemLC(BaseSemLC):
         return convolve_3d_toeplitz(-tpl_inv, activations)
 
 
-class ConvergedFrozenSemLC(BaseSemLC):
-    """Semantic lateral connectivity layers using the single operation convergence point strategy. Convergence point is determined
-    using the inverse of a Toeplitz matrix.
-
-    Input shape:
-        N x C x H x W
-        --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
-    """
-
-    def __init__(self, in_channels: int, ricker_width: float, damp: float = 0.12, pad="circular",
-                 self_connection: bool = False):
-        super().__init__()
-        self.in_channels = in_channels
-        self.damp = damp
-        assert pad in ["circular", "zeros"]
-        self.is_circular = pad == "circular"
-        self.self_connection = self_connection
-        self.width = ricker_width
-
-        # inhibition filter
-        self.lateral_filter = self._make_filter()
-
-        # construct filter toeplitz
-        if self.is_circular:
-            tpl = toeplitz1d_circular(self.lateral_filter, self.in_channels)
-        else:
-            tpl = toeplitz1d_zero(self.lateral_filter, self.in_channels)
-
-        self.tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
-
-    @property
-    def name(self):
-        return f"CLC Frozen"
-
-    def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.mexican_hat(self.in_channels - 1, width=torch.tensor(self.width, dtype=torch.float32),
-                                                 damping=torch.tensor(self.damp, dtype=torch.float32),
-                                                 self_connect=self.self_connection)
-
-    def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        return convolve_3d_toeplitz(-self.tpl_inv, activations)
-
-
-# PARAMETRIC
-
-class ParametricSemLC(BaseSemLC):
+class ParametricSemLC(BaseSemLCLayer):
     """Semantic lateral connectivity layers using the single operation convergence point strategy with trainable parameters
     damping and width factor. Convergence point is determined using the inverse of a Toeplitz matrix.
 
@@ -152,17 +148,16 @@ class ParametricSemLC(BaseSemLC):
         --> where N is the number of batches, C the number of filters, and H and W are spatial dimensions.
     """
 
-    def __init__(self, in_channels: int, ricker_width: float, initial_damp: float, pad="circular",
-                 self_connection: bool = False):
-        super().__init__()
-        self.in_channels = in_channels
+    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
+                 pad="circular", self_connection: bool = False):
+        super().__init__(hooked_conv)
 
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
 
         # parameters
-        damp = torch.tensor(initial_damp, dtype=torch.float32)
+        damp = torch.tensor(ricker_damp, dtype=torch.float32)
         width = torch.tensor(ricker_width, dtype=torch.float32)
 
         # inhibition filter
@@ -172,12 +167,12 @@ class ParametricSemLC(BaseSemLC):
 
     @property
     def name(self):
-        return f"CLC Parametric"
+        return f"Parametric SemLC"
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        self.lateral_filter = ricker.ricker(scope=self.in_channels - 1, width=self.width, damp=self.damp,
-                                               self_connect=self.self_connection)
+        self.lateral_filter = weight_initialization.ricker_wavelet(size=self.in_channels - 1, width=self.width,
+                                                                   damping=self.damp, self_connect=self.self_connection)
 
         # construct filter toeplitz
         if self.is_circular:
@@ -193,15 +188,15 @@ class ParametricSemLC(BaseSemLC):
 
 # GAUSSIAN FILTER
 
-class ConvergedGaussianSemLC(ConvergedFrozenSemLC):
+class GaussianSemLC(SemLC):
 
-    def __init__(self, in_channels: int, ricker_width: float, damp: float = 0.12, pad="circular",
-                 self_connection: bool = False):
-        super().__init__(in_channels, ricker_width, damp, pad, self_connection)
+    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
+                 pad="circular", self_connection: bool = False):
+        super().__init__(hooked_conv, ricker_width, ricker_damp, pad, self_connection)
 
     @property
     def name(self):
-        return f"CLC-G"
+        return f"Gaussian SemLC"
 
     def _make_filter(self) -> torch.Tensor:
         return weight_initialization.gaussian(self.in_channels - 1, width=self.width, damping=self.damp,

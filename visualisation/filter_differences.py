@@ -4,8 +4,8 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 
-from util.eval import accuracies_from_list
-from util.filter_ordering import mse
+from utilities.eval import accuracies_from_list
+from utilities.filter_ordering import mse
 from visualisation.helper import get_one_model
 from visualisation.plot_ordering import mse_difference
 

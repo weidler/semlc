@@ -6,8 +6,8 @@ from skimage.filters import gabor_kernel
 import matplotlib.pyplot as plt
 from skimage.transform import resize
 
-from util.filter_ordering import two_opt
-from util.filter_ordering import greedy
+from utilities.filter_ordering import two_opt
+from utilities.filter_ordering import greedy
 
 filters = []
 

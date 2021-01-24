@@ -16,10 +16,10 @@ from torch import nn
 from torchvision import transforms
 
 from networks import ConvergedInhibitionNetwork
-from util.train import train
-from util.eval import accuracy, accuracy_with_confidence
+from utilities.train import train
+from utilities.eval import accuracy, accuracy_with_confidence
 
-from util.log import Logger
+from utilities.log import Logger
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False

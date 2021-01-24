@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 
 import matplotlib.pyplot as plt
 
-from util import ricker
+from utilities import ricker
 from visualisation.helper import get_one_model, get_net
 
 mp.rcParams['ps.useafm'] = True

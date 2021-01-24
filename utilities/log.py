@@ -62,16 +62,8 @@ class ExperimentLogger:
             ended_naturally=False
         )
 
-    def save(self):
-        """
-        Save if current conditions meeting settings.
-        """
-        raise NotImplementedError()
-
     def log(self, epoch: int, train_loss: float, val_loss: float, val_acc: float) -> None:
-        """
-        Log ongoing statistics.
-        """
+        """Log ongoing statistics."""
         with open(self.log_file, "r") as f:
             current = json.load(f)
 

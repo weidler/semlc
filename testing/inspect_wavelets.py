@@ -1,11 +1,11 @@
-from util.weight_initialization import mexican_hat
+from core.weight_initialization import ricker_wavelet
 import torch
 import matplotlib.pyplot as plt
 import numpy
 
-wavelet_64_clca = mexican_hat(31, torch.tensor(3.0), torch.tensor(0.1), False).cpu().numpy().tolist() + [0]
-wavelet_64_clcf = mexican_hat(31, torch.tensor(3.0), torch.tensor(0.2), False).cpu().numpy().tolist() + [0]
-wavelet_32_clc_halfed = mexican_hat(31, torch.tensor(1.5), torch.tensor(0.2), False).cpu().numpy().tolist() + [0]
+wavelet_64_clca = ricker_wavelet(31, torch.tensor(3.0), torch.tensor(0.1), False).cpu().numpy().tolist() + [0]
+wavelet_64_clcf = ricker_wavelet(31, torch.tensor(3.0), torch.tensor(0.2), False).cpu().numpy().tolist() + [0]
+wavelet_32_clc_halfed = ricker_wavelet(31, torch.tensor(1.5), torch.tensor(0.2), False).cpu().numpy().tolist() + [0]
 
 x = numpy.array(list(range(32))) - 15
 

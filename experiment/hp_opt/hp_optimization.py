@@ -2,7 +2,7 @@ import sys
 
 import pandas as pd
 
-from util.train import train_model
+from utilities.train import train_model
 
 sys.path.append("./")
 
@@ -14,8 +14,8 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 import numpy as np
 from torchvision import transforms, datasets
 
-from util.eval import accuracy
-from util.log import Logger
+from utilities.eval import accuracy
+from utilities.log import Logger
 from networks import ConvergedInhibitionNetwork
 
 use_cuda = False
@@ -26,7 +26,7 @@ if torch.cuda.is_available():
 print(f"USE CUDA: {use_cuda}.")
 
 strategies = ["converged", "toeplitz", "once", "once_learned"]
-# scope is specific to each layers
+# size is specific to each layers
 range_scope = np.array([[9, 27, 45, 63],
                         [9, 27, 45, 63],
                         [9, 27, 45, 63],
@@ -127,7 +127,7 @@ def get_random_samples(samples, range_scope, range_ricker_width, range_damp):
     creates a number of unique random configurations
 
     :param samples:                 the number of samples
-    :param range_scope:             an array containing all considered values for the scope
+    :param range_scope:             an array containing all considered values for the size
     :param range_ricker_width:      an array containing all considered values for the ricker width
     :param range_damp:              an array containing all considered values for the damping factor
 
@@ -155,7 +155,7 @@ def get_samples_from_disk():
 
     :return:        a list of configurations
     """
-    df = pd.read_csv("./data/hp_config.csv", dtype={'scope': int, 'width': int, 'damp': float})
+    df = pd.read_csv("./data/hp_config.csv", dtype={'size': int, 'width': int, 'damp': float})
     configurations = df.values
     return configurations
 
@@ -180,7 +180,7 @@ def hp_opt(num_epoch, train_loader, val_loader, criterion, learn_rate=0.01, test
         for scope, ricker_width, damp in configurations:
             print("starting",
                   f"str: {strategy} freeze: {strategy == 'toeplitz'} sc: {int(scope)} w: {int(ricker_width)} d: {damp}")
-            # fix scope when applying depth > 1
+            # fix size when applying depth > 1
             net = ConvergedInhibitionNetwork()
 
             if use_cuda:
