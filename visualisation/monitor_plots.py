@@ -131,7 +131,6 @@ def render_test_accuracy_plot(test_accuracies: Dict[str, Dict[str, Dict[str, Lis
 
     groups = list(test_accuracies)
     test_settings = list(test_accuracies[list(test_accuracies)[0]][0].keys())
-    print(test_settings)
     x = [(d, g) for d in test_settings for g in groups]
     y = []
 

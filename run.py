@@ -8,8 +8,9 @@ from torch import nn
 from torch.utils.data import Subset, random_split, DataLoader
 from torchvision import transforms
 
+from evaluate import evaluate_on, load_test_set
 from networks.util import build_network, AVAILABLE_NETWORKS, prepare_lc_builder
-from utilities.data import get_number_of_classes
+from utilities.data import get_number_of_classes, get_training_dataset
 from utilities.eval import accuracy
 from utilities.log import ExperimentLogger
 from utilities.train import train_model
@@ -62,8 +63,6 @@ def get_params(args, param):
 
 
 def run(args):
-    crop = 24
-
     # (de-)activate GPU utilization
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if args.force_device is not None and args.force_device != "":
@@ -72,15 +71,8 @@ def run(args):
         device = torch.device(args.force_device)
     print(f"Optimizing on device '{device}'")
 
-    # transform for data
-    transform = transforms.Compose([transforms.RandomCrop(crop),
-                                    transforms.RandomHorizontalFlip(),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
     # load data
-    train_data = torchvision.datasets.CIFAR10("./data/cifar10/", train=True, download=True, transform=transform)
-    test_data = torchvision.datasets.CIFAR10("./data/cifar10/", train=False, download=True, transform=transform)
+    train_data = get_training_dataset(args.data, force_crop=(24, 24) if args.network == "aA" else None)
 
     for i in range(0, args.i):
         train_set, validation_set = random_split(train_data, [int(len(train_data) * 0.9),
@@ -100,17 +92,19 @@ def run(args):
         print(f"Model of type '{network.__class__.__name__}'{f' with lateral connections' if network.is_lateral else ''} "
               f"created with id {logger.id} in group {args.group}."
               f"\n\nStarting Training on {train_data.__class__.__name__} with {len(train_set)} samples distributed over {len(train_set_loader)} batches."
-              f"\nOptimizing for {args.e} epochs and validating on {len(validation_set)} samples every epoch.")
+              f"\nOptimizing for {args.epochs} epochs and validating on {len(validation_set)} samples every epoch.")
 
         train_model(model=network,
                     train_set_loader=train_set_loader,
                     val_set_loader=validation_set_loader,
-                    n_epochs=args.e,
+                    n_epochs=args.epochs,
                     logger=logger,
                     device=device)
 
-        network.eval()
-        print(f"\nFinal Test Accuracy: {accuracy(network, test_data, 128)}")
+        test_data = load_test_set(image_channels, image_height, image_width, args.data)
+        evaluate_on(network, test_data, model_dir=logger.model_dir)
+
+        print("\nGaude! Consummatum est.\n\n")
 
 
 if __name__ == '__main__':
@@ -128,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths", default=3)
     parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps", default=0.2)
     parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)
-    parser.add_argument("-e", type=int, default=180, help="Number of epochs per model.")
+    parser.add_argument("-e", "--epochs", type=int, default=180, help="Number of epochs per model.")
     parser.add_argument("--init-std", type=float, help="std for weight initialization")
 
     parser.add_argument("-i", type=int, default=1, help="the number of iterations, default=1")

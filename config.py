@@ -10,7 +10,7 @@ class Config:
 
 CONFIG = Config()
 CONFIG.PROJECT_PATH = os.path.dirname(os.path.realpath(__file__))
-CONFIG.DATA_DIR = os.path.join(CONFIG.PROJECT_PATH, "../data")
+CONFIG.DATA_DIR = os.path.join(CONFIG.PROJECT_PATH, "data")
 CONFIG.MODEL_DIR = "experiments/static/saved_models/"
 CONFIG.AVAILABLE_TEST_SETTINGS = ["default", "occlusion-r", "occlusion-v", "occlusion-h", "sprinkle-contrast",
                                   "sprinkle-blur"]
