@@ -18,8 +18,7 @@ class Shallow(BaseNetwork):
         conv_one_out_size = self.conv_one(self.generate_random_input()).shape
 
         if self.lateral_layer_partial is not None:
-            self.lateral_layer = self.lateral_layer_partial(self.conv_one,
-                                                            ricker_width=(self.conv_one.out_channels / 64) * 3)
+            self.lateral_layer = self.lateral_layer_partial(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
 
         self.bn_one = nn.BatchNorm2d(conv_one_out_size[-3])

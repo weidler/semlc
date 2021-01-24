@@ -20,8 +20,7 @@ class AlexNet(BaseNetwork):
         self.conv_one = nn.Conv2d(self.input_channels, 64, kernel_size=(5, 5), stride=1, padding=2)  # output shape same
         conv_one_out_size = self.conv_one(self.generate_random_input()).shape
         if self.lateral_layer_partial is not None:
-            self.lateral_layer = self.lateral_layer_partial(self.conv_one,
-                                                            ricker_width=(self.conv_one.out_channels / 64) * 3)
+            self.lateral_layer = self.lateral_layer_partial(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
 
         self.pool_one = nn.MaxPool2d((3, 3), stride=(2, 2))
