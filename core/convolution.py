@@ -8,8 +8,8 @@ from utilities.complex import div_complex
 def pad_roll(k: torch.Tensor, in_channels, scope):
     """Zero-pad around filter, then roll to have center at i=0. Need to use concatenation to keep padding out of
     auto grad functionality. If torch's pad() function would be used, padding can be adjusted during optimization."""
-    pad_left = torch.zeros((1, 1, (in_channels - scope) // 2))
-    pad_right = torch.zeros((1, 1, (in_channels - scope) - pad_left.shape[-1]))
+    pad_left = torch.zeros((1, 1, (in_channels - scope) // 2), device=k.device)
+    pad_right = torch.zeros((1, 1, (in_channels - scope) - pad_left.shape[-1]), device=k.device)
 
     return torch.cat((pad_left, k, pad_right), dim=-1).roll(math.floor(in_channels / 2) + 1)
 

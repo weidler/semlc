@@ -133,7 +133,7 @@ class AdaptiveSemLC(BaseSemLCLayer):
         else:
             tpl = toeplitz1d_zero(self.lateral_filter, activations.shape[1])
 
-        tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
+        tpl_inv = (torch.eye(*tpl.shape, device=tpl.device) - tpl).inverse()
 
         # convolve by toeplitz
         return convolve_3d_toeplitz(-tpl_inv, activations)
@@ -180,7 +180,7 @@ class ParametricSemLC(BaseSemLCLayer):
         else:
             tpl = toeplitz1d_zero(self.lateral_filter, self.in_channels)
 
-        tpl_inv = (torch.eye(*tpl.shape) - tpl).inverse()
+        tpl_inv = (torch.eye(*tpl.shape, device=tpl.device) - tpl).inverse()
 
         # convolve by toeplitz
         return convolve_3d_toeplitz(tpl_inv, activations)

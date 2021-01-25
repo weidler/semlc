@@ -46,7 +46,7 @@ def ricker_wavelet(size: int, width: torch.Tensor, damping: torch.Tensor, self_c
 
     a = damping * (2 / (torch.sqrt(3 * width) * (math.pi ** 0.25)))
     start = -(size - 1.0) / 2
-    vec = torch.arange(start, start + size)
+    vec = torch.arange(start, start + size, device=width.device)
 
     # pre-calculations
     vec_squared = torch.square(vec)
