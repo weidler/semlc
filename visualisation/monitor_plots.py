@@ -7,8 +7,8 @@ from bokeh.models import HoverTool, ColumnDataSource, FactorRange
 from bokeh.transform import factor_cmap
 from scipy import stats
 
-from core.statistics import confidence_around_mean
 from config import CONFIG
+from core.statistics import confidence_around_mean
 
 palette = [colors.RGB(*[int(c * 255) for c in color]) for color in CONFIG.COLORMAP]
 darker_palette = [c.darken(0.3) for c in palette]
@@ -123,9 +123,7 @@ def render_progress_line_plot(epochs: list, measurements: Union[Dict[str, List[f
     return embed.components(fig)
 
 
-def render_test_accuracy_plot(test_accuracies: Dict[str, Dict[str, Dict[str, List[float]]]], metric="", title=""):
-    # ci_lower_bounds, ci_upper_bounds = {}, {}
-
+def render_test_accuracy_plot(test_accuracies: Dict[str, List[Dict[str, Dict[str, List[float]]]]], metric="", title=""):
     if len(test_accuracies) == 0:
         return None
 
@@ -159,3 +157,19 @@ def render_test_accuracy_plot(test_accuracies: Dict[str, Dict[str, Dict[str, Lis
     style_plot(fig)
 
     return embed.components(fig)
+
+
+if __name__ == "__main__":
+    import os
+    import json
+
+    exp_id = 1611533601916437
+    path = f"../{CONFIG.MODEL_DIR}/{exp_id}"
+
+    with open(os.path.join(path, "evaluation.json"), "r") as f:
+        evaluation = json.load(f)
+
+    accuracies = render_test_accuracy_plot(
+        test_accuracies={f"{exp_id}": evaluation},
+        title="Test Accuracy", metric="Accuracy"
+    )

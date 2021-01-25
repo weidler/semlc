@@ -15,8 +15,8 @@ cfg = {
 
 
 class VGG(BaseNetwork):
-    def __init__(self, input_shape, vgg_name, lateral_layer: BaseSemLCLayer = None):
-        super().__init__(input_shape, lateral_layer)
+    def __init__(self, input_shape, vgg_name, lateral_layer_function: BaseSemLCLayer = None):
+        super().__init__(input_shape, lateral_layer_function)
         self.features = self._make_layers(cfg[vgg_name])
         self.classifier = nn.Linear(512, 10)
 

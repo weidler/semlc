@@ -60,7 +60,7 @@ class SingleShotSemLC(BaseSemLCLayer):
 
     def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12, learn_weights=False,
                  pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv)
+        super().__init__(hooked_conv, ricker_width, ricker_damp)
 
         assert pad in ["circular", "zeros"]
 
@@ -107,7 +107,7 @@ class AdaptiveSemLC(BaseSemLCLayer):
 
     def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
                  pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv)
+        super().__init__(hooked_conv, ricker_width, ricker_damp)
         self.damp = ricker_damp
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
@@ -150,7 +150,7 @@ class ParametricSemLC(BaseSemLCLayer):
 
     def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
                  pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv)
+        super().__init__(hooked_conv, ricker_width, ricker_damp)
 
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"

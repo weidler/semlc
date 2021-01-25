@@ -11,14 +11,14 @@ from torch.optim.optimizer import Optimizer
 
 class Simple(BaseNetwork):
 
-    def __init__(self, input_shape, n_classes: int, lateral_layer: BaseSemLCLayer = None, conv_one_init_std: float = 0.0001):
-        super().__init__(input_shape=input_shape, lateral_layer=lateral_layer)
+    def __init__(self, input_shape, n_classes: int, lateral_layer_function: BaseSemLCLayer = None, conv_one_init_std: float = 0.0001):
+        super().__init__(input_shape=input_shape, lateral_layer_function=lateral_layer_function)
 
         # first convolution block
         self.conv_one = nn.Conv2d(self.input_channels, 64, kernel_size=(5, 5), stride=1, padding=2)  # output shape same
         conv_one_out_size = self.conv_one(self.generate_random_input()).shape
-        if self.lateral_layer_partial is not None:
-            self.lateral_layer = self.lateral_layer_partial(self.conv_one)
+        if self.lateral_layer_function is not None:
+            self.lateral_layer = self.lateral_layer_function(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
 
         self.pool_one = nn.MaxPool2d((3, 3), stride=(2, 2))  # output shape - 2 // 2
@@ -68,7 +68,7 @@ class Simple(BaseNetwork):
 
     def forward(self, x: torch.Tensor):
         out_conv_one = self.conv_one(x)
-        if self.lateral_layer_partial is not None:
+        if self.lateral_layer_function is not None:
             out_conv_one = self.lateral_layer(out_conv_one)
 
         out_one = self.bn_one(self.pool_one(F.relu(out_conv_one)))

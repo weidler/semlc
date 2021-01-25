@@ -12,15 +12,15 @@ from networks import BaseNetwork
 class AlexNet(BaseNetwork):
     """The abstract Baseline class for CIFAR-10 reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
 
-    def __init__(self, input_shape, n_classes: int, lateral_layer: BaseSemLCLayer = None):
-        super().__init__(input_shape=input_shape, lateral_layer=lateral_layer)
+    def __init__(self, input_shape, n_classes: int, lateral_layer_function: BaseSemLCLayer = None):
+        super().__init__(input_shape=input_shape, lateral_layer_function=lateral_layer_function)
 
         self.layer_output_channels = [64, 64, 64, 32]
 
         self.conv_one = nn.Conv2d(self.input_channels, 64, kernel_size=(5, 5), stride=1, padding=2)  # output shape same
         conv_one_out_size = self.conv_one(self.generate_random_input()).shape
-        if self.lateral_layer_partial is not None:
-            self.lateral_layer = self.lateral_layer_partial(self.conv_one)
+        if self.lateral_layer_function is not None:
+            self.lateral_layer = self.lateral_layer_function(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
 
         self.pool_one = nn.MaxPool2d((3, 3), stride=(2, 2))
@@ -48,7 +48,7 @@ class AlexNet(BaseNetwork):
 
     def forward(self, x):
         out_conv_one = self.conv_one(x)
-        if self.lateral_layer_partial is not None:
+        if self.lateral_layer_function is not None:
             out_conv_one = self.lateral_layer(out_conv_one)
 
         block_one = self.bn_one(self.pool_one(F.relu(out_conv_one)))

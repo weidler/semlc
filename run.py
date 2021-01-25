@@ -72,7 +72,7 @@ def run(args):
     print(f"Optimizing on device '{device}'")
 
     # load data
-    train_data = get_training_dataset(args.data, force_crop=(24, 24) if args.network == "aA" else None)
+    train_data = get_training_dataset(args.data)
 
     for i in range(0, args.i):
         train_set, validation_set = random_split(train_data, [int(len(train_data) * 0.9),
@@ -83,7 +83,9 @@ def run(args):
         image_channels, image_width, image_height = next(iter(train_set_loader))[0].shape[1:]
         n_classes = get_number_of_classes(train_data)
 
-        lc_layer_function = prepare_lc_builder(args.strategy, args.widths, args.damps)
+        lc_layer_function = None
+        if args.strategy != "none":
+            lc_layer_function = prepare_lc_builder(args.strategy, args.widths, args.damps)
         network = build_network(args.network, input_shape=(image_channels, image_height, image_width),
                                 n_classes=n_classes, lc=lc_layer_function, init_std=args.init_std)
         network.to(device)
@@ -92,7 +94,7 @@ def run(args):
             args.group = "-".join(list(map(lambda s: s.lower(), [
                 network.__class__.__name__,
                 args.data,
-                *([args.strategy] if args.strategy is not None else []),
+                *([args.strategy] if args.strategy != "none" else []),
             ])))
         logger_args = dict(group=args.group) if args.group is not None else dict()
         logger = ExperimentLogger(network, train_data, **logger_args)
@@ -118,12 +120,9 @@ def run(args):
 if __name__ == '__main__':
     import argparse
 
-    strategies = ["cmap", "semlc", "adaptive-semlc", "parametric-semlc", "singleshot-semlc"]
+    strategies = ["none", "lrn", "semlc", "adaptive-semlc", "parametric-semlc", "singleshot-semlc"]
 
-    parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ run.py CLC frozen\n\noptionally do HP optimisation '
-                                           'using hp_params.json \n(index 23 in this example)\n'
-                                           '$ run.py CLC frozen -p 23\n\noptionally overwrite default params\n'
-                                           '$ run.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
+    parser = argparse.ArgumentParser()
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)
     parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("--data", type=str, default="cifar10", choices=["cifar10", "mnist"], help="dataset to use")

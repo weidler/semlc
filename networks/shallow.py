@@ -10,15 +10,15 @@ from networks import BaseNetwork
 
 class Shallow(BaseNetwork):
 
-    def __init__(self, input_shape, n_classes, lateral_layer: BaseSemLCLayer = None):
-        super().__init__(input_shape, lateral_layer)
+    def __init__(self, input_shape, n_classes, lateral_layer_function: BaseSemLCLayer = None):
+        super().__init__(input_shape, lateral_layer_function)
 
         # first convolution block -> output shape same
         self.conv_one = nn.Conv2d(self.input_channels, 64, kernel_size=5, stride=1, padding=2, )
         conv_one_out_size = self.conv_one(self.generate_random_input()).shape
 
-        if self.lateral_layer_partial is not None:
-            self.lateral_layer = self.lateral_layer_partial(self.conv_one)
+        if self.lateral_layer_function is not None:
+            self.lateral_layer = self.lateral_layer_function(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
 
         self.bn_one = nn.BatchNorm2d(conv_one_out_size[-3])
@@ -45,7 +45,7 @@ class Shallow(BaseNetwork):
 
     def forward(self, x: torch.Tensor):
         out_conv_one = self.conv_one(x)
-        if self.lateral_layer_partial is not None:
+        if self.lateral_layer_function is not None:
             out_conv_one = self.lateral_layer(out_conv_one)
 
         out_one = self.pool_conv_one(self.bn_one(F.relu(out_conv_one)))

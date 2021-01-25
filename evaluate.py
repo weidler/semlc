@@ -100,12 +100,11 @@ if __name__ == '__main__':
         image_width, image_height = (28, 28)
 
     image_channels = meta["input_channels"]
-    test_data = load_test_sets(image_channels, image_height, image_width, args.dataset)
+    test_data = load_test_set(image_channels, image_height, image_width, args.dataset)
 
     # MAKE MODEL
     n_classes = get_number_of_classes(test_data["default"])
     model = build_network(meta["network_type"],
-                          task="classification",
                           input_shape=(meta["input_channels"], image_height, image_width),
                           n_classes=n_classes, lc=meta.get("lateral_type"), complex_cells=meta.get("complex_cells"))
     model.load_state_dict(torch.load(f"{model_dir}/best.parameters"))

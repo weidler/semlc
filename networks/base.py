@@ -16,7 +16,7 @@ from utilities.util import closest_factors
 
 class BaseNetwork(nn.Module):
 
-    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer: BaseSemLCLayer):
+    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer_function: BaseSemLCLayer):
         super().__init__()
 
         input_shape = tuple(input_shape)
@@ -25,12 +25,12 @@ class BaseNetwork(nn.Module):
         self.input_shape = input_shape
         self.input_channels, self.input_height, self.input_width = input_shape
 
-        self.lateral_layer_partial = lateral_layer
+        self.lateral_layer_function = lateral_layer_function
 
         # quick check attributes
         self.is_grayscale = self.input_channels == 1
-        self.is_lateral = self.lateral_layer_partial is not None
-        self.lateral_type = self.lateral_layer_partial.func.__name__ if self.is_lateral else None
+        self.is_lateral = self.lateral_layer_function is not None
+        self.lateral_type = self.lateral_layer_function.func.__name__ if self.is_lateral else None
 
     def generate_random_input(self, batch_size=1):
         return torch.randn((batch_size,) + self.input_shape)

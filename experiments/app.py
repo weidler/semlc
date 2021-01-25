@@ -1,19 +1,18 @@
 import ast
-import statistics
-
-import core
-import shutil
-from collections import Counter
-
-import numpy
-import simplejson as json
+import math
 import os
 import re
+import shutil
+import statistics
+from collections import Counter
 
 import flask
-from config import CONFIG
+import numpy
+import simplejson as json
 from flask import request
 from flask_jsglue import JSGlue
+
+from config import CONFIG
 from core.statistics import best_val_acc, best_loss, best_val_acc_epoch, _potentially_pad, best_test_acc, \
     conf_h_test_acc
 from visualisation.monitor_plots import render_progress_line_plot, render_test_accuracy_plot
@@ -152,7 +151,7 @@ def show_experiment(exp_id):
 
         info["evaluated_settings"] = evaluation.keys()
         info["test_accuracies"] = render_test_accuracy_plot(
-            test_accuracies={f"{exp_id}": evaluation},
+            test_accuracies={f"{exp_id}": [evaluation]},
             title="Test Accuracy", metric="Accuracy"
         )
 
@@ -210,9 +209,9 @@ def analyze():
                                                              title="Loss", metric="Cross Entropy Loss"),
 
                 mean_train_time=numpy.array(
-                    [v.get("train_time") if "train_time" in v else core.inf for v in meta_dicts.values()]).mean().round(
+                    [v.get("train_time") if "train_time" in v else math.inf for v in meta_dicts.values()]).mean().round(
                     2).item(),
-                mean_epoch_time=numpy.array([v.get("time_per_epoch") if "time_per_epoch" in v else core.inf for v in
+                mean_epoch_time=numpy.array([v.get("time_per_epoch") if "time_per_epoch" in v else math.inf for v in
                                              meta_dicts.values()]).mean().round(2).item(),
                 )
 
@@ -244,7 +243,6 @@ def compare():
     for path in experiment_paths:
         eid_m = re.match("[0-9]+", str(path.split("/")[-1]))
         if eid_m:
-            print(eid_m)
             with open(os.path.join(path, "meta.json"), "r") as f:
                 meta = json.load(f)
             group = meta.get("group")
@@ -255,7 +253,6 @@ def compare():
                 progress = json.load(f)
 
                 if not progress["epoch"]:
-                    print(eid_m)
                     continue
 
                 max_epoch = max(max(progress["epoch"]), max_epoch)
@@ -286,32 +283,18 @@ def compare():
                                                                    evaluation_dicts.keys()},
                                                   title="Test Accuracy", metric="Accuracy"),
         stats=dict(
-            mean_best_val_acc={g: round(best_val_acc([e.get("val_acc") for e in v.values()]), 2) for g, v in progress_dicts.items()},
-            mean_best_val_acc_epoch={g: round(best_val_acc_epoch([e.get("val_acc") for e in v.values()]), 2) for g, v in progress_dicts.items()},
-            mean_best_val_loss={g: round(best_loss([e.get("val_loss") if "val_loss" in e else e.get("loss") for e in v.values()]), 2) for g, v in progress_dicts.items()},
+            mean_best_val_acc={g: round(best_val_acc([e.get("val_acc") for e in v.values()]), 2) for g, v in
+                               progress_dicts.items()},
+            mean_best_val_acc_epoch={g: round(best_val_acc_epoch([e.get("val_acc") for e in v.values()]), 2) for g, v in
+                                     progress_dicts.items()},
+            mean_best_val_loss={
+                g: round(best_loss([e.get("val_loss") if "val_loss" in e else e.get("loss") for e in v.values()]), 2)
+                for g, v in progress_dicts.items()},
 
-            mean_best_test_acc={g: round(best_test_acc([e.get("default").get("total") for e in v.values()]), 2) for g, v in evaluation_dicts.items()},
-            conf_h_test_acc={g: round(conf_h_test_acc([e.get("default").get("total") for e in v.values()]), 2) for g, v in evaluation_dicts.items()},
-
-            mean_best_test_acc_occl={g: round(best_test_acc([e.get("occlusion-h").get("total") for e in v.values()]), 2) for g, v
+            mean_best_test_acc={g: round(best_test_acc([e.get("default").get("total") for e in v.values()]), 2) for g, v
                                 in evaluation_dicts.items()},
-            conf_h_test_acc_occl={g: round(conf_h_test_acc([e.get("occlusion-h").get("total") for e in v.values()]), 2) for g, v
+            conf_h_test_acc={g: round(conf_h_test_acc([e.get("default").get("total") for e in v.values()]), 2) for g, v
                              in evaluation_dicts.items()},
-
-            mean_best_test_acc_sprinkle={g: round(best_test_acc([e.get("sprinkle-contrast").get("total") for e in v.values()]), 2)
-                                     for g, v
-                                     in evaluation_dicts.items()},
-            conf_h_test_acc_sprinkle={g: round(conf_h_test_acc([e.get("sprinkle-contrast").get("total") for e in v.values()]), 2)
-                                  for g, v
-                                  in evaluation_dicts.items()},
-            mean_best_test_acc_sprinkle_diff={
-                g: round(best_test_acc([100 * (numpy.array(e.get("default").get("total")) - numpy.array(e.get("occlusion-r").get("total"))) / numpy.array(e.get("default").get("total")) for e in v.values()]), 2)
-                for g, v
-                in evaluation_dicts.items()},
-            conf_h_test_acc_sprinkle_diff={
-                g: round(conf_h_test_acc([100 * (numpy.array(e.get("default").get("total")) - numpy.array(e.get("occlusion-r").get("total"))) / numpy.array(e.get("default").get("total")) for e in v.values()]), 2)
-                for g, v
-                in evaluation_dicts.items()},
         ),
         group_colors=CONFIG.COLORMAP_HEX[:len(group_names)]
     )

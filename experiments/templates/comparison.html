@@ -146,28 +146,6 @@
                             <td>{{ info.stats.mean_best_test_acc[g] }} (&#177; {{ info.stats.conf_h_test_acc[g] }})</td>
                         {% endfor %}
                     </tr>
-
-                    <tr>
-                        <td>Random Occlusion</td>
-                        {% for g in info.groups %}
-                            <td>{{ info.stats.mean_best_test_acc_occl[g] }} (&#177; {{ info.stats.conf_h_test_acc_occl[g] }})</td>
-                        {% endfor %}
-                    </tr>
-
-                    <tr>
-                        <td>Contrast Sprinkling</td>
-                        {% for g in info.groups %}
-                            <td>{{ info.stats.mean_best_test_acc_sprinkle[g] }} (&#177; {{ info.stats.conf_h_test_acc_sprinkle[g] }})</td>
-                        {% endfor %}
-                    </tr>
-
-                    <tr>
-                        <td>Decline From Occlusion</td>
-                        {% for g in info.groups %}
-                            <td>{{ info.stats.mean_best_test_acc_sprinkle_diff[g] }} (&#177; {{ info.stats.conf_h_test_acc_sprinkle_diff[g] }})</td>
-                        {% endfor %}
-                    </tr>
-
                     </tbody>
                 </table>
             </div>
