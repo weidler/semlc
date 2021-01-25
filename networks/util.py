@@ -1,8 +1,10 @@
 import functools
 from typing import Tuple, Callable, Union
 
+from torch import nn
 from torchsummary import torchsummary
 
+from layers.competitor_layers import LRN
 from layers.semantic_layers import SemLC, AdaptiveSemLC, ParametricSemLC, SingleShotSemLC
 from networks import CapsNet, BaseNetwork, Shallow
 from networks import Simple
@@ -19,6 +21,7 @@ def prepare_lc_builder(setting: str, ricker_width: float, ricker_damp: float) ->
 
     setting = setting.strip().lower()
 
+    # SEMLC
     if setting in ["semlc"]:
         return functools.partial(SemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
     elif setting in ["adaptive-semlc"]:
@@ -27,6 +30,10 @@ def prepare_lc_builder(setting: str, ricker_width: float, ricker_damp: float) ->
         return functools.partial(ParametricSemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
     elif setting in ["singleshot-semlc"]:
         return functools.partial(SingleShotSemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
+
+    # COMPETITORS
+    elif setting in ["lrn"]:
+        return functools.partial(LRN)
     else:
         raise NotImplementedError("LC layer construction for given layer settings not implemented.")
 
