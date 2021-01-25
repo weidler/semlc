@@ -281,7 +281,7 @@ def compare():
                                                      title="Validation Loss", metric="Cross Entropy Loss"),
         test_accuracies=render_test_accuracy_plot(test_accuracies={g: list(evaluation_dicts[g].values()) for g in
                                                                    evaluation_dicts.keys()},
-                                                  title="Test Accuracy", metric="Accuracy"),
+                                                  title="Error Rates", metric="Accuracy"),
         stats=dict(
             mean_best_val_acc={g: round(best_val_acc([e.get("val_acc") for e in v.values()]), 2) for g, v in
                                progress_dicts.items()},

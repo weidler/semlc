@@ -123,7 +123,8 @@ def render_progress_line_plot(epochs: list, measurements: Union[Dict[str, List[f
     return embed.components(fig)
 
 
-def render_test_accuracy_plot(test_accuracies: Dict[str, List[Dict[str, Dict[str, List[float]]]]], metric="", title=""):
+def render_test_accuracy_plot(test_accuracies: Dict[str, List[Dict[str, Dict[str, List[float]]]]], metric="", title="",
+                              error_rate=True):
     if len(test_accuracies) == 0:
         return None
 
@@ -135,9 +136,10 @@ def render_test_accuracy_plot(test_accuracies: Dict[str, List[Dict[str, Dict[str
     for dataset in test_settings:
         for group, accuracies in test_accuracies.items():
             # ci_lower_bounds[group], ci_upper_bounds[group] = {}, {}
-            y.append(confidence_around_mean(
-                list(map(lambda d: d[dataset]["total"], test_accuracies[group]))
-            )[0])
+            mean = confidence_around_mean(list(map(lambda d: d[dataset]["total"], test_accuracies[group])))[0]
+            if error_rate:
+                mean = 100 - mean
+            y.append(mean)
 
     fig = plotting.figure(x_range=FactorRange(*x),
                           # x_axis_label="Transformation",
