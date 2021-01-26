@@ -4,13 +4,12 @@ from typing import Tuple, Callable, Union
 from torch import nn
 from torchsummary import torchsummary
 
-from layers.competitor_layers import LRN
-from layers.semantic_layers import SemLC, AdaptiveSemLC, ParametricSemLC, SingleShotSemLC
+from layers.semantic_layers import SemLC, AdaptiveSemLC, ParametricSemLC, SingleShotSemLC, GaussianSemLC, LRN, CMapLRN
 from networks import CapsNet, BaseNetwork, Shallow
 from networks import Simple
 from networks.alexnet import AlexNet
 
-AVAILABLE_NETWORKS = ["simple", "", "shallow", "alexnet", "capsnet"]
+AVAILABLE_NETWORKS = ["simple", "shallow", "alexnet", "capsnet"]
 
 
 def prepare_lc_builder(setting: str, ricker_width: float, ricker_damp: float) -> Union[None, Callable[..., BaseNetwork]]:
@@ -34,6 +33,10 @@ def prepare_lc_builder(setting: str, ricker_width: float, ricker_damp: float) ->
     # COMPETITORS
     elif setting in ["lrn"]:
         return functools.partial(LRN)
+    elif setting in ["cmap-lrn"]:
+        return functools.partial(CMapLRN)
+    elif setting in ["gaussian-semlc"]:
+        return functools.partial(GaussianSemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
     else:
         raise NotImplementedError("LC layer construction for given layer settings not implemented.")
 

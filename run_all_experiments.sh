@@ -8,6 +8,16 @@ sh submit.sh -p 'python3 -O run.py shallow lrn --auto-group' -i $1
 sh submit.sh -p 'python3 -O run.py simple lrn --auto-group' -i $1
 sh submit.sh -p 'python3 -O run.py alexnet lrn --auto-group' -i $1
 
+# CMap RN
+sh submit.sh -p 'python3 -O run.py shallow cmap-lrn --auto-group' -i $1
+sh submit.sh -p 'python3 -O run.py simple cmap-lrn --auto-group' -i $1
+sh submit.sh -p 'python3 -O run.py alexnet cmap-lrn --auto-group' -i $1
+
+# Gaussian
+sh submit.sh -p 'python3 -O run.py shallow gaussian-semlc --auto-group' -i $1
+sh submit.sh -p 'python3 -O run.py simple gaussian-semlc --auto-group' -i $1
+sh submit.sh -p 'python3 -O run.py alexnet gaussian-semlc --auto-group' -i $1
+
 # SemLC
 sh submit.sh -p 'python3 -O run.py shallow semlc --auto-group' -i $1
 sh submit.sh -p 'python3 -O run.py simple semlc --auto-group' -i $1
@@ -24,6 +34,7 @@ sh submit.sh -p 'python3 -O run.py simple parametric-semlc --auto-group' -i $1
 sh submit.sh -p 'python3 -O run.py alexnet parametric-semlc --auto-group' -i $1
 
 # Capsule Networks
-sh submit.sh -p 'python3 run.py capsnet none -e 1 --auto-group --data mnist' -i $1
-sh submit.sh -p 'python3 run.py capsnet lrn -e 1 --auto-group --data mnist' -i $1
-sh submit.sh -p 'python3 run.py capsnet semlc -e 1 --auto-group --data mnist' -i $1
+#sh submit.sh -p 'python3 run.py capsnet none -e 1 --auto-group --data mnist' -i $1
+#sh submit.sh -p 'python3 run.py capsnet lrn -e 1 --auto-group --data mnist' -i $1
+#sh submit.sh -p 'python3 run.py capsnet cmap-lrn -e 1 --auto-group --data mnist' -i $1
+#sh submit.sh -p 'python3 run.py capsnet semlc -e 1 --auto-group --data mnist' -i $1

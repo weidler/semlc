@@ -91,6 +91,29 @@
 <div class="topic-group" id="stat-view">
         <div class="row justify-content-center">
             <div class="col col-12">
+                <h4 align="center" class="sub-title">Test Performance</h4>
+
+                <table class="table table-striped" title="Statistics">
+                    <thead>
+                    <tr>
+                        <th scope="col"></th>
+                        {% for g in info.groups %}
+                            <th class="{{ 'table-success' if info.group_stats[g].is_best }} {{ 'table-danger' if info.group_stats[g].is_worst }}" scope="col">{{ g  }}</th>
+                        {% endfor %}
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Default</td>
+                        {% for g in info.groups %}
+                            <td>{{ info.group_stats[g].mean_best_test_acc }} (&#177; {{ info.group_stats[g].conf_h_test_acc }})</td>
+                        {% endfor %}
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col col-12 mt-3">
                 <h4 align="center" class="sub-title">Validation Performance</h4>
 
                 <table class="table table-striped" title="Statistics">
@@ -106,49 +129,27 @@
                     <tr>
                         <td>Accuracy</td>
                         {% for g in info.groups %}
-                            <td>{{ info.stats.mean_best_val_acc[g] }}</td>
+                            <td>{{ info.group_stats[g].mean_best_val_acc }}</td>
                         {% endfor %}
                     </tr>
 
                     <tr>
                         <td>Epoch of Best Accuracy</td>
                         {% for g in info.groups %}
-                            <td>{{ info.stats.mean_best_val_acc_epoch[g] }}</td>
+                            <td>{{ info.group_stats[g].mean_best_val_acc_epoch }}</td>
                         {% endfor %}
                     </tr>
 
                     <tr>
                         <td>Best Loss</td>
                         {% for g in info.groups %}
-                            <td>{{ info.stats.mean_best_val_loss[g] }}</td>
+                            <td>{{ info.group_stats[g].mean_best_val_loss }}</td>
                         {% endfor %}
                     </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="col col-12">
-                <h4 align="center" class="sub-title">Test Performance</h4>
-
-                <table class="table table-striped" title="Statistics">
-                    <thead>
-                    <tr>
-                        <th scope="col"></th>
-                        {% for g in info.groups %}
-                            <th scope="col">{{ g }}</th>
-                        {% endfor %}
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>Default</td>
-                        {% for g in info.groups %}
-                            <td>{{ info.stats.mean_best_test_acc[g] }} (&#177; {{ info.stats.conf_h_test_acc[g] }})</td>
-                        {% endfor %}
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 

@@ -2,8 +2,8 @@ import torch
 from torch import nn
 
 from core import weight_initialization
-from layers.base import BaseSemLCLayer
 from core.convolution import toeplitz1d_circular, convolve_3d_toeplitz, toeplitz1d_zero
+from layers.base import BaseSemLCLayer
 
 
 class SemLC(BaseSemLCLayer):
@@ -186,7 +186,7 @@ class ParametricSemLC(BaseSemLCLayer):
         return convolve_3d_toeplitz(tpl_inv, activations)
 
 
-# GAUSSIAN FILTER
+# COMPETITORS
 
 class GaussianSemLC(SemLC):
 
@@ -199,5 +199,27 @@ class GaussianSemLC(SemLC):
         return f"Gaussian SemLC"
 
     def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.gaussian(self.in_channels - 1, width=self.width, damping=self.damp,
-                                              self_connect=self.self_connection)
+        return weight_initialization.matching_gaussian(self.in_channels - 1, width=self.width, ricker_damping=self.damp,
+                                                       self_connect=self.self_connection)
+
+
+class LRN(BaseSemLCLayer):
+
+    def __init__(self, hooked_conv, ricker_width: float = 0, ricker_damp: float = 0):
+        super().__init__(hooked_conv, ricker_width, ricker_damp)
+
+        self.wrapped_lrn = nn.LocalResponseNorm(size=9, k=2, alpha=10e-4, beta=0.75)
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        return self.wrapped_lrn(activations)
+
+
+class CMapLRN(BaseSemLCLayer):
+
+    def __init__(self, hooked_conv, ricker_width: float = 0, ricker_damp: float = 0):
+        super().__init__(hooked_conv, ricker_width, ricker_damp)
+
+        self.wrapped_lrn = nn.CrossMapLRN2d(size=9, k=2, alpha=10e-4, beta=0.75)
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        return self.wrapped_lrn(activations)

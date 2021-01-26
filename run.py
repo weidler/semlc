@@ -120,7 +120,7 @@ def run(args):
 if __name__ == '__main__':
     import argparse
 
-    strategies = ["none", "lrn", "semlc", "adaptive-semlc", "parametric-semlc", "singleshot-semlc"]
+    strategies = ["none", "lrn", "cmap-lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "parametric-semlc", "singleshot-semlc"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)

@@ -84,6 +84,11 @@ def groupview():
                     with open(os.path.join(path, "train.log"), "r") as f:
                         progress = json.load(f)
 
+                    # skip no progress experiments
+                    if len(progress.get("epoch")) < 1:
+                        continue
+
+                    # initialize info for group if not yet recorded
                     if meta.get("group") not in groups:
                         groups.update({meta.get("group"): {
                             "count": 0,
@@ -93,6 +98,7 @@ def groupview():
                             "epochs": []
                         }})
 
+                    # add experiment info to group info
                     groups[meta.get("group")]["count"] += 1
                     groups[meta.get("group")]["network_types"].add(meta.get("network_type"))
                     groups[meta.get("group")]["lateral_types"].add(meta.get("lateral_type"))
@@ -267,8 +273,35 @@ def compare():
                 with open(os.path.join(path, "evaluation.json"), "r") as f:
                     evaluation_dicts[group][eid_m.group(0)] = json.load(f)
 
+    stats = {}
+    for g in group_names:
+        progress_values = progress_dicts[g].values() if g in progress_dicts else []
+        evaluation_values = evaluation_dicts[g].values() if g in evaluation_dicts else []
+
+        stats.update({g: dict(
+            mean_best_val_acc=round(best_val_acc([e.get("val_acc") for e in progress_values]), 2),
+            mean_best_val_acc_epoch=round(best_val_acc_epoch([e.get("val_acc") for e in progress_values]), 2),
+            mean_best_val_loss=round(best_loss([e.get("val_loss") if "val_loss" in e else e.get("loss") for e in progress_values]), 2),
+            mean_best_test_acc=round(best_test_acc([e.get("default").get("total") for e in evaluation_values]), 2),
+            conf_h_test_acc=round(conf_h_test_acc([e.get("default").get("total") for e in evaluation_values]), 2),
+        )})
+
+        stats[g]["is_best"] = False
+        stats[g]["is_worst"] = False
+
+    all_mean_test_accuracies = numpy.sort(numpy.array([v["mean_best_test_acc"] for g, v in stats.items()]))
+    all_mean_test_accuracies = all_mean_test_accuracies[~numpy.isnan(all_mean_test_accuracies)]
+
+    for g in stats.keys():
+        if stats[g]["mean_best_test_acc"] >= all_mean_test_accuracies[-1]:
+            stats[g]["is_best"] = True
+        if stats[g]["mean_best_test_acc"] <= all_mean_test_accuracies[0]:
+            stats[g]["is_worst"] = True
+
     data = dict(
         groups=group_names,
+        group_stats=stats,
+        group_colors=CONFIG.COLORMAP_HEX[:len(group_names)],
         accuracy_progress_plot=render_progress_line_plot(epochs=list(range(1, max_epoch + 1)),
                                                          measurements={g: [exp.get("val_acc") for exp in
                                                                            progress_dicts[g].values()] for g in
@@ -282,21 +315,6 @@ def compare():
         test_accuracies=render_test_accuracy_plot(test_accuracies={g: list(evaluation_dicts[g].values()) for g in
                                                                    evaluation_dicts.keys()},
                                                   title="Error Rates", metric="Accuracy"),
-        stats=dict(
-            mean_best_val_acc={g: round(best_val_acc([e.get("val_acc") for e in v.values()]), 2) for g, v in
-                               progress_dicts.items()},
-            mean_best_val_acc_epoch={g: round(best_val_acc_epoch([e.get("val_acc") for e in v.values()]), 2) for g, v in
-                                     progress_dicts.items()},
-            mean_best_val_loss={
-                g: round(best_loss([e.get("val_loss") if "val_loss" in e else e.get("loss") for e in v.values()]), 2)
-                for g, v in progress_dicts.items()},
-
-            mean_best_test_acc={g: round(best_test_acc([e.get("default").get("total") for e in v.values()]), 2) for g, v
-                                in evaluation_dicts.items()},
-            conf_h_test_acc={g: round(conf_h_test_acc([e.get("default").get("total") for e in v.values()]), 2) for g, v
-                             in evaluation_dicts.items()},
-        ),
-        group_colors=CONFIG.COLORMAP_HEX[:len(group_names)]
     )
 
     return flask.render_template("comparison.html", info=data)
