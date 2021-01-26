@@ -24,6 +24,10 @@ class BaseSemLCLayer(nn.Module):
     def __repr__(self):
         return f"{self.__class__.__name__}[w={self.ricker_width}; d={self.ricker_damp}; s={self.in_channels}]"
 
+    @property
+    def name(self):
+        return self.__class__.__name__
+
     def compile(self, spatial_input_size: Tuple[int, int]):
         self.input_height, self.input_width = spatial_input_size[-2:]
         self.activations_shape = (self.in_channels, self.input_height, self.input_width)

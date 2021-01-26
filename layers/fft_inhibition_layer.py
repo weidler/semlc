@@ -5,12 +5,12 @@ from torch import nn
 import torch
 
 from core.convolution import pad_roll, convolve_3d_fourier
-from layers.inhibition_module import BaseSemLC
+from layers.base import BaseSemLCLayer
 from core import weight_initialization
 from utilities.complex import div_complex
 
 
-class FFTConvergedInhibition(nn.Module, BaseSemLC):
+class FFTConvergedInhibition(nn.Module, BaseSemLCLayer):
     """Inhibition layers using the single operation convergence point strategy. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms.
 

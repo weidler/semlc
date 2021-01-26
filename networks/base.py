@@ -16,12 +16,13 @@ from utilities.util import closest_factors
 
 class BaseNetwork(nn.Module):
 
-    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer_function: BaseSemLCLayer):
+    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer_function: BaseSemLCLayer, lateral_before=True):
         super().__init__()
 
         input_shape = tuple(input_shape)
         assert len(input_shape) == 3, f"Got {len(input_shape)} domains in input shape, but expected 3 (C, H, W)."
 
+        self.lateral_before = lateral_before
         self.input_shape = input_shape
         self.input_channels, self.input_height, self.input_width = input_shape
 

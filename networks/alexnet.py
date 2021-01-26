@@ -10,7 +10,6 @@ from networks import BaseNetwork
 
 
 class AlexNet(BaseNetwork):
-    """The abstract Baseline class for CIFAR-10 reconstructed from https://code.google.com/archive/p/cuda-convnet/"""
 
     def __init__(self, input_shape, n_classes: int, lateral_layer_function: BaseSemLCLayer = None):
         super().__init__(input_shape=input_shape, lateral_layer_function=lateral_layer_function)

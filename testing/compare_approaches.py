@@ -3,14 +3,11 @@ import torch
 from matplotlib import pyplot as plt
 from torch import nn
 
-from layers.fft_inhibition_layer import FFTConvergedFrozenInhibition, FFTConvergedInhibition
-from layers.semantic_layers import SingleShotSemLC, AdaptiveSemLC, \
-    SemLC, ParametricSemLC, SingleShotGaussian, GaussianSemLC
+from layers.semantic_layers import SingleShotSemLC, AdaptiveSemLC, SemLC, ParametricSemLC, GaussianSemLC, LRN, CMapLRN
 
 
-def lateral_pass_plot(layer, signal, line_style="."):
-    tensor_out = layer(signal)
-    plt.plot(tensor_out[0, :, 4, 7].detach().cpu().numpy(), line_style, label=layer.name)
+def lateral_pass_plot(tensor_out, label, line_style="."):
+    plt.plot(tensor_out[0, :, 4, 7].detach().cpu().numpy(), line_style, label=label)
 
 
 if __name__ == "__main__":
@@ -25,24 +22,25 @@ if __name__ == "__main__":
 
     # SETTINGS
     batches = 1
-    scope = 99
-    depth = 100
+    depth = 64
+    scope = depth - 1
     width = 14
     height = 14
-    wavelet_width = 6
-    damping = 0.12
+    wavelet_width = 3
+    damping = 0.2
     self_connect = False
+    match_lrn_peak = False
 
     tensor_in = torch.zeros((batches, depth, width, height))
     for b in range(batches):
         for i in range(tensor_in.shape[-1]):
             for j in range(tensor_in.shape[-2]):
                 tensor_in[b, :, i, j] = torch.from_numpy(
-                    gaussian(depth, 6)
-                    + np.roll(gaussian(depth, 6), -(scope // 4)) * 0.5
-                    + np.roll(gaussian(depth, 6), (scope // 4)) * 0.5
-                    + np.roll(gaussian(depth, 6), -(scope // 2)) * 0.2
-                    + np.roll(gaussian(depth, 6), (scope // 2)) * 0.2
+                    gaussian(depth, wavelet_width)
+                    + np.roll(gaussian(depth, wavelet_width), -(scope // 4)) * 0.2
+                    + np.roll(gaussian(depth, wavelet_width), (scope // 4)) * 0.2
+                    + np.roll(gaussian(depth, wavelet_width), -(scope // 2)) * 0.1
+                    + np.roll(gaussian(depth, wavelet_width), (scope // 2)) * 0.1
                 )
 
     tensor_in *= 100
@@ -50,39 +48,33 @@ if __name__ == "__main__":
     simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
 
     layers = [
-        SingleShotSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="zeros",
-                        self_connection=self_connect),
-        SingleShotSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, learn_weights=True, pad="circular",
-                        self_connection=self_connect),
+        # SingleShotSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, learn_weights=True, self_connection=self_connect),
 
         # circular padding
-        AdaptiveSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
-        SemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping,
-              self_connection=self_connect),
-        ParametricSemLC(in_channels=depth, ricker_width=wavelet_width, initial_damp=damping,
-                        self_connection=self_connect),
-
-        FFTConvergedInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
-        FFTConvergedFrozenInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping),
-
-        # zero padding
-        # AdaptiveSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="zeros", self_connection=self_connect),
-        # SemLC(in_channels=depth, ricker_width=wavelet_width, in_channels=depth, damp=damping, pad="zeros", self_connection=self_connect),
-
-        GaussianSemLC(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
-        SingleShotGaussian(in_channels=depth, ricker_width=wavelet_width, damp=damping, pad="circular", self_connection=self_connect),
-        # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
-        # RecurrentInhibition(in_channels=depth, ricker_width=wavelet_width, damp=damping, self_connection=self_connect),
+        SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
+        # AdaptiveSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
+        # ParametricSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
+        # GaussianSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
+        LRN(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
+        # CMapLRN(simple_conv, ricker_width=wavelet_width, ricker_damp=damping)
     ]
 
-    line_styles = [".", "-", "-", "--", ".-", "."]
+    line_styles = ["-", "--", ".-", "."]
     line_styles += ["." for i in range(len(layers) - len(line_styles))]
 
-    plt.clf()
-    plt.plot(tensor_in[0, :, 4, 7].cpu().numpy(), label="Input")
-    [lateral_pass_plot(l, tensor_in, line_style=ls) for l, ls in zip(layers, line_styles)]
+    tensor_outs = {l.name: l(tensor_in) for l in layers}
 
-    plt.title(f"Effects of Different Inhibition Strategies ")
+    plt.clf()
+    input_factor_lrn = (tensor_outs["LRN"][:, 31] / tensor_in[:, 31]) if match_lrn_peak else 1
+    plt.plot((tensor_in * input_factor_lrn)[0, :, 4, 7].cpu().numpy(), label="Input")
+    for l, ls in zip(layers, line_styles):
+        factor = 1
+        if match_lrn_peak and "LRN" not in l.name and "LRN" in tensor_outs.keys():
+            factor = tensor_outs["LRN"][:, 31] / tensor_outs[l.name][:, 31]
+
+        lateral_pass_plot(tensor_outs[l.name] * factor, label=l.name, line_style=ls)
+
+    plt.title(f"Effects of Different Lateral Connectivity Strategies ")
     plt.legend()
-    plt.savefig(f"../documentation/figures/strategy_effects.pdf", format="pdf")
+    plt.savefig(f"../documentation/figures/strategy_effects{'_match_lrn' if match_lrn_peak else ''}.pdf", format="pdf")
     plt.show()

@@ -17,12 +17,12 @@ class Shallow(BaseNetwork):
         self.conv_one = nn.Conv2d(self.input_channels, 64, kernel_size=5, stride=1, padding=2, )
         conv_one_out_size = self.conv_one(self.generate_random_input()).shape
 
+        self.bn_one = nn.BatchNorm2d(conv_one_out_size[-3])
+        self.pool_conv_one = nn.MaxPool2d((2, 2), stride=2)  # output shape 14
+
         if self.lateral_layer_function is not None:
             self.lateral_layer = self.lateral_layer_function(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
-
-        self.bn_one = nn.BatchNorm2d(conv_one_out_size[-3])
-        self.pool_conv_one = nn.MaxPool2d((2, 2), stride=2)  # output shape 14
 
         # second convolution block
         self.conv_two = nn.Conv2d(conv_one_out_size[-3],
