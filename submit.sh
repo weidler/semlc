@@ -3,7 +3,7 @@
 ITERATIONS=1
 GPU=false
 
-while getopts ":i:p:g:" opt; do
+while getopts ":i:p:g" opt; do
   case $opt in
     i) ITERATIONS="$OPTARG"
     ;;
