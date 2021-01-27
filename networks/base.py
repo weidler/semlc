@@ -1,4 +1,5 @@
-from typing import Tuple, Union
+from functools import partial
+from typing import Tuple, Union, Callable
 
 import torch
 from matplotlib import pyplot as plt
@@ -16,7 +17,8 @@ from utilities.util import closest_factors
 
 class BaseNetwork(nn.Module):
 
-    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer_function: BaseSemLCLayer, lateral_before=True):
+    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer_function: partial,
+                 lateral_before=True):
         super().__init__()
 
         input_shape = tuple(input_shape)
@@ -51,6 +53,7 @@ class BaseNetwork(nn.Module):
             "input_height": self.input_height,
             "is_lateral": self.is_lateral,
             "lateral_type": self.lateral_type,
+            "lateral_layer": None if not self.is_lateral else self.lateral_layer_function.keywords
         }
 
     def visualize_v1_filters(self, channel=None, shown_filters: torch.Tensor = None, ignored_ids=None):
