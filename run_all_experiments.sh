@@ -27,10 +27,3 @@ sh submit.sh -p 'python3 -O run.py alexnet adaptive-semlc --auto-group' -i $1
 sh submit.sh -p 'python3 -O run.py shallow parametric-semlc --auto-group' -i $1
 sh submit.sh -p 'python3 -O run.py simple parametric-semlc --auto-group' -i $1
 sh submit.sh -p 'python3 -O run.py alexnet parametric-semlc --auto-group' -i $1
-
-# Capsule Networks
-sh submit.sh -p 'python3 run.py capsnet none -e 250 --auto-group --data mnist' -i 10
-sh submit.sh -p 'python3 run.py capsnet lrn -e 250 --auto-group --data mnist' -i 10
-sh submit.sh -p 'python3 run.py capsnet semlc -e 250 --auto-group --data mnist' -i 10
-#sh submit.sh -p 'python3 run.py capsnet parametric-semlc --auto-group --data mnist' -i $1
-#sh submit.sh -p 'python3 run.py capsnet adaptive-semlc --auto-group --data mnist' -i $1
