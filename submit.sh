@@ -28,13 +28,13 @@ if (($ITERATIONS >= 0 && $ITERATIONS <= 120)); then
     if test -z "$SCRIPT"
     then
       if [ "$GPU" = true ] ; then
-        sbatch deploy-gpu.sh
+        sbatch deploy_gpu.sh
       else
         sbatch deploy.sh
       fi
     else
       if [ "$GPU" = true ] ; then
-        sbatch --export=ALL,SCRIPTCOMMAND="$SCRIPT" deploy-gpu.sh
+        sbatch --export=ALL,SCRIPTCOMMAND="$SCRIPT" deploy_gpu.sh
       else
         sbatch --export=ALL,SCRIPTCOMMAND="$SCRIPT" deploy.sh
       fi
