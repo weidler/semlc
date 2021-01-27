@@ -133,7 +133,7 @@ if __name__ == '__main__':
     strategies = ["converged_full_hp"]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("strategy", type=str, choices=strategies)
+    parser.add_argument("group", type=str, choices=strategies)
     parser.add_argument("-i", type=int, default=10, help="no of iterations per run")
     parser.add_argument("-r", type=int, default=30, help="no of runs")
     args = parser.parse_args()

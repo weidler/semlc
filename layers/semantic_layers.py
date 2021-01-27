@@ -7,7 +7,7 @@ from layers.base import BaseSemLCLayer
 
 
 class SemLC(BaseSemLCLayer):
-    """Semantic lateral connectivity layers using the single operation convergence point strategy. Convergence point is
+    """Semantic lateral connectivity layers using the single operation convergence point group. Convergence point is
     determined using the inverse of a Toeplitz matrix.
 
     Input shape:
@@ -97,7 +97,7 @@ class SingleShotSemLC(BaseSemLCLayer):
 
 
 class AdaptiveSemLC(BaseSemLCLayer):
-    """Semantic lateral connectivity layers using the single operation convergence point strategy. Convergence point is
+    """Semantic lateral connectivity layers using the single operation convergence point group. Convergence point is
     determined using the inverse of a Toeplitz matrix.
 
     Input shape:
@@ -140,7 +140,7 @@ class AdaptiveSemLC(BaseSemLCLayer):
 
 
 class ParametricSemLC(BaseSemLCLayer):
-    """Semantic lateral connectivity layers using the single operation convergence point strategy with trainable parameters
+    """Semantic lateral connectivity layers using the single operation convergence point group with trainable parameters
     damping and width factor. Convergence point is determined using the inverse of a Toeplitz matrix.
 
     Input shape:
@@ -223,3 +223,20 @@ class CMapLRN(BaseSemLCLayer):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         return self.wrapped_lrn(activations)
+
+
+class LRNSemLCChain(BaseSemLCLayer):
+    def __init__(self, hooked_conv, ricker_width: float, ricker_damp: float):
+        super().__init__(hooked_conv, ricker_width, ricker_damp)
+
+        self.lrn = LRN(hooked_conv)
+        self.semlc = SemLC(hooked_conv, ricker_width, ricker_damp)
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        return self.semlc(self.lrn(activations))
+
+
+class SemLCLRNChain(LRNSemLCChain):
+
+    def forward(self, activations: torch.Tensor) -> torch.Tensor:
+        return self.lrn(self.semlc(activations))

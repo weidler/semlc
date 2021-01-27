@@ -1,4 +1,4 @@
-"""plots 10 samples of the learned filter for he specified strategy
+"""plots 10 samples of the learned filter for he specified group
 as well as the mean adaption vs the initialization"""
 
 import numpy
@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from utilities import ricker
-from visualisation.helper import get_one_model, get_net
+from visualisation.util import get_one_model, get_net
 
 mp.rcParams['ps.useafm'] = True
 mp.rcParams['pdf.use14corefonts'] = True

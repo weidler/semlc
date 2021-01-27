@@ -11,7 +11,7 @@ from utilities.complex import div_complex
 
 
 class FFTConvergedInhibition(nn.Module, BaseSemLCLayer):
-    """Inhibition layers using the single operation convergence point strategy. Convergence point is determined
+    """Inhibition layers using the single operation convergence point group. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms.
 
     Input shape:
@@ -48,7 +48,7 @@ class FFTConvergedInhibition(nn.Module, BaseSemLCLayer):
 
 
 class FFTConvergedFrozenInhibition(nn.Module, BaseSemLC):
-    """Inhibition layers using the single operation convergence point strategy. Convergence point is determined
+    """Inhibition layers using the single operation convergence point group. Convergence point is determined
     using deconvolution in the frequency domain with fourier transforms. Filter is frozen, implementation is optimized
     towards speed taking this into account.
 

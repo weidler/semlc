@@ -1,5 +1,5 @@
 """
-A script for all main experiments that allows running multiple experiments of the same strategy
+A script for all main experiments that allows running multiple experiments of the same group
 """
 import sys
 
@@ -146,7 +146,7 @@ if __name__ == '__main__':
                   "parametric_cov_12", "parametric_cov_123", "converged_cov_12", "converged_cov_123"]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("strategy", type=str, choices=strategies)
+    parser.add_argument("group", type=str, choices=strategies)
     parser.add_argument("-i", type=int, default=30, help="the number of iterations")
     args = parser.parse_args()
 

@@ -55,7 +55,7 @@ class Conv3DSingleShotInhibition(BaseSemLC):
         # augment channel dimension
         activations = activations.unsqueeze(dim=1)
 
-        # apply cycle padding strategy if necessary
+        # apply cycle padding group if necessary
         if self.padding_strategy == "cycle":
             activations = torch.cat((
                 activations[:, :, -self.scope // 2 + 1:, :, :],
@@ -116,7 +116,7 @@ class Conv3DRecurrentInhibition(BaseSemLC):
         # augment channel dimension
         activations = activations.unsqueeze(dim=1)
 
-        # apply cycle padding strategy if necessary
+        # apply cycle padding group if necessary
         if self.padding_strategy == "cycle":
             activations = torch.cat((
                 activations[:, :, -self.scope // 2 + 1:, :, :],

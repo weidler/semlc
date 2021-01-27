@@ -3,7 +3,8 @@ import torch
 from matplotlib import pyplot as plt
 from torch import nn
 
-from layers.semantic_layers import SingleShotSemLC, AdaptiveSemLC, SemLC, ParametricSemLC, GaussianSemLC, LRN, CMapLRN
+from layers.semantic_layers import SingleShotSemLC, AdaptiveSemLC, SemLC, ParametricSemLC, GaussianSemLC, LRN, CMapLRN, \
+    SemLCLRNChain, LRNSemLCChain
 
 
 def lateral_pass_plot(tensor_out, label, line_style="."):
@@ -52,15 +53,15 @@ if __name__ == "__main__":
 
         # circular padding
         SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
-        # AdaptiveSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
-        # ParametricSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
-        # GaussianSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
+        GaussianSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
         LRN(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
-        # CMapLRN(simple_conv, ricker_width=wavelet_width, ricker_damp=damping)
+
+        # SemLCLRNChain(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
+        # LRNSemLCChain(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
     ]
 
-    line_styles = ["-", "--", ".-", "."]
-    line_styles += ["." for i in range(len(layers) - len(line_styles))]
+    line_styles = ["-", "--", ".-", "-"]
+    line_styles += ["-" for i in range(len(layers) - len(line_styles))]
 
     tensor_outs = {l.name: l(tensor_in) for l in layers}
 

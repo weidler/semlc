@@ -109,7 +109,7 @@ for random_transform_test in [False, True]:
                 continue
 
             accuracies = []
-            # match the exact strategy followed by _ and 1 or optional 2 digits
+            # match the exact group followed by _ and 1 or optional 2 digits
             filenames = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
             print(strategy, len(filenames))
 

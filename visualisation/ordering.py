@@ -7,16 +7,16 @@ from matplotlib.axes import Axes
 from tqdm import tqdm
 
 from visualisation.filter_weights_visualization import get_dim_for_plot
-from visualisation.helper import get_one_model
+from visualisation.util import get_one_model
 from visualisation.plot_ordering import create_plot
 
 mp.rcParams['ps.useafm'] = True
 mp.rcParams['pdf.use14corefonts'] = True
 mp.rcParams['text.usetex'] = True
 
-# set strategy to plot all its models' ordering
-# set strategy to None to create comparison plot in paper
-# strategy = 'cmap'
+# set group to plot all its models' ordering
+# set group to None to create comparison plot in paper
+# group = 'cmap'
 strategy = None
 
 num_layer = 0
@@ -93,7 +93,7 @@ for net in tqdm(models, disable=False):
     counter += 1
 
 if strategy is not None:
-    # use for plotting all models of single strategy
+    # use for plotting all models of single group
     fig.savefig(f'./documentation/figures/ordering_{strategy}.pdf', format="pdf", bbox_inches='tight')
 
 else:

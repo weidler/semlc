@@ -43,7 +43,7 @@ parser = argparse.ArgumentParser(usage='\nEXAMPLE: \n$ run.py CLC frozen\n\nopti
                                        '$ run.py CLC frozen -p 23\n\nor all 50 HP opts at once (sequentially)\n'
                                        '$ run.py CLC frozen -pa 50\n\noptionally overwrite default params\n'
                                        '$ run.py CLC frozen -c 3 -s 1,3,5 -w 2,3,4 -d 0.5,0.2,0.3\n')
-parser.add_argument("strategy", type=str, choices=strategies)
+parser.add_argument("group", type=str, choices=strategies)
 parser.add_argument("optim", type=str, choices=optims)
 parser.add_argument("-s", "--scopes", dest="scopes", type=str, help="overwrite default scopes")
 parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths")
@@ -71,7 +71,7 @@ def evaluate_exp(filenames, strategy, optim, args):
         acc = accuracy_from_data_loader(network, data_loader)
         print(acc)
         accuracies.append(acc)
-    print(f"\nLoaded {len(filenames)} files for strategy {strategy} {optim}.")
+    print(f"\nLoaded {len(filenames)} files for group {strategy} {optim}.")
     if len(filenames):
         print(accuracies)
         print(f"{strategy}{'[wA]' if random_transform_test else ''}: {accuracies_from_list(accuracies)}")

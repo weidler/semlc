@@ -157,10 +157,10 @@ if __name__ == "__main__":
     # configurations = [[27, 3, 0.1]]
     configurations = get_samples_from_disk()
 
-    # df = pd.DataFrame(columns=["val_acc", "test_acc", "strategy", "size", "width", "damp"])
+    # df = pd.DataFrame(columns=["val_acc", "test_acc", "group", "size", "width", "damp"])
 
     for i in range(1,3):
-        df = pd.DataFrame(columns=["val_acc", "test_acc", "strategy", "size", "width", "damp"])
+        df = pd.DataFrame(columns=["val_acc", "test_acc", "group", "size", "width", "damp"])
         for strategy in strategies:
             for scope, ricker_width, damp in configurations:
                 print("starting", f"str: {strategy} sc: {scope} w: {ricker_width} d: {damp}")
@@ -171,7 +171,7 @@ if __name__ == "__main__":
                 net.load_state_dict(torch.load(f"../saved_models/0{i}/{strategy}/scope_{scope}/width_{ricker_width}/damp_{damp}/ConvergedInhibitionNetwork{freeze}_final.model"))
                 val_acc = accuracy_from_data_loader(net, valid_loader)
                 test_acc = accuracy(net, test_set, batch_size=batch_size)
-                df = df.append({'val_acc': val_acc, 'test_acc': test_acc, 'strategy': strategy, 'size': scope, 'width': ricker_width, 'damp': damp}, ignore_index=True)
+                df = df.append({'val_acc': val_acc, 'test_acc': test_acc, 'group': strategy, 'size': scope, 'width': ricker_width, 'damp': damp}, ignore_index=True)
 
                 df = df.sort_values(by='val_acc', ascending=False)
                 df.to_csv(path_or_buf=f"../results/0{i}/hpopt_0{i}.csv", index=False)

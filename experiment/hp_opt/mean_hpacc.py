@@ -14,7 +14,7 @@ dfs = [pd.read_csv(path+'results/hpopt_01.csv'),
        pd.read_csv(path+'results/hpopt_03.csv')
       ]
 
-meanacc = pd.DataFrame(columns=["val_acc", "test_acc", "strategy", "size", "width", "damp"])
+meanacc = pd.DataFrame(columns=["val_acc", "test_acc", "group", "size", "width", "damp"])
 
 configs = get_samples_from_disk()
 for scope, width, damp in configs:
@@ -23,7 +23,7 @@ for scope, width, damp in configs:
         test_accs = []
         for df in dfs:
             acc = df.loc[(df['size'] == scope) & (df['width'] == width) &
-                         (df['damp'] == damp) & (df['strategy'] == strategy)]
+                         (df['damp'] == damp) & (df['group'] == strategy)]
             val_accs.append(acc['val_acc'].values[0])
             test_accs.append(acc['test_acc'].values[0])
         val_mean = sum(val_accs) / len(val_accs)
@@ -31,7 +31,7 @@ for scope, width, damp in configs:
         #print(size, width, damp)
         #print(val_accs, val_mean, test_accs, test_mean)
         meanacc = meanacc.append(
-            {'val_acc': round(val_mean, 2), 'test_acc': round(test_mean, 2), 'strategy': strategy, 'size': int(scope), 'width': int(width),
+            {'val_acc': round(val_mean, 2), 'test_acc': round(test_mean, 2), 'group': strategy, 'size': int(scope), 'width': int(width),
              'damp': damp}, ignore_index=True)
 
         meanacc = meanacc.sort_values(by='val_acc', ascending=False)

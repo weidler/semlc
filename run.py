@@ -1,4 +1,4 @@
-"""A script for all main experiments that allows running multiple experiments of the same strategy."""
+"""A script for all main experiments that allows running multiple experiments of the same group."""
 
 import json
 
@@ -27,8 +27,8 @@ def get_hp_params(args):
         with open('hp_params.json') as hp:
             conf = json.load(hp).get(args.hpopt)
 
-        CONFIG[args.strategy][args.optim]['widths'] = conf['widths']
-        CONFIG[args.strategy][args.optim]['damps'] = conf['damps']
+        CONFIG[args.group][args.optim]['widths'] = conf['widths']
+        CONFIG[args.group][args.optim]['damps'] = conf['damps']
 
 
 def get_config(args):
@@ -40,15 +40,15 @@ def get_config(args):
         widths = [int(x) for x in args.widths.split(',')]
         assert len(widths) == args.coverage, \
             f"number of widths ({len(widths)}) does not match coverage {args.coverage}"
-        CONFIG[args.strategy][args.optim]['widths'] = widths
+        CONFIG[args.group][args.optim]['widths'] = widths
     if args.damps:
         damps = [float(x) for x in args.damps.split(',')]
         assert len(damps) == args.coverage, \
             f"number of damps ({len(damps)}) does not match coverage {args.coverage}"
-        CONFIG[args.strategy][args.optim]['damps'] = damps
+        CONFIG[args.group][args.optim]['damps'] = damps
     else:
-        assert args.coverage == len(CONFIG[args.strategy][args.optim]['widths']) == len(
-            CONFIG[args.strategy][args.optim]['damps']), \
+        assert args.coverage == len(CONFIG[args.group][args.optim]['widths']) == len(
+            CONFIG[args.group][args.optim]['damps']), \
             f"coverage ({args.coverage}) does not match configuration. Please check coverage param " \
             f"and change or overwrite config with arguments -s, -w, -d."
 
@@ -57,7 +57,7 @@ def get_config(args):
 
 def get_params(args, param):
     assert param in ['widths', 'damps'], f"invalid param {param}"
-    parameter = CONFIG[args.strategy][args.optim][param]
+    parameter = CONFIG[args.group][args.optim][param]
 
     return parameter
 
@@ -84,8 +84,8 @@ def run(args):
         n_classes = get_number_of_classes(train_data)
 
         lc_layer_function = None
-        if args.strategy != "none":
-            lc_layer_function = prepare_lc_builder(args.strategy, args.widths, args.damps)
+        if args.group != "none":
+            lc_layer_function = prepare_lc_builder(args.group, args.widths, args.damps)
         network = build_network(args.network, input_shape=(image_channels, image_height, image_width),
                                 n_classes=n_classes, lc=lc_layer_function, init_std=args.init_std)
         network.to(device)
@@ -94,7 +94,7 @@ def run(args):
             args.group = "-".join(list(map(lambda s: s.lower(), [
                 network.__class__.__name__,
                 args.data,
-                *([args.strategy] if args.strategy != "none" else []),
+                *([args.group] if args.group != "none" else []),
             ])))
         logger_args = dict(group=args.group) if args.group is not None else dict()
         logger = ExperimentLogger(network, train_data, **logger_args)
@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)
-    parser.add_argument("strategy", type=str, choices=strategies)
+    parser.add_argument("group", type=str, choices=strategies)
     parser.add_argument("--data", type=str, default="cifar10", choices=["cifar10", "mnist"], help="dataset to use")
     parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths", default=3)
     parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps", default=0.2)
