@@ -11,6 +11,7 @@ import numpy
 import simplejson as json
 from flask import request
 from flask_jsglue import JSGlue
+from simplejson import JSONDecodeError
 
 from config import CONFIG
 from core.statistics import best_val_acc, best_loss, best_val_acc_epoch, _potentially_pad, best_test_acc, \
@@ -135,7 +136,9 @@ def show_experiment(exp_id):
                 host=meta.get("host"),
                 group=meta.get("group"),
                 epochs=max(progress["epoch"]) if "epoch" in meta else None,
-                hps={},
+                hps={
+                    **(meta.get("lateral_layer"))
+                },
                 current_id=exp_id,
                 next_id=experiment_paths[current_index + 1] if current_index != len(experiment_paths) - 1 else None,
                 prev_id=experiment_paths[current_index - 1] if current_index != 0 else None,
@@ -249,8 +252,12 @@ def compare():
     for path in experiment_paths:
         eid_m = re.match("[0-9]+", str(path.split("/")[-1]))
         if eid_m:
-            with open(os.path.join(path, "meta.json"), "r") as f:
-                meta = json.load(f)
+            try:
+                with open(os.path.join(path, "meta.json"), "r") as f:
+                    meta = json.load(f)
+            except JSONDecodeError:
+                continue
+
             group = meta.get("group")
 
             if group not in group_names:

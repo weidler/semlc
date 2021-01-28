@@ -69,30 +69,51 @@
         </div>
     </div>
 
-<!--    <div class="topic-group" id="hp-view">-->
-<!--        <div class="row justify-content-center">-->
-<!--            <div class="col col-6">-->
-<!--                <h4 align="center" class="sub-title">Hyperparameters</h4>-->
+    <div class="topic-group" id="hp-view">
+        <div class="row justify-content-center">
+            <div class="col col-6">
+                <h4 align="center" class="sub-title">Hyperparameters</h4>
 
-<!--                <table class="table table-striped" title="Hyperparameters">-->
-<!--                    <thead>-->
-<!--                    <tr>-->
-<!--                        <th scope="col">Hyperparameter</th>-->
-<!--                        <th scope="col">Value</th>-->
-<!--                    </tr>-->
-<!--                    </thead>-->
-<!--                    <tbody>-->
-<!--                    {% for p, v in info.hps.items() %}-->
-<!--                        <tr>-->
-<!--                            <td>{{ p }}</td>-->
-<!--                            <td>{{ v }}</td>-->
-<!--                        </tr>-->
-<!--                    {% endfor %}-->
-<!--                    </tbody>-->
-<!--                </table>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
+                <table class="table table-striped" title="Hyperparameters">
+                    <thead>
+                    <tr>
+                        <th scope="col">Hyperparameter</th>
+                        <th scope="col">Value</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for p, v in info.hps.items() %}
+                        <tr>
+                            <td>{{ p }}</td>
+                            <td>{{ v }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col col-6">
+                <h4 align="center" class="sub-title">Dataset and Preprocessing</h4>
+
+                <table class="table table-striped" title="Hyperparameters">
+                    <thead>
+                    <tr>
+                        <th scope="col">Attribute</th>
+                        <th scope="col">Value</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for p, v in info.dataset.items() %}
+                        <tr>
+                            <td>{{ p }}</td>
+                            <td>{{ v }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
 {% endblock %}
 

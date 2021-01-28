@@ -18,49 +18,6 @@ from utilities.train import train_model
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-with open('default_config.json') as f:
-    CONFIG = json.load(f).get('CONFIG', {})
-
-
-def get_hp_params(args):
-    if args.hpopt:
-        with open('hp_params.json') as hp:
-            conf = json.load(hp).get(args.hpopt)
-
-        CONFIG[args.group][args.optim]['widths'] = conf['widths']
-        CONFIG[args.group][args.optim]['damps'] = conf['damps']
-
-
-def get_config(args):
-    # check for HP optimization
-    get_hp_params(args)
-
-    # optionally overwrite config
-    if args.widths:
-        widths = [int(x) for x in args.widths.split(',')]
-        assert len(widths) == args.coverage, \
-            f"number of widths ({len(widths)}) does not match coverage {args.coverage}"
-        CONFIG[args.group][args.optim]['widths'] = widths
-    if args.damps:
-        damps = [float(x) for x in args.damps.split(',')]
-        assert len(damps) == args.coverage, \
-            f"number of damps ({len(damps)}) does not match coverage {args.coverage}"
-        CONFIG[args.group][args.optim]['damps'] = damps
-    else:
-        assert args.coverage == len(CONFIG[args.group][args.optim]['widths']) == len(
-            CONFIG[args.group][args.optim]['damps']), \
-            f"coverage ({args.coverage}) does not match configuration. Please check coverage param " \
-            f"and change or overwrite config with arguments -s, -w, -d."
-
-    return CONFIG
-
-
-def get_params(args, param):
-    assert param in ['widths', 'damps'], f"invalid param {param}"
-    parameter = CONFIG[args.group][args.optim][param]
-
-    return parameter
-
 
 def run(args):
     # (de-)activate GPU utilization
@@ -72,7 +29,8 @@ def run(args):
     print(f"Optimizing on device '{device}'")
 
     # load data
-    train_data = get_training_dataset(args.data)
+    force_crop = None
+    train_data = get_training_dataset(args.data, force_crop=force_crop)
 
     for i in range(0, args.i):
         train_set, validation_set = random_split(train_data, [int(len(train_data) * 0.9),
@@ -99,7 +57,7 @@ def run(args):
         logger_args = dict(group=args.group) if args.group is not None else dict()
         logger = ExperimentLogger(network, train_data, **logger_args)
 
-        print(f"Model of type '{network.__class__.__name__}'{f' with lateral connections' if network.is_lateral else ''} "
+        print(f"Model of type '{network.__class__.__name__}'{f' with lateral connections {network.lateral_layer} ' if network.is_lateral else ''} "
               f"created with id {logger.id} in group {args.group}."
               f"\n\nStarting Training on {train_data.__class__.__name__} with {len(train_set)} samples distributed over {len(train_set_loader)} batches."
               f"\nOptimizing for {args.epochs} epochs and validating on {len(validation_set)} samples every epoch.")
@@ -126,8 +84,8 @@ if __name__ == '__main__':
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)
     parser.add_argument("group", type=str, choices=strategies)
     parser.add_argument("--data", type=str, default="cifar10", choices=["cifar10", "mnist"], help="dataset to use")
-    parser.add_argument("-w", "--widths", dest="widths", type=str, help="overwrite default widths", default=3)
-    parser.add_argument("-d", "--damps", dest="damps", type=str, help="overwrite default damps", default=0.2)
+    parser.add_argument("-w", "--widths", dest="widths", type=int, help="overwrite default widths", default=3)
+    parser.add_argument("-d", "--damps", dest="damps", type=int, help="overwrite default damps", default=0.2)
     parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)
     parser.add_argument("-e", "--epochs", type=int, default=180, help="Number of epochs per model.")
     parser.add_argument("--init-std", type=float, help="std for weight initialization")

@@ -17,8 +17,7 @@ from utilities.util import closest_factors
 
 class BaseNetwork(nn.Module):
 
-    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer_function: partial,
-                 lateral_before=True):
+    def __init__(self, input_shape: Tuple[int, int, int], lateral_layer_function: partial, lateral_before=True):
         super().__init__()
 
         input_shape = tuple(input_shape)

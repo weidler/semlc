@@ -57,7 +57,7 @@ class ExperimentLogger:
                     numpy.unique(self.dataset.labels)),
                 classes=self.dataset.classes if hasattr(self.dataset, "classes") else numpy.unique(
                     self.dataset.labels).tolist(),
-                tranform=[str(t) for t in self.dataset.transform.transforms]
+                transform=[str(t) for t in self.dataset.transform.transforms]
             ),
             ended_naturally=False
         )

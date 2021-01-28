@@ -91,16 +91,14 @@ class PrimaryCapsLayer(nn.Module):
 
 
 class CapsNet(BaseNetwork):
-    def __init__(self, input_shape, n_classes: int, routing_iterations=3, lateral_layer_function: BaseSemLCLayer = None,
-                 complex_cells: bool = False):
+    def __init__(self, input_shape, n_classes: int, routing_iterations=3, lateral_layer_function: BaseSemLCLayer = None):
         super(CapsNet, self).__init__(input_shape=input_shape, lateral_layer_function=lateral_layer_function)
 
         self.conv_one = nn.Conv2d(self.input_channels, 256, kernel_size=9, stride=1)
         conv_one_out_size = self.conv_one(self.generate_random_input()).shape
 
         if self.lateral_layer_function is not None:
-            self.lateral_layer = self.lateral_layer_function(self.conv_one,
-                                                             ricker_width=(self.conv_one.out_channels / 64) * 3)
+            self.lateral_layer = self.lateral_layer_function(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
 
         self.primaryCaps = PrimaryCapsLayer(conv_one_out_size[-3], 32, 8, kernel_size=9, stride=2)  # outputs 6*6
