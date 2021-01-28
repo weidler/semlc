@@ -143,7 +143,7 @@ if __name__ == "__main__":
     batch_size = 128
     _, valid_loader, test_set, valid_set = get_train_valid_loaders("../data/cifar10/", batch_size)
     strategies = ["converged", "toeplitz"]# "once", "once_learned"]
-    # strategies = ["once"]
+    # groups = ["once"]
     # size is specific to each layers
     range_scope = np.array([[9, 27, 45, 63],
                             [9, 27, 45, 63],

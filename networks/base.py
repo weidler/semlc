@@ -146,3 +146,6 @@ class BaseNetwork(nn.Module):
     @staticmethod
     def make_preferred_criterion():
         return nn.CrossEntropyLoss()
+
+    def get_conv_one(self):
+        return self.conv_one

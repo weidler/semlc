@@ -16,7 +16,7 @@ from simplejson import JSONDecodeError
 from config import CONFIG
 from core.statistics import best_val_acc, best_loss, best_val_acc_epoch, _potentially_pad, best_test_acc, \
     conf_h_test_acc
-from visualisation.monitor_plots import render_progress_line_plot, render_test_accuracy_plot
+from analysis.monitor_plots import render_progress_line_plot, render_test_accuracy_plot
 
 app = flask.Flask(__name__, )
 glue = JSGlue(app)
@@ -137,7 +137,7 @@ def show_experiment(exp_id):
                 group=meta.get("group"),
                 epochs=max(progress["epoch"]) if "epoch" in meta else None,
                 hps={
-                    **(meta.get("lateral_layer"))
+                    **(meta.get("lateral_layer") if meta.get("lateral_layer") is not None else {})
                 },
                 current_id=exp_id,
                 next_id=experiment_paths[current_index + 1] if current_index != len(experiment_paths) - 1 else None,

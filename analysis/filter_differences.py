@@ -1,4 +1,4 @@
-"""Calculates the mean differences between filters in certain strategies and layers and writes the results to a file"""
+"""Calculates the mean differences between filters in certain groups and layers and writes the results to a file"""
 
 import numpy as np
 from tqdm import tqdm
@@ -6,26 +6,32 @@ from sklearn.preprocessing import MinMaxScaler
 
 from utilities.eval import accuracies_from_list
 from utilities.filter_ordering import mse
-from visualisation.util import get_group_model_ids, load_model_by_id
-from visualisation.plot_ordering import mse_difference
+from analysis.util import get_group_model_ids, load_model_by_id
+from analysis.plot_ordering import mse_difference
 
 # 30 for parametric else 60
 num_layer = 0
 
 groups = [
-    'alexnet-cifar10-semlc',
-    'alexnet-cifar10-adaptive-semlc',
-    'alexnet-cifar10-parametric-semlc',
-    'alexnet-cifar10-gaussian-semlc',
-    'alexnet-cifar10-lrn',
-    'alexnet-cifar10',
+    # 'alexnet-cifar10-semlc',
+    # 'alexnet-cifar10-adaptive-semlc',
+    # 'alexnet-cifar10-parametric-semlc',
+    # 'alexnet-cifar10-gaussian-semlc',
+    # 'alexnet-cifar10-lrn',
+    # 'alexnet-cifar10',
+    'capsnet-mnist',
+    'capsnet-mnist-semlc',
+    'capsnet-mnist-lrn',
 ]
 
 for group in groups:
     models = []
     for id in get_group_model_ids(group):
-        model = load_model_by_id(id)
-        models.append(model)
+        try:
+            model = load_model_by_id(id)
+            models.append(model)
+        except:
+            pass
 
     mses = []
     mses_neighbor = []

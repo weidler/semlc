@@ -154,13 +154,13 @@ class ParametricSemLC(BaseSemLCLayer):
         self.self_connection = self_connection
 
         # parameters
-        damp = torch.tensor(ricker_damp, dtype=torch.float32)
-        width = torch.tensor(ricker_width, dtype=torch.float32)
+        damp = torch.tensor(self.ricker_damp, dtype=torch.float32)
+        width = torch.tensor(self.ricker_width, dtype=torch.float32)
 
         # inhibition filter
         self.register_parameter("damp", nn.Parameter(damp))
         self.register_parameter("width", nn.Parameter(width))
-        self.ricker_damp.requires_grad, self.ricker_width.requires_grad = True, True
+        self.damp.requires_grad, self.width.requires_grad = True, True
 
     @property
     def name(self):
@@ -168,8 +168,8 @@ class ParametricSemLC(BaseSemLCLayer):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        self.lateral_filter = weight_initialization.ricker_wavelet(size=self.in_channels - 1, width=self.ricker_width,
-                                                                   damping=self.ricker_damp, self_connect=self.self_connection)
+        self.lateral_filter = weight_initialization.ricker_wavelet(size=self.in_channels - 1, width=self.width,
+                                                                   damping=self.damp, self_connect=self.self_connection)
 
         # construct filter toeplitz
         if self.is_circular:

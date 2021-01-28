@@ -1,4 +1,4 @@
-"""Experiment script that compares the inhibition strategies regarding their computational efficiency."""
+"""Experiment script that compares the inhibition groups regarding their computational efficiency."""
 
 import time
 from typing import List

@@ -16,11 +16,11 @@ from utilities.data import get_number_of_classes
 # keychain = "./output/keychain.txt"
 # path = "./output/"
 
-# def get_net(strategy: str):
+# def get_net(group: str):
 #     """
 #     loads the layers with pre-defined hyper parameters for a given group
 #
-#     :param strategy:                the group
+#     :param group:                the group
 #
 #     :return:                        the layers
 #     """
@@ -60,34 +60,34 @@ from utilities.data import get_number_of_classes
 #         # vgg
 #     }
 #
-#     return all_nets[strategy]
+#     return all_nets[group]
 #
 #
-# def get_all_model_paths(strategy: str):
+# def get_all_model_paths(group: str):
 #     """
 #     returns all file paths to saved models for a given group
-#     :param strategy:            the group
+#     :param group:            the group
 #
 #     :return:                    a list of file paths
 #     """
 #
-#     files = df[df['group'].str.match(rf'{strategy}_\d\d?')]['id']
+#     files = df[df['group'].str.match(rf'{group}_\d\d?')]['id']
 #     return files
 #
 #
-# def get_one_model(strategy: str, index=0):
+# def get_one_model(group: str, index=0):
 #     """
 #     returns a layers with loaded state dictionary at the specified index of all saved models
 #
-#     :param strategy:            the group
+#     :param group:            the group
 #     :param index:               the index
 #
 #     :return:                    the layers with loaded state dictionary
 #     """
 #
-#     model_path = get_all_model_paths(strategy).iloc[index]
+#     model_path = get_all_model_paths(group).iloc[index]
 #     filename = f"{path}{model_path}_best.layers"
-#     model = get_net(strategy)
+#     model = get_net(group)
 #     model.load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
 #     return model
 
@@ -114,8 +114,8 @@ def get_group_model_ids(group) -> List[str]:
     return ids
 
 
-def load_model_by_id(model_id: str):
-    model_dir = os.path.join("../" + CONFIG.MODEL_DIR, str(model_id))
+def load_model_by_id(model_id: str, location_modifier: str = "../"):
+    model_dir = os.path.join(location_modifier + CONFIG.MODEL_DIR, str(model_id))
 
     with open(f"{model_dir}/meta.json") as f:
         meta = json.load(f)

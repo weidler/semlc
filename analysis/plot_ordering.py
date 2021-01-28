@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torch import Tensor
 from utilities.filter_ordering import two_opt, mse
-from visualisation.filter_weights_visualization import get_ordering_difference
+from analysis.filter_weights_visualization import get_ordering_difference
 
 
 def create_plot(net, part, cmap, plot_sequence=False, num_layer=0, point_size=4):
@@ -66,7 +66,7 @@ def get_orderings(net, num_layer=0):
 
     :return:                a tuple with the original and
     """
-    filters = net.features[num_layer].weight.data.numpy()
+    filters = net.get_conv_one().weight.data.numpy()
     sorted_filters: List[Tensor] = two_opt(filters)
     diff = get_ordering_difference(filters, sorted_filters)
     original_ordering = [elem[0] for elem in diff]

@@ -18,7 +18,11 @@ output/**/*.opt
 
 data/imagenet/*
 data/mnist/*
+data/MNIST/*
+data/cifar-10-batches-py/*
 data/cifar10/*
+data/cifar-10-python.tar.gz
+
 
 # Created by https://www.gitignore.io/api/python,pycharm
 # Edit at https://www.gitignore.io/?templates=python,pycharm

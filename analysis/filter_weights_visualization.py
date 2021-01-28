@@ -6,8 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torch import Tensor
 
+from utilities.image import rgb2gray
+from analysis.util import load_model_by_id
 
-def visualize_filters(filters: List[Tensor]):
+
+def visualize_filters(filters: List[Tensor], grayscale=False, title=None):
     """
     visualizes the given filters
     :param filters:         the filters
@@ -19,9 +22,15 @@ def visualize_filters(filters: List[Tensor]):
         for col in range(cols):
             img = np.swapaxes(filters[f], 0, 2)
             img = np.ndarray.astype(np.interp(img, (img.min(), img.max()), (0, 1)), dtype=float)
+            if grayscale and img.shape[-1] == 3:
+                img = rgb2gray(img)
             axs[row, col].imshow(img)
+            axs[row, col].axis("off")
+
             f += 1
-    plt.show()
+
+    if title is not None:
+        fig.suptitle(title)
 
 
 def plot_unsorted_and_sorted_filters(filters: List[Tensor], sorted_filters: List[Tensor]):
@@ -91,3 +100,24 @@ def get_dim_for_plot(n):
         return val, val2
     else:
         return val2, val
+
+
+if __name__ == '__main__':
+    models = [
+        # CAPSNET
+        load_model_by_id("1611789987902634"),  # capsnet semlc
+        load_model_by_id("1611789986722637"),  # capsnet none
+
+        # ALEXNET
+        # load_model_by_id("1611720276269320"),  # alexnet semlc
+        # load_model_by_id("1611709223422344"),  # alexnet none
+    ]
+
+    show_every_nth = 1
+
+    for model in models:
+        weights = model.get_conv_one().weight.data.numpy()
+        visualize_filters([f for i, f in enumerate(weights) if i % show_every_nth == 0], grayscale=True, title=model.lateral_type)
+        visualize_filters([f for i, f in enumerate(weights) if i % show_every_nth == 0], grayscale=True, title=model.lateral_type)
+
+    plt.show()
