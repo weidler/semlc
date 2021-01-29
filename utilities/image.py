@@ -9,7 +9,7 @@ from utilities.util import closest_factors
 
 def show_image(img, mean=0.5, std=0.5):
     img = img * mean + std
-    npimg = img.numpy()
+    npimg = img.cpu().numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
 

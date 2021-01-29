@@ -8,13 +8,8 @@ _deprecated/logs/
 .idea/
 .vscode/
 
-output/**/*.txt
-output/**/*.loss
-output/**/*.model
-output/**/*.log
-output/**/*.pth.tar
-output/**/*.acc
-output/**/*.opt
+experiments/static/saved_models/*
+networks/weights/*
 
 data/imagenet/*
 data/mnist/*

@@ -104,6 +104,7 @@ class CapsNet(BaseNetwork):
         self.primaryCaps = PrimaryCapsLayer(conv_one_out_size[-3], 32, 8, kernel_size=9, stride=2)  # outputs 6*6
 
         self.num_primaryCaps = 32 * (((self.input_height - 8) - 8) // 2) * (((self.input_width - 8) - 8) // 2)
+        print(self.num_primaryCaps)
         routing_module = AgreementRouting(self.num_primaryCaps, n_classes, routing_iterations)
         self.digitCaps = CapsLayer(self.num_primaryCaps, 8, n_classes, 16, routing_module)
 

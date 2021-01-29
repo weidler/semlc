@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -29,7 +31,7 @@ if __name__ == "__main__":
     height = 14
     wavelet_width = 3
     damping = 0.2
-    self_connect = False
+    self_connect = True
     match_lrn_peak = False
 
     tensor_in = torch.zeros((batches, depth, width, height))
@@ -38,10 +40,10 @@ if __name__ == "__main__":
             for j in range(tensor_in.shape[-2]):
                 tensor_in[b, :, i, j] = torch.from_numpy(
                     gaussian(depth, wavelet_width)
-                    + np.roll(gaussian(depth, wavelet_width), -(scope // 4)) * 0.2
-                    + np.roll(gaussian(depth, wavelet_width), (scope // 4)) * 0.2
-                    + np.roll(gaussian(depth, wavelet_width), -(scope // 2)) * 0.1
-                    + np.roll(gaussian(depth, wavelet_width), (scope // 2)) * 0.1
+                    + np.roll(gaussian(depth, wavelet_width * random.uniform(0, 3)), -(scope // 4)) * 0.2
+                    + np.roll(gaussian(depth, wavelet_width * random.uniform(0, 3)), (scope // 4)) * 0.2
+                    + np.roll(gaussian(depth, wavelet_width * random.uniform(0, 3)), -(scope // 2)) * 0.1
+                    + np.roll(gaussian(depth, wavelet_width * random.uniform(0, 3)), (scope // 2)) * 0.1
                 )
 
     tensor_in *= 100
@@ -52,9 +54,13 @@ if __name__ == "__main__":
         # SingleShotSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, learn_weights=True, self_connection=self_connect),
 
         # circular padding
+        SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping * 100, self_connection=self_connect),
+        SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping * 2, self_connection=self_connect),
         SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
-        GaussianSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
-        LRN(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
+        SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping * 0.5, self_connection=self_connect),
+        SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping * 0.5 * 0.5, self_connection=self_connect),
+        # GaussianSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
+        # LRN(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
 
         # SemLCLRNChain(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
         # LRNSemLCChain(simple_conv, ricker_width=wavelet_width, ricker_damp=damping),
@@ -73,7 +79,7 @@ if __name__ == "__main__":
         if match_lrn_peak and "LRN" not in l.name and "LRN" in tensor_outs.keys():
             factor = tensor_outs["LRN"][:, 31] / tensor_outs[l.name][:, 31]
 
-        lateral_pass_plot(tensor_outs[l.name] * factor, label=l.name, line_style=ls)
+        lateral_pass_plot(tensor_outs[l.name] * factor, label=str(l), line_style=ls)
 
     plt.title(f"Effects of Different Lateral Connectivity Strategies ")
     plt.legend()
