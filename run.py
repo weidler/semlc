@@ -29,8 +29,8 @@ def run(args):
     print(f"Optimizing on device '{device}'")
 
     # load data
-    force_crop = None
-    train_data = get_training_dataset(args.data, force_crop=force_crop)
+    force_crop = (32, 32) if args.data == "cifar10-bw" and args.network != "capsnet" else None
+    train_data = get_training_dataset(args.data, force_size=force_crop)
 
     for i in range(0, args.i):
         train_set, validation_set = random_split(train_data, [int(len(train_data) * 0.9),
@@ -52,7 +52,7 @@ def run(args):
             args.group = "-".join(list(map(lambda s: s.lower(), [
                 network.__class__.__name__,
                 args.data,
-                *([args.group] if args.group != "none" else []),
+                *([args.strategy] if args.strategy != "none" else []),
             ])))
         logger_args = dict(group=args.group) if args.group is not None else dict()
         logger = ExperimentLogger(network, train_data, **logger_args)

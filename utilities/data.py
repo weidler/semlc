@@ -20,19 +20,19 @@ def get_dataset_class(name: str):
     }[name.lower()]
 
 
-def get_training_dataset(name: str, force_crop: Tuple[int, int] = None):
+def get_training_dataset(name: str, force_size: Tuple[int, int] = None):
     name = name.lower()
 
     if name == "cifar10":
         width, height = (32, 32)
         dataset = torchvision.datasets.CIFAR10(root=CONFIG.DATA_DIR, train=True, download=True,
                                                transform=make_transform_composition(
-                                                   (width, height) if force_crop is None else force_crop, 3))
+                                                   (width, height) if force_size is None else force_size, 3))
     elif name == "cifar10-bw":
         width, height = (28, 28)
         dataset = torchvision.datasets.CIFAR10(root=CONFIG.DATA_DIR, train=True, download=True,
                                                transform=make_transform_composition(
-                                                   size=(width, height) if force_crop is None else force_crop,
+                                                   size=(width, height) if force_size is None else force_size,
                                                    channels=1,
                                                    augmentations=[transforms.Grayscale()]))
     elif name == "mnist":

@@ -16,12 +16,15 @@ while getopts ":i:p:g" opt; do
   esac
 done
 
-echo "Submitting $ITERATIONS jobs."
+echo "Submitting $ITERATIONS jobs: $SCRIPT."
 if [ "$GPU" = true ] ; then
   echo "Using GPU Server."
 else
   echo "Using Multicore Server."
 fi
+
+eval $SCRIPT
+exit
 
 if (($ITERATIONS >= 0 && $ITERATIONS <= 120)); then
   for ((i = 0 ; i < $ITERATIONS ; i++)); do
