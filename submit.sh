@@ -23,9 +23,6 @@ else
   echo "Using Multicore Server."
 fi
 
-eval $SCRIPT
-exit
-
 if (($ITERATIONS >= 0 && $ITERATIONS <= 120)); then
   for ((i = 0 ; i < $ITERATIONS ; i++)); do
     if test -z "$SCRIPT"
