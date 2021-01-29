@@ -6,32 +6,12 @@ from typing import Dict
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import transforms
 
 from config import CONFIG
 from core.statistics import acc
-from core.transform import make_test_transform_composition
 from networks.util import build_network
-from utilities.data import get_number_of_classes, AVAILABLE_DATASETS, get_dataset_class
+from utilities.data import get_number_of_classes, AVAILABLE_DATASETS, load_test_set
 from utilities.evaluation import evaluate_classification
-
-
-def load_test_set(image_channels: int, image_height: int, image_width: int, dataset: str):
-    """Return all available test dataset variants for given dataset."""
-    dataset_class = get_dataset_class(dataset)
-
-    if dataset.lower() == "mnist":
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,)),
-        ])
-    elif dataset.lower() == "cifar10":
-        transform = make_test_transform_composition((image_width, image_height), image_channels)
-    else:
-        raise ValueError("Unknown Dataset.")
-
-    return {"default": dataset_class(root=CONFIG.DATA_DIR, train=False, download=True,
-                                     transform=transform)}
 
 
 def evaluate_on(model: nn.Module, data: Dict[str, Dataset], model_dir: str, batch_size: int = 128, device: str = None):

@@ -8,9 +8,9 @@ from torch import nn
 from torch.utils.data import Subset, random_split, DataLoader
 from torchvision import transforms
 
-from evaluate import evaluate_on, load_test_set
+from evaluate import evaluate_on
 from networks.util import build_network, AVAILABLE_NETWORKS, prepare_lc_builder
-from utilities.data import get_number_of_classes, get_training_dataset
+from utilities.data import get_number_of_classes, get_training_dataset, AVAILABLE_DATASETS, load_test_set
 from utilities.eval import accuracy
 from utilities.log import ExperimentLogger
 from utilities.train import train_model
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)
     parser.add_argument("group", type=str, choices=strategies)
-    parser.add_argument("--data", type=str, default="cifar10", choices=["cifar10", "mnist"], help="dataset to use")
+    parser.add_argument("--data", type=str, default="cifar10", choices=AVAILABLE_DATASETS, help="dataset to use")
     parser.add_argument("-w", "--widths", dest="widths", type=int, help="overwrite default widths", default=3)
     parser.add_argument("-d", "--damps", dest="damps", type=int, help="overwrite default damps", default=0.2)
     parser.add_argument("-c", "--cov", dest="coverage", type=int, help="coverage, default=1", default=1)

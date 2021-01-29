@@ -5,9 +5,9 @@ import torchvision
 from torchvision.transforms import transforms
 
 from config import CONFIG
-from core.transform import make_transform_composition
+from core.transform import make_transform_composition, make_test_transform_composition
 
-AVAILABLE_DATASETS = ["cifar10", "mnist", "fashionmnist", "svhn", "kylberg", "rectangles"]
+AVAILABLE_DATASETS = ["cifar10", "cifar10-bw", "mnist"]
 
 
 def get_dataset_class(name: str):
@@ -15,6 +15,7 @@ def get_dataset_class(name: str):
 
     return {
         "cifar10": torchvision.datasets.CIFAR10,
+        "cifar10-bw": torchvision.datasets.CIFAR10,
         "mnist": torchvision.datasets.MNIST,
     }[name.lower()]
 
@@ -27,6 +28,13 @@ def get_training_dataset(name: str, force_crop: Tuple[int, int] = None):
         dataset = torchvision.datasets.CIFAR10(root=CONFIG.DATA_DIR, train=True, download=True,
                                                transform=make_transform_composition(
                                                    (width, height) if force_crop is None else force_crop, 3))
+    elif name == "cifar10-bw":
+        width, height = (28, 28)
+        dataset = torchvision.datasets.CIFAR10(root=CONFIG.DATA_DIR, train=True, download=True,
+                                               transform=make_transform_composition(
+                                                   size=(width, height) if force_crop is None else force_crop,
+                                                   channels=1,
+                                                   augmentations=[transforms.Grayscale()]))
     elif name == "mnist":
         width, height = (28, 28)
         transform = transforms.Compose([
@@ -41,6 +49,27 @@ def get_training_dataset(name: str, force_crop: Tuple[int, int] = None):
         raise NotImplementedError("Unknown dataset.")
 
     return dataset
+
+
+def load_test_set(image_channels: int, image_height: int, image_width: int, dataset: str):
+    """Return all available test dataset variants for given dataset."""
+    dataset_class = get_dataset_class(dataset)
+
+    if dataset.lower() == "mnist":
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,)),
+        ])
+    elif dataset.lower() == "cifar10":
+        transform = make_test_transform_composition((image_width, image_height), image_channels)
+    elif dataset.lower() == "cifar10-bw":
+        transform = make_test_transform_composition((image_width, image_height), image_channels,
+                                                    augmentations=[transforms.Grayscale()])
+    else:
+        raise ValueError("Unknown Dataset.")
+
+    return {"default": dataset_class(root=CONFIG.DATA_DIR, train=False, download=True,
+                                     transform=transform)}
 
 
 def get_class_labels(dataset) -> list:

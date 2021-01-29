@@ -7,11 +7,11 @@ import pandas as pd
 import torch
 
 from config import CONFIG
-from evaluate import load_test_set
 
 # files to saved models and keychain
 from networks.util import build_network, prepare_lc_builder
-from utilities.data import get_number_of_classes
+from utilities.data import get_number_of_classes, load_test_set
+
 
 # keychain = "./output/keychain.txt"
 # path = "./output/"
