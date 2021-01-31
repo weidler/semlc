@@ -84,6 +84,9 @@ class Simple(BaseNetwork):
     def make_preferred_optimizer(self) -> Optimizer:
         return optim.Adam(self.parameters(), lr=0.001)
 
+    def get_final_block1_layer(self):
+        return self.bn_one
+
 
 if __name__ == '__main__':
     sb_plus = Simple(input_shape=(3, 32, 32), n_classes=10)

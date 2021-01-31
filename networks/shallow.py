@@ -59,6 +59,9 @@ class Shallow(BaseNetwork):
     def make_preferred_optimizer(self) -> Optimizer:
         return optim.SGD(self.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-6)
 
+    def get_final_block1_layer(self):
+        return self.pool_conv_one
+
 
 if __name__ == '__main__':
     sb_plus = Shallow(input_shape=(3, 32, 32), n_classes=10)

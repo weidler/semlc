@@ -46,6 +46,16 @@ class AlexNet(BaseNetwork):
         nn.init.normal_(self.classifier.weight, 0, 0.01)
 
     def forward(self, x):
+        x = self.extract_features(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+
+        return x
+
+    def make_preferred_optimizer(self) -> Optimizer:
+        return optim.Adam(self.parameters(), lr=0.001)
+
+    def extract_features(self, x):
         out_conv_one = self.conv_one(x)
         if self.lateral_layer_function is not None:
             out_conv_one = self.lateral_layer(out_conv_one)
@@ -55,10 +65,7 @@ class AlexNet(BaseNetwork):
         block_three = F.relu(self.conv_three(block_two))
         block_four = F.relu(self.conv_four(block_three))
 
-        x = torch.flatten(block_four, 1)
-        x = self.classifier(x)
+        return block_four
 
-        return x
-
-    def make_preferred_optimizer(self) -> Optimizer:
-        return optim.Adam(self.parameters(), lr=0.001)
+    def get_final_block1_layer(self):
+        return self.bn_one

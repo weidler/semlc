@@ -105,7 +105,7 @@ def get_dim_for_plot(n):
 if __name__ == '__main__':
     models = [
         # CAPSNET
-        load_model_by_id("1611789987902634"),  # capsnet semlc
+        load_model_by_id("1612027536819388"),  # capsnet semlc
         load_model_by_id("1611789986722637"),  # capsnet none
 
         # ALEXNET
@@ -118,6 +118,6 @@ if __name__ == '__main__':
     for model in models:
         weights = model.get_conv_one().weight.data.numpy()
         visualize_filters([f for i, f in enumerate(weights) if i % show_every_nth == 0], grayscale=True, title=model.lateral_type)
-        visualize_filters([f for i, f in enumerate(weights) if i % show_every_nth == 0], grayscale=True, title=model.lateral_type)
+        # visualize_filters([f for i, f in enumerate(weights) if i % show_every_nth == 0], grayscale=True, title=model.lateral_type)
 
     plt.show()

@@ -9,6 +9,7 @@ import torch
 from config import CONFIG
 
 # files to saved models and keychain
+from networks import BaseNetwork
 from networks.util import build_network, prepare_lc_builder
 from utilities.data import get_number_of_classes, load_test_set
 
@@ -114,7 +115,7 @@ def get_group_model_ids(group) -> List[str]:
     return ids
 
 
-def load_model_by_id(model_id: str, location_modifier: str = "../"):
+def load_model_by_id(model_id: str, location_modifier: str = "../") -> BaseNetwork:
     model_dir = os.path.join(location_modifier + CONFIG.MODEL_DIR, str(model_id))
 
     with open(f"{model_dir}/meta.json") as f:

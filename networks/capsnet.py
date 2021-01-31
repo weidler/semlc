@@ -100,25 +100,29 @@ class CapsNet(BaseNetwork):
         if self.lateral_layer_function is not None:
             self.lateral_layer = self.lateral_layer_function(self.conv_one)
             self.lateral_layer.compile(conv_one_out_size[-2:])
+        self.relu_one = nn.ReLU()
 
         self.primaryCaps = PrimaryCapsLayer(conv_one_out_size[-3], 32, 8, kernel_size=9, stride=2)  # outputs 6*6
 
         self.num_primaryCaps = 32 * (((self.input_height - 8) - 8) // 2) * (((self.input_width - 8) - 8) // 2)
-        print(self.num_primaryCaps)
         routing_module = AgreementRouting(self.num_primaryCaps, n_classes, routing_iterations)
         self.digitCaps = CapsLayer(self.num_primaryCaps, 8, n_classes, 16, routing_module)
 
     def forward(self, x):
-        out_conv_one = self.conv_one(x)
-
-        if self.lateral_layer_function is not None:
-            out_conv_one = self.lateral_layer(out_conv_one)
-
-        primary_capsules = self.primaryCaps(F.relu(out_conv_one))
+        out_conv_one = self.extract_features(x)
+        primary_capsules = self.primaryCaps(out_conv_one)
         digit_capsules = self.digitCaps(primary_capsules)
         probs = digit_capsules.pow(2).sum(dim=2).sqrt()
 
         return probs
+
+    def extract_features(self, x):
+        out_conv_one = self.conv_one(x)
+        if self.lateral_layer_function is not None:
+            out_conv_one = self.lateral_layer(out_conv_one)
+        out_conv_one = self.relu_one(out_conv_one)
+
+        return out_conv_one
 
     @staticmethod
     def make_preferred_criterion():
@@ -130,6 +134,9 @@ class CapsNet(BaseNetwork):
     @staticmethod
     def make_preferred_lr_schedule(optimizer):
         return lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, patience=15, min_lr=1e-6)
+
+    def get_final_block1_layer(self):
+        return self.relu_one
 
 
 class MarginLoss(nn.Module):
