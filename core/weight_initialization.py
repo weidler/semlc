@@ -1,7 +1,6 @@
 """Functions providing initialization of lateral connectivity filters."""
 import math
-import timeit
-from typing import Tuple
+from typing import Tuple, Union
 
 import matplotlib.pyplot as plt
 import torch
@@ -63,7 +62,20 @@ def ricker_wavelet(size: int, width: torch.Tensor, damping: torch.Tensor, self_c
     return wavelet
 
 
-def gaussian(size: int, width: float, damping: float, self_connect: bool = True):
+def dog_mexican_hat(size: int, width: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
+                    damping: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]], self_connect: bool = True):
+    if isinstance(width, torch.Tensor):
+        width = (width, width)
+    if isinstance(damping, torch.Tensor):
+        damping = (damping, damping)
+
+    excitation_gaussian = normalized_gaussian(size, width[0], damping[0], self_connect)
+    inhibition_gaussian = normalized_gaussian(size, width[1], damping[1], self_connect)
+
+    return excitation_gaussian - inhibition_gaussian
+
+
+def gaussian(size: int, width: torch.Tensor, damping: torch.Tensor, self_connect: bool = True):
     """Compose a Gaussian filter.
 
     :param size:                size of the output vector
@@ -78,11 +90,24 @@ def gaussian(size: int, width: float, damping: float, self_connect: bool = True)
 
     start = -(size - 1.0) / 2
     x = torch.tensor([start + i for i in range(size)])
-    gaussian_filter = damping * torch.exp(-(torch.pow(x - 0, 2) / (2 * (width * width))))
+    gaussian_filter = damping * torch.exp(-(torch.pow(x, 2) / (2 * (width * width))))
     if not self_connect:
         gaussian_filter[gaussian_filter.shape[-1] // 2] = 0
 
     return gaussian_filter
+
+
+def normalized_gaussian(size: int, width: torch.Tensor, damping: torch.Tensor, self_connect: bool = True):
+    """Compose a normalized Gaussian filter.
+
+    :param size:                size of the output vector
+    :param width:               width of the gaussian
+    :param damping:             damping factor scaling the amplitude of the gaussian
+    :param self_connect:        whether to form a connection of a neuron to itself
+
+    :return:                    the wavelet
+    """
+    return gaussian(size, width, damping, self_connect) * (1 / (2 * math.pi * (width ** 2)))
 
 
 def matching_gaussian(size: int, width: float, ricker_damping: float, self_connect: bool = True):
@@ -172,25 +197,9 @@ if __name__ == "__main__":
     damping = 0.1
     self_connect = True
 
-    # EFFICIENCY
-    print(f"{timeit.timeit(lambda: ricker_scipy(scope, width, damping), number=1000)} (scipy)")
-    print(
-        f"{timeit.timeit(lambda: ricker_wavelet(scope, torch.tensor(width, dtype=torch.float32), torch.tensor(damping, dtype=torch.float32)), number=1000)} (ours)")
+    a = normalized_gaussian(scope, width, damping)
+    b = normalized_gaussian(scope, width * 2, damping)
 
-    # VISUAL INSPECTION
-    gauss = gaussian(scope, width, damping, self_connect=self_connect)
-    mgauss = matching_gaussian(scope, width, damping, self_connect=self_connect)
-    mh = ricker_wavelet(scope, torch.tensor(width, dtype=torch.float32), torch.tensor(damping, dtype=torch.float32),
-                        self_connect=self_connect)
-
-    start = -(scope - 1.0) / 2
-    x = torch.tensor([start + i for i in range(scope)])
-
-    plt.axvline(0, color="grey", ls="--")
-    plt.axhline(0, color="grey", ls="--")
-    plt.plot(x, gauss.detach().cpu().tolist(), label="Gaussian")
-    plt.plot(x, mgauss.detach().cpu().tolist(), label="Matched Gaussian")
-    plt.plot(x, mh.detach().cpu().tolist(), label="Mexican hat")
-
-    plt.legend()
+    plt.plot(a)
+    plt.plot(b)
     plt.show()

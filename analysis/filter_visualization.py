@@ -113,16 +113,17 @@ def recreate_image(im_as_var):
     reverse_std = [1 / 0.229, 1 / 0.224, 1 / 0.225]
     recreated_im = copy.copy(im_as_var.data.numpy()[0])
 
-    if im_as_var.shape[0] == 3:
-        for c, _ in enumerate(recreated_im):
-            recreated_im[c] /= reverse_std[c]
-            recreated_im[c] -= reverse_mean[c]
-
-    recreated_im[recreated_im > 1] = 1
-    recreated_im[recreated_im < 0] = 0
+    for c, _ in enumerate(recreated_im):
+        recreated_im[c] /= reverse_std[c]
+        recreated_im[c] -= reverse_mean[c]
 
     if recreated_im.shape[0] == 3:
+        recreated_im[recreated_im > 1] = 1
+        recreated_im[recreated_im < 0] = 0
+
         recreated_im = np.uint8(np.round(recreated_im * 255))
+    else:
+        recreated_im = (recreated_im - recreated_im.min()) / (recreated_im.max() - recreated_im.min())
 
     recreated_im = recreated_im.transpose(1, 2, 0)
     return recreated_im
@@ -140,8 +141,7 @@ class CNNLayerVisualization():
         self.selected_filter = selected_filter
         self.conv_output = torch.tensor(0)
 
-        self.upscaling_steps = 6
-        self.upscaling_factor = 1.2
+        self.epochs = 6
 
         # Create the folder to export images if not exists
         if not os.path.exists('../generated'):
@@ -167,7 +167,7 @@ class CNNLayerVisualization():
         # Define optimizer for the image
         optimizer = Adam([processed_image], lr=0.1, weight_decay=1e-6)
 
-        for i in range(self.upscaling_steps):
+        for i in range(self.epochs):
             for j in range(1, 21):
                 optimizer.zero_grad()
 
@@ -176,13 +176,7 @@ class CNNLayerVisualization():
                 loss.backward()
                 optimizer.step()
 
-            if resize_crop:
-                processed_image = center_crop(
-                    resize(processed_image, [int(size * self.upscaling_factor), int(size * self.upscaling_factor)],
-                           interpolation=PIL.Image.BICUBIC),
-                    [size, size])
-
-            if blur and not i == self.upscaling_steps - 1:
+            if blur and not i == self.epochs - 1:
                 processed_image = Variable(gaussian_blur(processed_image, [3, 3], sigma=[0.4, 0.4]), requires_grad=True)
 
         created_image = recreate_image(processed_image)
@@ -194,7 +188,7 @@ if __name__ == '__main__':
     pretrained_model = load_model_by_id("1612027536819388")  # semlc
 
     images = []
-    for filter_pos in tqdm(range(4)):
+    for filter_pos in tqdm(range(64)):
         layer_vis = CNNLayerVisualization(pretrained_model, filter_pos)
 
         # Layer visualization with pytorch hooks
