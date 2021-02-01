@@ -1,0 +1,9 @@
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 2.5 --group hpo-capsnet-2.5 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 2.75 --group hpo-capsnet-2.75 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 3 --group hpo-capsnet-3 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 3.25 --group hpo-capsnet-3.25 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 3.5 --group hpo-capsnet-3.5 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 3.75 --group hpo-capsnet-3.75 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 4 --group hpo-capsnet-4 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 4.25 --group hpo-capsnet-4.25 --data mnist' -i $1
+sh submit.sh -p 'python3 run.py capsnet semlc -e 80 -w 4.5 --group hpo-capsnet-4.5 --data mnist' -i $1
