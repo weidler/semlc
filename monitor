@@ -1,3 +1,3 @@
-export PYTHONPATH=$PYTHONPATH:/lateral
-cd lateral
+export PYTHONPATH=$PYTHONPATH:/semlc
+cd semlc
 env FLASK_APP=experiments/app.py flask run

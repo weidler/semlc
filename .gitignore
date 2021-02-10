@@ -8,8 +8,8 @@ _deprecated/logs/
 .idea/
 .vscode/
 
-experiments/static/saved_models/*
-networks/weights/*
+semlc/experiments/static/saved_models/*
+semlc/networks/weights/*
 
 data/imagenet/*
 data/mnist/*
