@@ -133,5 +133,5 @@ if __name__ == "__main__":
         fig.set_size_inches(6.75, 2.5)
         fig.tight_layout()
 
-        plt.savefig(f"../documentation/figures/strategy_effects{'_match_lrn' if match_lrn_peak else ''}_{input_name}.pdf",
+        plt.savefig(f"./strategy_effects{'_match_lrn' if match_lrn_peak else ''}_{input_name}.pdf",
                     format="pdf", dpi=fig.dpi, bbox_inches="tight", pad_inches=0)

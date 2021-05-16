@@ -14,7 +14,7 @@ from flask_jsglue import JSGlue
 from simplejson import JSONDecodeError
 
 from config import CONFIG
-from core import best_val_acc, best_loss, best_val_acc_epoch, _potentially_pad, best_test_acc, \
+from core.statistics import best_val_acc, best_loss, best_val_acc_epoch, _potentially_pad, best_test_acc, \
     conf_h_test_acc
 from analysis.monitor_plots import render_progress_line_plot, render_test_accuracy_plot
 

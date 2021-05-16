@@ -120,6 +120,24 @@ def matching_gaussian(size: int, width: float, ricker_damping: float, self_conne
     return base_gaussian * ricker_center_value
 
 
+# difference of beta
+
+def beta(size: int, alphas: torch.Tensor, betas: torch.Tensor, damping: torch.Tensor, self_connect: bool = True):
+    """Probability density of the Beta distribution."""
+
+    # start = -(size - 1.0) / 2
+    samples = torch.tensor([0 + i for i in range(size)], dtype=torch.float32) / size
+
+    top = torch.pow(samples, torch.subtract(alphas, 1.)) * torch.pow(torch.subtract(torch.tensor(1.), samples),
+                                                                     torch.subtract(betas, 1.))
+    bab = torch.multiply(torch.exp(torch.lgamma(alphas)),
+                         torch.exp(torch.lgamma(betas)) / torch.exp(torch.lgamma(torch.add(alphas, betas))))
+
+    out = top / bab
+
+    return out
+
+
 # GABOR FILTERS
 
 def gabor_filter(size, theta, lamb, sigma, gamma):
@@ -195,14 +213,17 @@ def fix_layer_weights_to_gabor(layer, scale=True):
 
 
 if __name__ == "__main__":
-    scope = 47
-    width = 3
-    damping = 0.1
+    scope = 27
+    width = torch.tensor(3.)
+    damping = torch.tensor(0.1)
     self_connect = True
 
-    a = normalized_gaussian(scope, width, damping)
-    b = normalized_gaussian(scope, width * 2, damping)
+    # a = dog_mexican_hat(scope, (width, width * 2), (damping, damping * 2), self_connect)
 
-    plt.plot(a)
-    plt.plot(b)
+    i = 4
+    b = beta(scope, torch.tensor(float(i)), torch.tensor(float(i)), torch.tensor(1.), self_connect)
+    a = beta(scope, torch.tensor(float(i + 6)), torch.tensor(float(i + 4)), torch.tensor(1.), self_connect)
+    plt.plot(a - b, label=str(i))
+
+    plt.legend()
     plt.show()

@@ -9,7 +9,7 @@ from torch import Tensor
 from torchvision.utils import make_grid
 
 from analysis.util import load_model_by_id
-from utilities import rgb2gray
+from utilities.image import rgb2gray
 
 
 def visualize_filters(filters_per_group: Dict[str, Tensor], grayscale=False):

@@ -109,5 +109,5 @@ fig.suptitle("\n\nAdaptions of 10 Independent Trainings")
 ax_left.plot(filter_before, color="royalblue")
 ax_right.plot(mean_filter_after, color="maroon")
 
-plt.savefig(f"./documentation/figures/adapted_filters_{strategy}_layer_{layer}.pdf", format="pdf", bbox_inches="tight")
+plt.savefig(f"./adapted_filters_{strategy}_layer_{layer}.pdf", format="pdf", bbox_inches="tight")
 plt.show()

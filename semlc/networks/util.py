@@ -1,44 +1,11 @@
-import functools
-from typing import Tuple, Callable, Union
+from typing import Tuple, Callable
 
 from torchsummary import torchsummary
 
-from layers import SemLC, AdaptiveSemLC, ParametricSemLC, SingleShotSemLC, GaussianSemLC, LRN, CMapLRN
-from networks import CapsNet, BaseNetwork, Shallow
-from networks import Simple
-from networks.alexnet import AlexNet
+from layers.util import prepare_lc_builder
+from networks import CapsNet, BaseNetwork, Shallow, CORnetS, CORnetZ, AlexNet, Simple
 
-AVAILABLE_NETWORKS = ["simple", "shallow", "alexnet", "capsnet"]
-
-
-def prepare_lc_builder(setting: str, ricker_width: float, ricker_damp: float) -> Union[
-    None, Callable[..., BaseNetwork]]:
-    """Return a partial function of the semantic lateral connectivity layer requested by name."""
-
-    if setting is None or setting == "none":
-        return None
-
-    setting = setting.strip().lower()
-
-    # SEMLC
-    if setting in ["semlc"]:
-        return functools.partial(SemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
-    elif setting in ["adaptive-semlc", "adaptivesemlc"]:
-        return functools.partial(AdaptiveSemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
-    elif setting in ["parametric-semlc", "parametricsemlc"]:
-        return functools.partial(ParametricSemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
-    elif setting in ["singleshot-semlc", "singleshotsemlc"]:
-        return functools.partial(SingleShotSemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
-
-    # COMPETITORS
-    elif setting in ["lrn"]:
-        return functools.partial(LRN)
-    elif setting in ["cmap-lrn", "cmaplrn"]:
-        return functools.partial(CMapLRN)
-    elif setting in ["gaussian-semlc", "gaussiansemlc"]:
-        return functools.partial(GaussianSemLC, ricker_width=ricker_width, ricker_damp=ricker_damp)
-    else:
-        raise NotImplementedError(f"LC layer construction for given layer setting {setting} not implemented.")
+AVAILABLE_NETWORKS = ["simple", "shallow", "alexnet", "capsnet", "cornet-s", "cornet-z"]
 
 
 def build_network(network: str, input_shape: Tuple[int, int, int], n_classes: int = None, lc: Callable = None,
@@ -56,6 +23,10 @@ def build_network(network: str, input_shape: Tuple[int, int, int], n_classes: in
         model = AlexNet(input_shape=input_shape, n_classes=n_classes, lateral_layer_function=lc)
     elif network in ["capsnet", CapsNet.__name__.lower()]:
         model = CapsNet(input_shape=input_shape, n_classes=n_classes, lateral_layer_function=lc)
+    elif network in ["cornet-s", CORnetS.__name__.lower()]:
+        model = CORnetS(input_shape=input_shape, n_classes=n_classes, lateral_layer_function=lc)
+    elif network in ["cornet-z", CORnetZ.__name__.lower()]:
+        model = CORnetZ(input_shape=input_shape, n_classes=n_classes, lateral_layer_function=lc)
     else:
         raise NotImplementedError(f"Requested network '{network}' does not exist.")
 

@@ -193,5 +193,5 @@ handles, labels = axs[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc="lower center", ncol=2)
 fig.subplots_adjust(hspace=0.35, bottom=0.2)
 
-plt.savefig('./documentation/figures/layer_efficiency_horizontal.pdf', format="pdf", bbox_inches='tight')
+plt.savefig('./layer_efficiency_horizontal.pdf', format="pdf", bbox_inches='tight')
 plt.show()

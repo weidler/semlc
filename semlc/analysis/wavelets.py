@@ -47,4 +47,4 @@ axs.legend()
 fig.set_size_inches(3.25, 2)
 fig.tight_layout()
 
-fig.savefig("../documentation/figures/wavelet.pdf", format="pdf", dpi=plt.gcf().dpi, bbox_inches="tight", pad_inches=0.01)
+fig.savefig("./wavelet.pdf", format="pdf", dpi=plt.gcf().dpi, bbox_inches="tight", pad_inches=0.01)

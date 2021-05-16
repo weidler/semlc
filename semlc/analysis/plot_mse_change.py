@@ -44,5 +44,5 @@ ax.margins(0.05, 0.2)
 fig.subplots_adjust(bottom=0.3)
 # fig.suptitle("MSE Ratio of All Filter Pairs Over Adjacent Filter Pairs")
 
-plt.savefig("./documentation/figures/mse-ratio-change.pdf", format="pdf")
+plt.savefig("./mse-ratio-change.pdf", format="pdf")
 plt.show()

@@ -8,7 +8,7 @@ from bokeh.transform import factor_cmap
 from scipy import stats
 
 from config import CONFIG
-from core import confidence_around_mean
+from core.statistics import confidence_around_mean
 
 palette = [colors.RGB(*[int(c * 255) for c in color]) for color in CONFIG.COLORMAP]
 darker_palette = [c.darken(0.3) for c in palette]

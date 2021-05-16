@@ -9,7 +9,8 @@ from config import CONFIG
 
 # files to saved models and keychain
 from networks import BaseNetwork
-from networks.util import build_network, prepare_lc_builder
+from networks.util import build_network
+from layers.util import prepare_lc_builder
 
 
 # keychain = "./output/keychain.txt"

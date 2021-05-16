@@ -4,7 +4,8 @@ import torch
 from torch.utils.data import random_split, DataLoader
 
 from evaluate import evaluate_on
-from networks.util import build_network, AVAILABLE_NETWORKS, prepare_lc_builder
+from networks.util import build_network, AVAILABLE_NETWORKS
+from layers.util import prepare_lc_builder
 from utilities.data import get_number_of_classes, get_training_dataset, AVAILABLE_DATASETS, load_test_set
 from utilities.log import ExperimentLogger
 from utilities.train import train_model
@@ -77,8 +78,7 @@ def run(args):
 if __name__ == '__main__':
     import argparse
 
-    strategies = ["none", "lrn", "cmap-lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "parametric-semlc",
-                  "singleshot-semlc"]
+    strategies = ["none", "lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "parametric-semlc", "singleshot-semlc"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)

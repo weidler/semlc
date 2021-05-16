@@ -74,5 +74,5 @@ for layer in range(1, len(layers) + 1):
 handles, labels = ax.get_legend_handles_labels()
 fig.legend(handles, labels, loc="lower center", ncol=2)
 
-plt.savefig(f"./documentation/figures/adapted_filters.pdf", format="pdf", bbox_inches="tight")
+plt.savefig(f"./adapted_filters.pdf", format="pdf", bbox_inches="tight")
 plt.show()

@@ -37,42 +37,44 @@ def corr_measure(x, y):
     return 1 - cosine(x, y)
 
 
-network = "alexnet"
+network = "shallow"
 dataset = "cifar10"
-strat = "semlc"
 
-ids = get_group_model_ids(generate_group_handle(network, dataset, strat))
+for strategy in ["none", "lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "parametric-semlc"]:
+    ids = get_group_model_ids(generate_group_handle(network, dataset, strategy))
 
-model = load_model_by_id(ids[10])
-filters = model.get_conv_one().weight.data.detach().numpy()
-n_filters = filters.shape[0]
+    model = load_model_by_id(ids[10])
+    filters = model.get_conv_one().weight.data.detach().numpy()
+    n_filters = filters.shape[0]
 
-tuning_curves = []
-for i in range(n_filters):
-    focus_filter = filters[i, ...]
+    tuning_curves = []
+    for i in range(n_filters):
+        focus_filter = filters[i, ...]
 
-    correlation_vector = []
-    for f in filters:
-        correlation_vector.append(corr_measure(focus_filter.flatten(), f.flatten()))
-    correlation_vector = numpy.array(correlation_vector)
+        correlation_vector = []
+        for f in filters:
+            correlation_vector.append(corr_measure(focus_filter.flatten(), f.flatten()))
+        correlation_vector = numpy.array(correlation_vector)
 
-    tuning_curves.append(numpy.roll(correlation_vector, (n_filters // 2) - i))
+        tuning_curves.append(numpy.roll(correlation_vector, (n_filters // 2) - i))
 
-x = numpy.arange(n_filters) - (n_filters // 2)
-y = numpy.mean(numpy.array(tuning_curves), axis=0)
+    x = numpy.arange(n_filters) - (n_filters // 2)
+    y = numpy.mean(numpy.array(tuning_curves), axis=0)
 
-# plot
-fig: Figure
-axs: Axes
-fig, axs = plt.subplots()
+    # plot
+    fig: Figure
+    axs: Axes
+    fig, axs = plt.subplots()
 
-axs.set_xlim(x.min(), x.max())
-axs.set_xlabel("Filter")
-axs.set_ylabel("Cosine Similarity")
-axs.bar(x.tolist(), y)
+    axs.set_xlim(x.min(), x.max())
+    axs.set_xlabel("Filter")
+    axs.set_ylabel("Cosine Similarity")
+    axs.bar(x.tolist(), y)
 
-fig.set_size_inches(3.25, 2.5)
-fig.tight_layout()
+    fig.set_size_inches(6.75, 2)
+    fig.tight_layout()
 
-plt.savefig(f"{network}-{strat}-tuning-curve.pdf", format="pdf", dpi=fig.dpi, bbox_inches="tight", pad_inches=0.01)
-# plt.show()
+    filename = f"{network}-{strategy}-tuning-curve.pdf"
+    print(f"Saving {filename}")
+    plt.savefig(filename, format="pdf", dpi=fig.dpi, bbox_inches="tight", pad_inches=0.01)
+    # plt.show()

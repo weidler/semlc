@@ -50,6 +50,6 @@ handles, labels = axs[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc="lower center", ncol=2)
 fig.subplots_adjust(hspace=0.35, bottom=0.17)
 
-fig.savefig("../documentation/figures/acc_history.pdf", format="pdf", bbox_inches='tight')
+fig.savefig("./acc_history.pdf", format="pdf", bbox_inches='tight')
 
 plt.show()

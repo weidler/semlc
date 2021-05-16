@@ -7,7 +7,7 @@ from torch.autograd import Variable
 from torchvision import transforms
 
 from networks import BaseNetwork
-from networks.util import prepare_lc_builder
+from layers.util import prepare_lc_builder
 from utilities import show_image
 
 
