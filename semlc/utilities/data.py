@@ -7,7 +7,7 @@ from torchvision.transforms import transforms
 from config import CONFIG
 from core.transform import make_transform_composition, make_test_transform_composition
 
-AVAILABLE_DATASETS = ["cifar10", "cifar10-bw", "mnist"]
+AVAILABLE_DATASETS = ["cifar10", "cifar10-bw", "mnist", "imagenet"]
 
 
 def get_dataset_class(name: str):

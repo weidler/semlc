@@ -52,7 +52,7 @@ def run(args):
         network.to(device)
 
         if args.auto_group:
-            generate_group_handle(network.__class__.__name__, args.data, args.strategy)
+            args.group = generate_group_handle(network.__class__.__name__, args.data, args.strategy)
         logger_args = dict(group=args.group) if args.group is not None else dict()
         logger = ExperimentLogger(network, train_data, **logger_args)
 
