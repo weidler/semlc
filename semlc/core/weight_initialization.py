@@ -1,4 +1,5 @@
 """Functions providing initialization of lateral connectivity filters_per_group."""
+import itertools
 import math
 from typing import Tuple, Union
 
@@ -65,17 +66,27 @@ def ricker_wavelet(size: int, width: torch.Tensor, damping: torch.Tensor, self_c
     return wavelet
 
 
-def dog_mexican_hat(size: int, width: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
-                    damping: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]], self_connect: bool = True):
-    if isinstance(width, torch.Tensor):
-        width = (width, width)
-    if isinstance(damping, torch.Tensor):
-        damping = (damping, damping)
+def difference_of_gaussians(size: int,
+                            widths: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
+                            ratio: torch.Tensor,
+                            damping: torch.Tensor,
+                            self_connect: bool = True):
+    """Difference of Gaussians kernel.
 
-    excitation_gaussian = normalized_gaussian(size, width[0], damping[0], self_connect)
-    inhibition_gaussian = normalized_gaussian(size, width[1], damping[1], self_connect)
+    Peak is of height 1."""
 
-    return excitation_gaussian - inhibition_gaussian
+    if isinstance(widths, torch.Tensor):
+        widths = (widths, widths)
+
+    excitation_gaussian = gaussian(size, widths[0], torch.tensor(2) * ratio, True)
+    inhibition_gaussian = gaussian(size, widths[1], torch.tensor(1), True)
+
+    dog = (excitation_gaussian - inhibition_gaussian) * damping
+
+    if not self_connect:
+        dog[dog.shape[-1] // 2] = 0
+
+    return dog
 
 
 def gaussian(size: int, width: torch.Tensor, damping: torch.Tensor, self_connect: bool = True):
@@ -215,15 +226,36 @@ def fix_layer_weights_to_gabor(layer, scale=True):
 if __name__ == "__main__":
     scope = 27
     width = torch.tensor(3.)
-    damping = torch.tensor(0.1)
+    damping = torch.tensor(0.2)
     self_connect = True
 
-    # a = dog_mexican_hat(scope, (width, width * 2), (damping, damping * 2), self_connect)
+    # for w in [0.1, 1,2,3,4,5,6,7]:
+    #     plt.plot(normalized_gaussian(scope, w, damping), label=str(w))
+    #
+    # plt.legend()
+    # plt.show()
 
-    i = 4
-    b = beta(scope, torch.tensor(float(i)), torch.tensor(float(i)), torch.tensor(1.), self_connect)
-    a = beta(scope, torch.tensor(float(i + 6)), torch.tensor(float(i + 4)), torch.tensor(1.), self_connect)
-    plt.plot(a - b, label=str(i))
+    # total_psps = []
+    # for wa, wb in itertools.combinations([3, 3], 2):
+    #     a = dog_mexican_hat(scope, (torch.tensor(wa), torch.tensor(wb)), (damping), self_connect)
+    #     plt.bar(list(range(scope)), a, label=f"Total PSP [{wa}, {wb}]")
+    #     plt.legend()
+    #     plt.show()
+    #
+    #     total_psps.append((a, f"{wa} - {wb}"))
+    #
+    # for tpsp, name in total_psps:
+    #     plt.plot(tpsp, label=name)
+
+    plt.bar(range(scope), difference_of_gaussians(scope, (width, width * 3), torch.tensor(4), damping, self_connect), label="DoG")
+    # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
 
     plt.legend()
     plt.show()
+
+    # i = 4
+    # b = beta(scope, torch.tensor(float(i)), torch.tensor(float(i)), torch.tensor(1.), self_connect)
+    # a = beta(scope, torch.tensor(float(i + 6)), torch.tensor(float(i + 4)), torch.tensor(1.), self_connect)
+    # plt.plot(a - b, label=str(i))
+
+
