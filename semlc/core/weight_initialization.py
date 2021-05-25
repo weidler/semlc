@@ -11,26 +11,6 @@ from torch import nn
 from utilities.util import closest_factors
 
 
-def ricker_scipy(size: int, width: float, damping: float = 1, self_connect: bool = True) -> torch.Tensor:
-    """Compose a Ricker wavelet filter using scipy (not differentiable).
-
-    :param size:                size of the output vector
-    :param width:               width of the wavelet
-    :param damping:             damping factor scaling the amplitude of the wavelet
-    :param self_connect:        whether to form a connection of a neuron to itself
-
-    :return:                    the wavelet
-    """
-    assert size % 2 != 0, "Scope must have an odd number of dimensions."
-    assert size > 0, "WHAT?"
-
-    hat = torch.tensor(signal.ricker(size, width) * damping, dtype=torch.float)
-    if not self_connect:
-        hat[hat.shape[-1] // 2] = 0
-
-    return hat
-
-
 def ricker_wavelet(size: int, width: torch.Tensor, damping: torch.Tensor, self_connect: bool = True):
     """Compose a differentiable Ricker wavelet filter.
 
