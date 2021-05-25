@@ -133,7 +133,7 @@ class CORnetZ(BaseCORnet):
 
         self.v1 = nn.Sequential(OrderedDict([
             ("conv1", self.conv_one),
-            ("lateral", self.lateral_layer),
+            ('lateral', self.lateral_layer),
             ("nonlin", nn.ReLU(inplace=True)),
             ("pool", nn.MaxPool2d(kernel_size=3, stride=2, padding=1)),
             ("output", Identity())  # for an easy access to this block's output
@@ -153,7 +153,7 @@ class CORnetZ(BaseCORnet):
         # weight initialization
         for m in [self.v1, self.v2, self.it, self.classifier]:
             if isinstance(m, (nn.Conv2d, nn.Linear)):
-                nn.init.xavier_uniform_(m.weight)
+                nn.init.normal_(m.weight, 0.0001)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
@@ -176,7 +176,7 @@ class CORnetS(BaseCORnet):
 
         self.v1 = nn.Sequential(OrderedDict([  # this one is custom to save GPU memory
             ('conv1', self.conv_one),
-            ("lateral", self.lateral_layer),
+            ('lateral', self.lateral_layer),
             ('norm1', nn.BatchNorm2d(64)),
             ('nonlin1', nn.ReLU(inplace=True)),
             ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=1)),

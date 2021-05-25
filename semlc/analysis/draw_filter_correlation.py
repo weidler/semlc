@@ -43,11 +43,12 @@ dataset = "cifar10"
 for strategy in ["none", "lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "parametric-semlc"]:
     ids = get_group_model_ids(generate_group_handle(network, dataset, strategy))
 
-    model = load_model_by_id(ids[10])
+    model = load_model_by_id("1621892770857092")
     filters = model.get_conv_one().weight.data.detach().numpy()
     n_filters = filters.shape[0]
 
     tuning_curves = []
+    x = numpy.arange(n_filters) - (n_filters // 2)
     for i in range(n_filters):
         focus_filter = filters[i, ...]
 
@@ -55,11 +56,15 @@ for strategy in ["none", "lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "pa
         for f in filters:
             correlation_vector.append(corr_measure(focus_filter.flatten(), f.flatten()))
         correlation_vector = numpy.array(correlation_vector)
-
         tuning_curves.append(numpy.roll(correlation_vector, (n_filters // 2) - i))
+        plt.bar(x, tuning_curves[-1])
+        plt.show()
 
-    x = numpy.arange(n_filters) - (n_filters // 2)
-    y = numpy.mean(numpy.array(tuning_curves), axis=0)
+    tuning_curves = numpy.array(tuning_curves)
+
+    print(tuning_curves)
+    y = numpy.mean(tuning_curves, axis=0)
+    print(y)
 
     # plot
     fig: Figure
@@ -75,6 +80,6 @@ for strategy in ["none", "lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "pa
     fig.tight_layout()
 
     filename = f"{network}-{strategy}-tuning-curve.pdf"
-    print(f"Saving {filename}")
-    plt.savefig(filename, format="pdf", dpi=fig.dpi, bbox_inches="tight", pad_inches=0.01)
-    # plt.show()
+    # print(f"Saving {filename}")
+    # plt.savefig(filename, format="pdf", dpi=fig.dpi, bbox_inches="tight", pad_inches=0.01)
+    plt.show()
