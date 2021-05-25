@@ -5,7 +5,7 @@ from torch import nn, Tensor
 
 class BaseSemLCLayer(nn.Module):
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float):
+    def __init__(self, hooked_conv: nn.Conv2d, widths: Tuple[float, float], ratio: float, damping: float):
         super().__init__()
 
         self.hooked_conv = hooked_conv
@@ -16,13 +16,14 @@ class BaseSemLCLayer(nn.Module):
         self.input_height, self.input_width = None, None
         self.activations_shape = (None, None, None)
 
-        self.ricker_width = ricker_width
-        self.ricker_damp = ricker_damp
+        self.widths = widths
+        self.damping = damping
+        self.ratio = ratio
 
         self.gabor_filters = None
 
     def __repr__(self):
-        return f"{self.__class__.__name__}[w={self.ricker_width}; d={self.ricker_damp}; s={self.in_channels}]"
+        return f"{self.__class__.__name__}[w={self.widths}; r={self.ratio}; d={self.damping}; s={self.in_channels}]"
 
     @property
     def name(self):

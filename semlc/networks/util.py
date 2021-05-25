@@ -34,7 +34,7 @@ def build_network(network: str, input_shape: Tuple[int, int, int], n_classes: in
 
 
 if __name__ == '__main__':
-    lateral_connectivity_function = prepare_lc_builder("semlc", 3, 0.2)
+    lateral_connectivity_function = prepare_lc_builder("semlc", (3, 5), 2, 0.2)
 
     sh_net = build_network("shallow", input_shape=(3, 32, 32), n_classes=10, lc=lateral_connectivity_function)
     sb_net = build_network("simple", input_shape=(3, 32, 32), n_classes=10, lc=lateral_connectivity_function)

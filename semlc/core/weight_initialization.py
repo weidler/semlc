@@ -67,21 +67,17 @@ def ricker_wavelet(size: int, width: torch.Tensor, damping: torch.Tensor, self_c
 
 
 def difference_of_gaussians(size: int,
-                            widths: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
+                            widths: Tuple[torch.Tensor, torch.Tensor],
                             ratio: torch.Tensor,
                             damping: torch.Tensor,
                             self_connect: bool = True):
     """Difference of Gaussians kernel.
 
-    Peak is of height 1."""
-
-    if isinstance(widths, torch.Tensor):
-        widths = (widths, widths)
-
-    excitation_gaussian = gaussian(size, widths[0], torch.tensor(2) * ratio, True)
+    Peak is normalized to height 1."""
+    excitation_gaussian = gaussian(size, widths[0], torch.tensor(1) * ratio, True)
     inhibition_gaussian = gaussian(size, widths[1], torch.tensor(1), True)
 
-    dog = (excitation_gaussian - inhibition_gaussian) * damping
+    dog = (excitation_gaussian - inhibition_gaussian) / (ratio - 1 + 1e-8) * damping
 
     if not self_connect:
         dog[dog.shape[-1] // 2] = 0
@@ -103,7 +99,7 @@ def gaussian(size: int, width: torch.Tensor, damping: torch.Tensor, self_connect
     assert size > 0, "WHAT?"
 
     start = -(size - 1.0) / 2
-    x = torch.tensor([start + i for i in range(size)])
+    x = torch.tensor([start + i for i in range(size)], device=width.device)
     gaussian_filter = damping * torch.exp(-(torch.pow(x, 2) / (2 * (width * width))))
     if not self_connect:
         gaussian_filter[gaussian_filter.shape[-1] // 2] = 0
@@ -226,7 +222,7 @@ def fix_layer_weights_to_gabor(layer, scale=True):
 if __name__ == "__main__":
     scope = 27
     width = torch.tensor(3.)
-    damping = torch.tensor(0.2)
+    damping = torch.tensor(1)
     self_connect = True
 
     # for w in [0.1, 1,2,3,4,5,6,7]:
@@ -247,11 +243,49 @@ if __name__ == "__main__":
     # for tpsp, name in total_psps:
     #     plt.plot(tpsp, label=name)
 
-    plt.bar(range(scope), difference_of_gaussians(scope, (width, width * 3), torch.tensor(4), damping, self_connect), label="DoG")
-    # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
+    do = False
+    if do:
+        r_range = range(2, 10)
+        w_range = range(4, 14)
 
-    plt.legend()
-    plt.show()
+        fig, axs = plt.subplots(len(r_range), len(w_range))
+
+        i = 0
+        for r in r_range:
+            j = 0
+            for w in w_range:
+                the_dog = difference_of_gaussians(scope, (width, torch.tensor(w)), torch.tensor(r), damping, self_connect)
+                axs[i][j].bar(range(scope), the_dog)
+                axs[i][j].set_xticks([])
+                axs[i][j].set_yticks([])
+                # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
+                j += 1
+            i += 1
+
+        plt.legend()
+        plt.show()
+
+    do = True
+    if do:
+        w1_range = range(1, 5)
+        w2_range = range(1, 8)
+
+        fig, axs = plt.subplots(len(w1_range), len(w2_range))
+
+        i = 0
+        for w1 in w1_range:
+            j = 0
+            for w2 in w2_range:
+                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(2), damping, self_connect)
+                axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1+w2}")
+                axs[i][j].set_xticks([])
+                axs[i][j].set_yticks([])
+                axs[i][j].legend()
+                # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
+                j += 1
+            i += 1
+
+        plt.show()
 
     # i = 4
     # b = beta(scope, torch.tensor(float(i)), torch.tensor(float(i)), torch.tensor(1.), self_connect)

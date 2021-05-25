@@ -101,9 +101,9 @@ if __name__ == "__main__":
         simple_conv = nn.Conv2d(depth, depth, 3, 1, padding=1)
 
         layers = [
-            SemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
-            GaussianSemLC(simple_conv, ricker_width=wavelet_width, ricker_damp=damping, self_connection=self_connect),
-            LRN(simple_conv, ricker_width=wavelet_width, ricker_damp=damping)]
+            SemLC(simple_conv, widths=wavelet_width, damping=damping, self_connection=self_connect),
+            GaussianSemLC(simple_conv, widths=wavelet_width, damping=damping, self_connection=self_connect),
+            LRN(simple_conv, widths=wavelet_width, damping=damping)]
 
         line_styles = ["-", "--", ".-", "."]
         line_styles += ["-" for i in range(len(layers) - len(line_styles))]

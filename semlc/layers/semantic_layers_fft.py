@@ -23,13 +23,13 @@ class FFTAdaptiveSemLC(BaseSemLCLayer):
     def name(self):
         return f"SemLC-A (FFT)"
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
+    def __init__(self, hooked_conv: nn.Conv2d, widths: float, damping: float = 0.12):
+        super().__init__(hooked_conv, widths, 2, damping)
 
         # inhibition filter, focused at i=0
         inhibition_filter = weight_initialization.ricker_wavelet(self.in_channels - 1,
-                                                                 width=torch.tensor(self.ricker_width),
-                                                                 damping=torch.tensor(self.ricker_damp),
+                                                                 width=torch.tensor(self.widths),
+                                                                 damping=torch.tensor(self.damping),
                                                                  self_connect=False)
         self.register_parameter("inhibition_filter", nn.Parameter(inhibition_filter, requires_grad=True))
 
@@ -61,11 +61,11 @@ class FFTSemLC(BaseSemLCLayer):
     def name(self):
         return "SemLC (FFT)"
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)       # inhibition filter, focused at i=0
+    def __init__(self, hooked_conv: nn.Conv2d, widths: float, damping: float = 0.12):
+        super().__init__(hooked_conv, widths, 2, damping)  # inhibition filter, focused at i=0
         self.inhibition_filter = weight_initialization.ricker_wavelet(self.in_channels - 1,
-                                                                      width=torch.tensor(self.ricker_width),
-                                                                      damping=torch.tensor(self.ricker_damp),
+                                                                      width=torch.tensor(self.widths),
+                                                                      damping=torch.tensor(self.damping),
                                                                       self_connect=False)
         self.inhibition_filter = pad_roll(self.inhibition_filter.view(1, 1, -1), self.in_channels, self.in_channels - 1)
         self.inhibition_filter = self.inhibition_filter.view((1, 1, 1, -1))

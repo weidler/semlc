@@ -46,7 +46,7 @@ def run(args):
 
         lc_layer_function = None
         if args.strategy != "none":
-            lc_layer_function = prepare_lc_builder(args.strategy, args.widths, args.damps)
+            lc_layer_function = prepare_lc_builder(args.strategy, args.widths, args.ratio, args.damps)
         network = build_network(args.network, input_shape=(image_channels, image_height, image_width),
                                 n_classes=n_classes, lc=lc_layer_function, init_std=args.init_std)
         network.to(device)
@@ -84,8 +84,9 @@ if __name__ == '__main__':
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)
     parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("--data", type=str, default="cifar10", choices=AVAILABLE_DATASETS, help="dataset to use")
-    parser.add_argument("-w", "--widths", dest="widths", type=float, help="overwrite default widths", default=3)
-    parser.add_argument("-d", "--damps", dest="damps", type=float, help="overwrite default damps", default=0.2)
+    parser.add_argument("-w", "--widths", dest="widths", type=float, help="overwrite default widths", default=(3, 5))
+    parser.add_argument("-r", "--ratio", dest="ratio", type=float, help="overwrite default ratio", default=2)
+    parser.add_argument("-d", "--damps", dest="damps", type=float, help="overwrite default damping", default=0.2)
     parser.add_argument("-e", "--epochs", type=int, default=180, help="Number of epochs per model.")
     parser.add_argument("--init-std", type=float, help="std for weight initialization")
 
