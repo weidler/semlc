@@ -1,6 +1,7 @@
 """Functions providing initialization of lateral connectivity filters_per_group."""
 import itertools
 import math
+import os
 from typing import Tuple, Union, List
 
 import matplotlib.pyplot as plt
@@ -8,6 +9,7 @@ import torch
 from scipy import signal
 from torch import nn
 
+from config import CONFIG
 from utilities.util import closest_factors
 
 
@@ -200,8 +202,15 @@ def fix_layer_weights_to_gabor(layer, scale=True):
                                     requires_grad=False)
 
 
+def fix_layer_weights_to_pretraining(layer):
+    pretrained_weights = torch.load(os.path.join(CONFIG.PRETRAIN_DIR, "v1_pretraining.pt"))
+
+    with torch.no_grad():
+        layer.weight = nn.Parameter(pretrained_weights, requires_grad=False)
+
+
 if __name__ == "__main__":
-    scope = 27
+    scope = 63
     width = torch.tensor(3.)
     damping = torch.tensor(1)
     self_connect = True
@@ -259,7 +268,9 @@ if __name__ == "__main__":
             j = 0
             for w2 in w2_range:
                 the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(2), damping, self_connect)
+                the_ricker = ricker_wavelet(scope, width, damping)
                 axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1+w2}")
+                axs[i][j].bar(range(scope), the_ricker, label=f"ricker ({width})")
                 axs[i][j].set_xticks([])
                 axs[i][j].set_yticks([])
                 axs[i][j].legend()

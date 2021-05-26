@@ -11,7 +11,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torch.optim.optimizer import Optimizer
 
 from config import RGB_TO_GREYSCALE_WEIGHTS
-from core.weight_initialization import fix_layer_weights_to_gabor
+from core.weight_initialization import fix_layer_weights_to_gabor, fix_layer_weights_to_pretraining
 from utilities.util import closest_factors
 
 
@@ -40,6 +40,12 @@ class BaseNetwork(nn.Module, abc.ABC):
     def init_gabors(self):
         if hasattr(self, "conv_one"):
             fix_layer_weights_to_gabor(self.conv_one)
+        else:
+            raise NotImplementedError("Cannot find conv_one layer in model and as such cannot init to gabor filters_per_group.")
+
+    def init_pretraining(self):
+        if hasattr(self, "conv_one"):
+            fix_layer_weights_to_pretraining(self.conv_one)
         else:
             raise NotImplementedError("Cannot find conv_one layer in model and as such cannot init to gabor filters_per_group.")
 

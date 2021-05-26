@@ -44,7 +44,13 @@ def load_model_by_id(model_id: str, location_modifier: str = "../") -> BaseNetwo
     # MAKE MODEL
     image_width, image_height = (meta.get("input_width"), meta.get("input_height"))
     n_classes = meta.get("dataset").get("n_classes")
-    lc = prepare_lc_builder(meta.get("lateral_type"), (3, 5), 2, .2)
+
+    lc = prepare_lc_builder(meta.get("lateral_type"),
+                            meta.get("lateral_layer").get("widths") if meta.get("is_lateral") else (3, 5),
+                            meta.get("lateral_layer").get("ratio") if meta.get("is_lateral") else 2,
+                            meta.get("lateral_layer").get("damping") if meta.get("is_lateral") else .2,
+                            meta.get("lateral_layer").get("rings") if meta.get("is_lateral") else 1)
+
     model = build_network(meta["network_type"], input_shape=(meta["input_channels"], image_height, image_width),
                           n_classes=n_classes, lc=lc)
 

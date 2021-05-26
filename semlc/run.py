@@ -49,6 +49,15 @@ def run(args):
             lc_layer_function = prepare_lc_builder(args.strategy, args.widths, args.ratio, args.damps, rings=args.rings)
         network = build_network(args.network, input_shape=(image_channels, image_height, image_width),
                                 n_classes=n_classes, lc=lc_layer_function, init_std=args.init_std)
+
+        assert not(args.init_gabor and args.init_pretrain), \
+            "Ja was denn nun? Choose only one option for initialization."
+
+        if args.init_gabor:
+            network.init_gabors()
+        elif args.init_pretrain:
+            network.init_pretraining()
+
         network.to(device)
 
         if args.auto_group:
@@ -90,6 +99,9 @@ if __name__ == '__main__':
     parser.add_argument("--rings", dest="rings", type=int, help="divide the filters into rings to be connected individually", default=1)
     parser.add_argument("-e", "--epochs", type=int, default=180, help="Number of epochs per model.")
     parser.add_argument("--init-std", type=float, help="std for weight initialization")
+    parser.add_argument("--init-gabor", action="store_true", help="Initialize V1 with Gabor Filters")
+    parser.add_argument("--init-pretrain", action="store_true", help="Initialize V1 with Pretrained Filters "
+                                                                     "(requires finished pretraining)")
 
     parser.add_argument("-i", type=int, default=1, help="the number of iterations, default=1")
     parser.add_argument("--group", type=str, default=None, help="A group identifier, just for organizing.")

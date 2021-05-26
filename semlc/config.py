@@ -13,6 +13,7 @@ CONFIG.PROJECT_PATH = os.path.dirname(os.path.realpath(__file__))
 CONFIG.DATA_DIR = os.path.join(CONFIG.PROJECT_PATH, "../data")
 CONFIG.IMAGENET_DIR = "/scratch/snx3000/datasets/imagenet/ILSVRC2012_1k"
 CONFIG.MODEL_DIR = "experiments/static/saved_models/"
+CONFIG.PRETRAIN_DIR = "layers/pretrained/"
 CONFIG.AVAILABLE_TEST_SETTINGS = ["default", "occlusion-r", "occlusion-v", "occlusion-h", "sprinkle-contrast",
                                   "sprinkle-blur"]
 
