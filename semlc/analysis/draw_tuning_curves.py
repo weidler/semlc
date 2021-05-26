@@ -26,8 +26,8 @@ def get_tuning_curve(f, s) -> numpy.ndarray:
 filters_a = torch.tensor(grayify_rgb_filters(load_model_by_id("1621998144509098").get_conv_one().weight.cpu().detach().numpy()), dtype=torch.float32)
 filters_b = torch.tensor(grayify_rgb_filters(load_model_by_id("1621998142814076").get_conv_one().weight.cpu().detach().numpy()), dtype=torch.float32)
 
-# grid_plot(filters_b)
-# plt.show()
+grid_plot(filters_a)
+plt.show()
 
 stimuli = generate_gabor_filter_bank((7, 7), lamb=2, n_filters=len(filters_a), scale=False, part="real")
 
