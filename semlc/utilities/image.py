@@ -1,4 +1,7 @@
+from typing import Union
+
 import numpy as np
+import torch
 from matplotlib import pyplot as plt
 
 from utilities.util import closest_factors
@@ -20,7 +23,16 @@ def show_image_gray(I, block=True, **kwargs):
 
 
 def rgb2gray(rgb):
-    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+    return np.dot(rgb[..., :3], [0.2989, 0.5870, 0.1140])
+
+
+def grayify_rgb_filters(rgb_filters: np.ndarray) -> np.ndarray:
+    """Approximate grayscale filters from RGB filters.
+
+    Input Shape:  [N, C, W, H]
+    """
+
+    return np.dot(np.swapaxes(rgb_filters[:, :3, ...], 1, -1), [0.2989, 0.5870, 0.1140])
 
 
 def grid_plot(imgs: list, name=None, block=True, range=None):
@@ -35,7 +47,8 @@ def grid_plot(imgs: list, name=None, block=True, range=None):
     i = 0
     for row in axs:
         for col in row:
-            col.imshow(imgs[i].squeeze(), cmap=plt.gray(), **(dict(vmin=range[0], vmax=range[1]) if range is not None else dict()), interpolation="none")
+            col.imshow(imgs[i].squeeze(), cmap=plt.gray(),
+                       **(dict(vmin=range[0], vmax=range[1]) if range is not None else dict()), interpolation="none")
             col.axis("off")
 
             i += 1
@@ -67,4 +80,3 @@ def row_plot(imgs: list, name=None, block=True, range=None, labels=None, cmap=pl
 
     if name is not None:
         plt.suptitle(name, weight="bold")
-

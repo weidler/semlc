@@ -1,7 +1,7 @@
 """Functions providing initialization of lateral connectivity filters_per_group."""
 import itertools
 import math
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 
 import matplotlib.pyplot as plt
 import torch
@@ -155,7 +155,8 @@ def gabor_filter(size, theta, lamb, sigma, gamma):
     return complex_gabor
 
 
-def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, part="complex", scale: bool = False):
+def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, part="complex", scale: bool = False)\
+        -> List[torch.Tensor]:
     """Generate a bank of Gabor filters_per_group."""
     assert part in ["complex", "real", "imag"]
 
@@ -171,7 +172,7 @@ def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, 
     filter_bank = []
     for theta in thetas:
         for scale in scales:
-            g = gabor_filter(size=size, theta=theta, lamb=lamb * scale, sigma=size[0] / 12 * scale, gamma=0.6)
+            g = gabor_filter(size=size, theta=theta, lamb=lamb * scale, sigma=size[0] / 6 * scale, gamma=1)
             if part == "real":
                 g = g.real
             elif part == "imag":
@@ -251,6 +252,7 @@ if __name__ == "__main__":
         w2_range = range(1, 8)
 
         fig, axs = plt.subplots(len(w1_range), len(w2_range))
+        fig.set_size_inches((24, 12))
 
         i = 0
         for w1 in w1_range:

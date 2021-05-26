@@ -84,7 +84,7 @@ if __name__ == '__main__':
     parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS)
     parser.add_argument("strategy", type=str, choices=strategies)
     parser.add_argument("--data", type=str, default="cifar10", choices=AVAILABLE_DATASETS, help="dataset to use")
-    parser.add_argument("-w", "--widths", dest="widths", type=float, help="overwrite default widths", default=(3, 5))
+    parser.add_argument("-w", "--widths", dest="widths", type=float, nargs=2, help="overwrite default widths", default=(3, 5))
     parser.add_argument("-r", "--ratio", dest="ratio", type=float, help="overwrite default ratio", default=2)
     parser.add_argument("-d", "--damps", dest="damps", type=float, help="overwrite default damping", default=0.2)
     parser.add_argument("-e", "--epochs", type=int, default=180, help="Number of epochs per model.")

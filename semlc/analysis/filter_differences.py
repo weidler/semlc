@@ -4,21 +4,20 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 
+from analysis.plot_ordering import mse_difference, mae_difference
 from utilities.eval import accuracies_from_list
 from utilities.filter_ordering import mse, mae
 from analysis.util import get_group_model_ids, load_model_by_id
-from analysis import mse_difference, mae_difference
 
 # 30 for parametric else 60
 num_layer = 0
 
 groups = [
-    'alexnet-cifar10-semlc',
-    'alexnet-cifar10-adaptive-semlc',
-    'alexnet-cifar10-parametric-semlc',
-    'alexnet-cifar10-gaussian-semlc',
-    'alexnet-cifar10-lrn',
-    'alexnet-cifar10',
+    'cornetz-cifar10-semlc',
+    # 'cornetz-cifar10-parametric-semlc',
+    'cornetz-cifar10-gaussian-semlc',
+    'cornetz-cifar10',
+    # 'alexnet-cifar10',
     # 'capsnet-mnist',
     # 'capsnet-mnist-semlc',
     # 'capsnet-mnist-lrn',

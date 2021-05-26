@@ -1,4 +1,11 @@
-sh submit.sh -p 'python3 run.py cornet-z none -e 250 --auto-group --data mnist' -i $1 -g
-sh submit.sh -p 'python3 run.py cornet-z parametric-semlc -e 250 --auto-group --data mnist' -i $1 -g
-sh submit.sh -p 'python3 run.py cornet-z gaussian-semlc -e 250 --auto-group --data mnist' -i $1 -g
-sh submit.sh -p 'python3 run.py cornet-z semlc -e 250 -w 12 --auto-group --data mnist' -i $1 -g
+VARIANT=$1
+
+if [ "$VARIANT" != "z" ] && [ "$VARIANT" != "s" ] ; then
+  echo "illegal variant"
+  exit 1
+fi
+
+sh submit.sh -p "python3 run.py cornet-$VARIANT none -w 3,5 -e 250 --auto-group --data cifar10" -i $1 -g
+sh submit.sh -p "python3 run.py cornet-$VARIANT parametric-semlc -w 3,5 -e 250 --auto-group --data cifar10" -i $1 -g
+sh submit.sh -p "python3 run.py cornet-$VARIANT gaussian-semlc -w 3,5 -e 250 --auto-group --data cifar10" -i $1 -g
+sh submit.sh -p "python3 run.py cornet-$VARIANT semlc -e 250 -w 3,5 --auto-group --data cifar10" -i $1 -g
