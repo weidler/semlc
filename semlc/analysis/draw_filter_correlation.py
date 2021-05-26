@@ -43,7 +43,7 @@ dataset = "cifar10"
 for strategy in ["none", "lrn", "gaussian-semlc", "semlc", "adaptive-semlc", "parametric-semlc"]:
     ids = get_group_model_ids(generate_group_handle(network, dataset, strategy))
 
-    model = load_model_by_id("1621872960249638")
+    model = load_model_by_id("1622052621344469")
     filters = model.get_conv_one().weight.data.detach().numpy()
     n_filters = filters.shape[0]
 

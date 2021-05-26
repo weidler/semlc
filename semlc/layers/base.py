@@ -23,8 +23,6 @@ class BaseSemLCLayer(nn.Module):
             self.hooked_conv.weight[i * self.ring_size:(i + 1) * self.ring_size, ...] for i in range(self.n_rings)
         ]
 
-        print([r.shape for r in self.rings])
-
         self.is_compiled = False
         self.input_height, self.input_width = None, None
         self.activations_shape = (None, None, None)

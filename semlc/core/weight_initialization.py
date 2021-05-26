@@ -257,26 +257,41 @@ if __name__ == "__main__":
 
     do = True
     if do:
-        w1_range = range(1, 5)
-        w2_range = list(range(1, 8)) + [2.5]
+        epsp_widths = [2, 2.5, 3.0, 3.5, 4.0]
+        ipsp_width_adds = [1.5, 2.5, 3.5, 4.5, 5.5, 7.5, 10.0, 15.0]
 
-        fig, axs = plt.subplots(len(w1_range), len(w2_range))
+        fig, axs = plt.subplots(len(epsp_widths), len(ipsp_width_adds))
         fig.set_size_inches((24, 12))
 
+        min_value = 100
+        max_value = -100
+
         i = 0
-        for w1 in w1_range:
+        for w1 in epsp_widths:
             j = 0
-            for w2 in w2_range:
-                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(2), damping, self_connect)
+            for w2 in ipsp_width_adds:
+                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(4), damping, self_connect)
                 the_ricker = ricker_wavelet(scope, width, damping)
-                axs[i][j].plot(range(scope), the_dog, label=f"{w1}, {w1+w2}")
-                axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})")
+                axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1+w2}")
+                # axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})")
                 axs[i][j].set_xticks([])
                 axs[i][j].set_yticks([])
                 axs[i][j].legend()
                 # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
                 j += 1
+
+                if the_dog.min() < min_value:
+                    min_value = the_dog.min()
+
+                if the_dog.max() > max_value:
+                    max_value = the_dog.max()
+
             i += 1
+
+        tolerance = 0.1 * max_value
+        for i in range(len(axs)):
+            for j in range(len(axs[i])):
+                axs[i][j].set_ylim(min_value - tolerance, max_value + tolerance )
 
         plt.show()
 

@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 
 from analysis.util import load_model_by_id
+from networks import BaseNetwork
 from semlc.core.weight_initialization import generate_gabor_filter_bank
 
 import matplotlib.pyplot as plt
@@ -10,57 +11,67 @@ import matplotlib.pyplot as plt
 from utilities.image import grid_plot, grayify_rgb_filters
 
 
-def get_tuning_curve(f, s) -> numpy.ndarray:
-    f = torch.unsqueeze(torch.unsqueeze(f, 0), 0)
-    responses = []
-    for stimulus in s:
-        mean_activity = torch.mean(F.conv2d(torch.unsqueeze(torch.unsqueeze(stimulus, 0), 0), f)).numpy()
-        responses.append(mean_activity)
+def get_tuning_curves(model: BaseNetwork, s) -> numpy.ndarray:
+    gray_filters = torch.unsqueeze(torch.tensor(grayify_rgb_filters(model.get_conv_one().weight.cpu().detach().numpy()),
+                                                dtype=torch.float32), 1)
+    stimuli = torch.unsqueeze(torch.stack(s, 0), 1)
 
-    return numpy.array(responses)
+    out = F.conv2d(stimuli, gray_filters, padding=model.get_conv_one().padding)
+    if model.is_lateral:
+        out = model.lateral_layer(out)
+
+    return F.relu(out).numpy()
 
 
-# filters_a = generate_gabor_filter_bank((7, 7), lamb=3, n_filters=64, scale=False, part="real")
-# filters_b = generate_gabor_filter_bank((7, 7), lamb=4, n_filters=64, scale=False, part="real")
+model_base = load_model_by_id("1622055130772184")
+model_competitor = load_model_by_id("1622058944269511")
+n_filters = model_base.get_conv_one().out_channels
 
-filters_a = torch.tensor(grayify_rgb_filters(load_model_by_id("1621998144509098").get_conv_one().weight.cpu().detach().numpy()), dtype=torch.float32)
-filters_b = torch.tensor(grayify_rgb_filters(load_model_by_id("1621998142814076").get_conv_one().weight.cpu().detach().numpy()), dtype=torch.float32)
+stimuli = generate_gabor_filter_bank((7, 7), lamb=2, n_filters=n_filters, scale=False, part="real")
+tuning_curves_base = get_tuning_curves(model_base, stimuli).mean(-1).mean(-1)
+tuning_curves_competitor = get_tuning_curves(model_competitor, stimuli).mean(-1).mean(-1)
 
-grid_plot(filters_a)
-plt.show()
-
-stimuli = generate_gabor_filter_bank((7, 7), lamb=2, n_filters=len(filters_a), scale=False, part="real")
+rolled_tuning_curves_competitor = []
+rolled_tuning_curves_base = []
 
 fig, axs = plt.subplots(8, 8)
 
 i = 0
-tuning_curves_base = []
-tuning_curves_competitor = []
 for irow in range(len(axs)):
     for icol in range(len(axs[irow])):
-        tuning_curve_a = get_tuning_curve(filters_a[i], stimuli)
-        tuning_curve_b = get_tuning_curve(filters_b[i], stimuli)
+        tuning_curve_base = tuning_curves_base[:, i, ...]
+        tuning_curve_competitor = tuning_curves_competitor[:, i, ...]
 
-        tuning_curve_a -= tuning_curve_a.min()
-        tuning_curve_b -= tuning_curve_b.min()
-        # tuning_curve_b = tuning_curve_b + (tuning_curve_a.max() - tuning_curve_b.max())
+        tuning_curve_base -= tuning_curve_base.min()
+        tuning_curve_competitor -= tuning_curve_competitor.min()
 
-        tuning_curves_base.append(tuning_curve_a)
-        tuning_curves_competitor.append(tuning_curve_b)
+        base_peak_index = numpy.argmax(tuning_curve_base)
+        competitor_peak_index = numpy.argmax(tuning_curve_competitor)
 
-        axs[irow][icol].plot(range(len(filters_a)), tuning_curve_a)
-        axs[irow][icol].plot(range(len(filters_b)), tuning_curve_b)
+        rolled_tuning_curves_base.append(numpy.roll(tuning_curve_base, len(tuning_curve_base) - base_peak_index + len(tuning_curve_base) // 2))
+        rolled_tuning_curves_competitor.append(numpy.roll(tuning_curve_competitor, len(tuning_curve_competitor) - competitor_peak_index + len(tuning_curve_competitor) // 2))
+
+        axs[irow][icol].plot(range(n_filters), tuning_curve_base)
+        axs[irow][icol].plot(range(n_filters), tuning_curve_competitor)
         axs[irow][icol].set_xticks([])
         axs[irow][icol].set_yticks([])
-        # plt.plot(range(len(filters_a)), tuning_curve_b)
+        # plt.plot(range(n_filters), tuning_curve_b)
 
         i += 1
 
-plt.show()
+fig.show()
 
 fig, axs = plt.subplots()
 
-axs.plot(numpy.array(tuning_curves_base).mean(axis=0))
-axs.plot(numpy.array(tuning_curves_competitor).mean(axis=0))
+rolled_tuning_curves_base = numpy.array(rolled_tuning_curves_base)
+rolled_tuning_curves_competitor = numpy.array(rolled_tuning_curves_competitor)
+mean_tc_base = rolled_tuning_curves_base.mean(axis=0)
+mean_tc_competitor = rolled_tuning_curves_competitor.mean(axis=0)
 
+# mean_tc_base = mean_tc_base * (mean_tc_competitor.max() / mean_tc_base.max())
+
+axs.plot(mean_tc_base - mean_tc_base.min(), label="No SemLC")
+axs.plot(mean_tc_competitor - mean_tc_competitor.min(), label="SemLC")
+
+axs.legend()
 plt.show()
