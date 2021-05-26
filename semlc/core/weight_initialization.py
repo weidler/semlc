@@ -212,7 +212,7 @@ def fix_layer_weights_to_pretraining(layer):
 if __name__ == "__main__":
     scope = 63
     width = torch.tensor(3.)
-    damping = torch.tensor(1)
+    damping = torch.tensor(.2)
     self_connect = True
 
     # for w in [0.1, 1,2,3,4,5,6,7]:
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     do = True
     if do:
         w1_range = range(1, 5)
-        w2_range = range(1, 8)
+        w2_range = list(range(1, 8)) + [2.5]
 
         fig, axs = plt.subplots(len(w1_range), len(w2_range))
         fig.set_size_inches((24, 12))
@@ -269,8 +269,8 @@ if __name__ == "__main__":
             for w2 in w2_range:
                 the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(2), damping, self_connect)
                 the_ricker = ricker_wavelet(scope, width, damping)
-                axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1+w2}")
-                axs[i][j].bar(range(scope), the_ricker, label=f"ricker ({width})")
+                axs[i][j].plot(range(scope), the_dog, label=f"{w1}, {w1+w2}")
+                axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})")
                 axs[i][j].set_xticks([])
                 axs[i][j].set_yticks([])
                 axs[i][j].legend()

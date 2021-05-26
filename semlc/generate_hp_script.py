@@ -1,5 +1,5 @@
-network = "capsnet"
-dataset = "mnist"
+network = "cornetz"
+dataset = "cifar10"
 strategy = "semlc"
 
 widths = [2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5]
