@@ -51,7 +51,7 @@ for irow in range(len(axs)):
         rolled_tuning_curves_base.append(numpy.roll(tuning_curve_base, len(tuning_curve_base) - base_peak_index + len(tuning_curve_base) // 2))
         rolled_tuning_curves_competitor.append(numpy.roll(tuning_curve_competitor, len(tuning_curve_competitor) - competitor_peak_index + len(tuning_curve_competitor) // 2))
 
-        axs[irow][icol].plot(range(n_filters), tuning_curve_base)
+        # axs[irow][icol].plot(range(n_filters), tuning_curve_base)
         axs[irow][icol].plot(range(n_filters), tuning_curve_competitor)
         axs[irow][icol].set_xticks([])
         axs[irow][icol].set_yticks([])
@@ -68,7 +68,7 @@ rolled_tuning_curves_competitor = numpy.array(rolled_tuning_curves_competitor)
 mean_tc_base = rolled_tuning_curves_base.mean(axis=0)
 mean_tc_competitor = rolled_tuning_curves_competitor.mean(axis=0)
 
-# mean_tc_base = mean_tc_base * (mean_tc_competitor.max() / mean_tc_base.max())
+mean_tc_base = mean_tc_base * (mean_tc_competitor.max() / mean_tc_base.max())
 
 axs.plot(mean_tc_base - mean_tc_base.min(), label="No SemLC")
 axs.plot(mean_tc_competitor - mean_tc_competitor.min(), label="SemLC")

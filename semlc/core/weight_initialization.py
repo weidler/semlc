@@ -174,7 +174,7 @@ def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, 
     filter_bank = []
     for theta in thetas:
         for scale in scales:
-            g = gabor_filter(size=size, theta=theta, lamb=lamb * scale, sigma=size[0] / 6 * scale, gamma=1)
+            g = gabor_filter(size=size, theta=theta, lamb=lamb * scale, sigma=size[0] / 4 * scale, gamma=1)
             if part == "real":
                 g = g.real
             elif part == "imag":
@@ -189,9 +189,10 @@ def fix_layer_weights_to_gabor(layer, scale=True):
     """Fix the weights of a convolutional or complex cell convolutional layer to gabor filters_per_group.
 
     TODO handle RGB correctly."""
-    lambdas = layer.kernel_size[0] / 4
+    lambdas = layer.kernel_size[0] / 2.5
 
-    gabor = generate_gabor_filter_bank(size=tuple(layer.kernel_size), lamb=lambdas,
+    gabor = generate_gabor_filter_bank(size=tuple(layer.kernel_size),
+                                       lamb=lambdas,
                                        n_filters=layer.out_channels, part="real", scale=scale)
 
     with torch.no_grad():
@@ -270,7 +271,7 @@ if __name__ == "__main__":
         for w1 in epsp_widths:
             j = 0
             for w2 in ipsp_width_adds:
-                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(4), damping, self_connect)
+                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(2), damping, self_connect)
                 the_ricker = ricker_wavelet(scope, width, damping)
                 axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1+w2}")
                 # axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})")

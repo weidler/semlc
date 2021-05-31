@@ -79,9 +79,11 @@ def run(args):
                     device=device)
 
         test_data = load_test_set(image_channels, image_height, image_width, args.data)
-        evaluate_on(network, test_data, model_dir=logger.model_dir)
+        evaluation_results = evaluate_on(network, test_data, model_dir=logger.model_dir)
 
         print("\nGaude! Consummatum est.\n\n")
+
+        return evaluation_results
 
 
 if __name__ == '__main__':

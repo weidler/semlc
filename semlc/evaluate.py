@@ -51,6 +51,8 @@ def evaluate_on(model: nn.Module, data: Dict[str, Dataset], model_dir: str, batc
     with open(f"{model_dir}/evaluation.json", "w") as f:
         json.dump(existing_data, f)
 
+    return evaluation_results
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
