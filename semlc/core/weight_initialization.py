@@ -56,10 +56,10 @@ def difference_of_gaussians(size: int,
     """Difference of Gaussians kernel.
 
     Peak is normalized to height 1."""
-    excitation_gaussian = gaussian(size, widths[0], torch.tensor(1) * ratio, True)
-    inhibition_gaussian = gaussian(size, widths[1], torch.tensor(1), True)
+    excitation_gaussian = gaussian(size, widths[0], torch.tensor(1), True)
+    inhibition_gaussian = gaussian(size, widths[1], torch.tensor(1) * ratio, True)
 
-    dog = (excitation_gaussian - inhibition_gaussian) / (ratio - 1 + 1e-8) * damping
+    dog = (excitation_gaussian - inhibition_gaussian) * damping
 
     if not self_connect:
         dog[dog.shape[-1] // 2] = 0
@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     do = False
     if do:
-        r_range = range(2, 10)
+        r_range = [0.1, 0.2, 0.3, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0]
         w_range = range(4, 14)
 
         fig, axs = plt.subplots(len(r_range), len(w_range))
@@ -249,7 +249,7 @@ if __name__ == "__main__":
                 axs[i][j].bar(range(scope), the_dog)
                 axs[i][j].set_xticks([])
                 axs[i][j].set_yticks([])
-                # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
+                plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
                 j += 1
             i += 1
 
@@ -271,14 +271,14 @@ if __name__ == "__main__":
         for w1 in epsp_widths:
             j = 0
             for w2 in ipsp_width_adds:
-                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(2), damping, self_connect)
+                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(0.5), damping, self_connect)
                 the_ricker = ricker_wavelet(scope, width, damping)
                 axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1+w2}")
-                # axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})")
+                axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})", c="red")
                 axs[i][j].set_xticks([])
                 axs[i][j].set_yticks([])
                 axs[i][j].legend()
-                # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
+
                 j += 1
 
                 if the_dog.min() < min_value:
