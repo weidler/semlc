@@ -83,7 +83,6 @@ class ExperimentLogger:
         Args:
             time_taken: time passed since beginning and end of training (in seconds)
         """
-        print("Finalizing training session.")
         # torch.save(self.layers.state_dict(), f"{self.model_dir}/final.parameters")
 
         with open(self.log_file, "r") as f:
