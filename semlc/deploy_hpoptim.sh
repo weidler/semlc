@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=semlc-gpu
-#SBATCH --time=24:00:00
+#SBATCH --time=6:00:00
 #SBATCH --nodes=10
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=1
@@ -21,9 +21,4 @@ module load cray-python
 source ${HOME}/lcvenv/bin/activate
 
 # start job
-if test -z "$SCRIPTCOMMAND"
-then
-  srun python3 -O run.py CLC frozen
-else
-  eval $SCRIPTCOMMAND
-fi
+srun python3 -O run_bayes_opt_client.py shallow -i 20 -e 10 --force-device gpu
