@@ -15,7 +15,9 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 # load modules
 module load daint-gpu
-module load cray-python
+module load cudatoolkit
+module use /apps/daint/UES/6.0.UP04/sandboxes/sarafael/modules/all
+module load cuDNN/8.0.3.33
 
 # load virtual environment
 source ${HOME}/lcvenv/bin/activate
