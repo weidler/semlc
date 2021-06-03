@@ -1,10 +1,11 @@
 import argparse
-import json
 import time
 from typing import Any, Dict
 
 import numpy
 import pandas as pd
+from ax import Models
+from ax.modelbridge.generation_strategy import GenerationStrategy, GenerationStep
 from ax.plot.render import plot_config_to_html
 from ax.service.ax_client import AxClient
 from ax.utils.report.render import render_report_elements
@@ -72,11 +73,15 @@ args.init_pretrain = False
 args.group = None
 args.auto_group = False
 
-
 # SET UP EXPERIMENT
 ax_client = AxClient(
     random_seed=111,
-    verbose_logging=False
+    verbose_logging=False,
+    generation_strategy=GenerationStrategy([
+        GenerationStep(model=Models.SOBOL, num_trials=20, min_trials_observed=3),
+        GenerationStep(model=Models.GPEI, num_trials=-1)],
+        name="Sobol+GPEI"
+    )
 )
 
 ax_client.create_experiment(
@@ -106,7 +111,6 @@ ax_client.create_experiment(
     minimize=False,
     objective_name=args.metric
 )
-
 
 # SEARCH PHASE
 for i in range(args.iterations):

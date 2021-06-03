@@ -21,4 +21,4 @@ module load cray-python
 source ${HOME}/lcvenv/bin/activate
 
 # start job
-srun python3 -O run_bayes_opt_client.py shallow -i 20 -e 10 --force-device gpu
+srun python3 -O run_bayes_opt_client.py shallow -i 100 -e 100
