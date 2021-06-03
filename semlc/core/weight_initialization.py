@@ -1,12 +1,10 @@
 """Functions providing initialization of lateral connectivity filters_per_group."""
-import itertools
 import math
 import os
-from typing import Tuple, Union, List
+from typing import Tuple, List
 
 import matplotlib.pyplot as plt
 import torch
-from scipy import signal
 from torch import nn
 
 from config import CONFIG
@@ -157,7 +155,7 @@ def gabor_filter(size, theta, lamb, sigma, gamma):
     return complex_gabor
 
 
-def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, part="complex", scale: bool = False)\
+def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, part="complex", scale: bool = False) \
         -> List[torch.Tensor]:
     """Generate a bank of Gabor filters_per_group."""
     assert part in ["complex", "real", "imag"]
@@ -234,6 +232,14 @@ if __name__ == "__main__":
     # for tpsp, name in total_psps:
     #     plt.plot(tpsp, label=name)
 
+    plt.plot(range(scope), difference_of_gaussians(scope,
+                                                  (torch.tensor(4.5),
+                                                   torch.tensor(2.5)),
+                                                  torch.tensor(1.6),
+                                                  torch.tensor(0.01)))
+    # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker", c="red")
+    plt.show()
+
     do = False
     if do:
         r_range = [0.1, 0.2, 0.3, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0]
@@ -245,7 +251,8 @@ if __name__ == "__main__":
         for r in r_range:
             j = 0
             for w in w_range:
-                the_dog = difference_of_gaussians(scope, (width, torch.tensor(w)), torch.tensor(r), damping, self_connect)
+                the_dog = difference_of_gaussians(scope, (width, torch.tensor(w)), torch.tensor(r), damping,
+                                                  self_connect)
                 axs[i][j].bar(range(scope), the_dog)
                 axs[i][j].set_xticks([])
                 axs[i][j].set_yticks([])
@@ -271,9 +278,10 @@ if __name__ == "__main__":
         for w1 in epsp_widths:
             j = 0
             for w2 in ipsp_width_adds:
-                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(0.5), damping, self_connect)
+                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(0.5),
+                                                  damping, self_connect)
                 the_ricker = ricker_wavelet(scope, width, damping)
-                axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1+w2}")
+                axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1 + w2}")
                 axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})", c="red")
                 axs[i][j].set_xticks([])
                 axs[i][j].set_yticks([])
@@ -292,7 +300,7 @@ if __name__ == "__main__":
         tolerance = 0.1 * max_value
         for i in range(len(axs)):
             for j in range(len(axs[i])):
-                axs[i][j].set_ylim(min_value - tolerance, max_value + tolerance )
+                axs[i][j].set_ylim(min_value - tolerance, max_value + tolerance)
 
         plt.show()
 
@@ -300,5 +308,3 @@ if __name__ == "__main__":
     # b = beta(scope, torch.tensor(float(i)), torch.tensor(float(i)), torch.tensor(1.), self_connect)
     # a = beta(scope, torch.tensor(float(i + 6)), torch.tensor(float(i + 4)), torch.tensor(1.), self_connect)
     # plt.plot(a - b, label=str(i))
-
-

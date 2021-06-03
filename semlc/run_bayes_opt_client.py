@@ -23,17 +23,6 @@ is_root = rank == 0
 hpoptim_id = int(time.time())
 
 
-def train_evaluate_test_function(p: Dict[str, Any]) -> float:
-    w1 = p["w1"] + numpy.random.randn() * 0.1
-    w2 = p["w2"] + numpy.random.randn() * 0.1
-    r = p["r"] + numpy.random.randn() * 0.1
-    d = p["d"] + numpy.random.randn() * 0.1
-    # w1 = p["w1"]
-    # w2 = p["w2"]
-
-    return (w1 + 2 * w2 - 7) ** 2 + (2 * w1 + w2 - 5) ** 2 * (r * d * - 2) * (- r / d) ** 3
-
-
 def train_evaluate(p: Dict[str, Any], other_args):
     other_args["widths"] = (p["w1"], p["w2"])
     other_args["damps"] = p["d"]
@@ -45,19 +34,21 @@ def train_evaluate(p: Dict[str, Any], other_args):
     else:
         evaluation_results = run.run(other_args, verbose=False)
 
-    return evaluation_results["default"]["total"]
+    return evaluation_results["default"]["total"], evaluation_results["percent_less_chaos"]
 
 
 def evaluate(p: Dict[str, Any], other_args) -> Dict:
-    process_acc = train_evaluate(p, other_args)
-    gathered_means = comm.allgather(process_acc)
+    process_acc, order = train_evaluate(p, other_args)
+    gathered_means, gathered_order_means = comm.allgather(process_acc), comm.allgather(order)
 
     if len(gathered_means) > 1:
         mean, sem = numpy.mean(gathered_means), stats.sem(gathered_means)
+        order_mean, order_sem = numpy.mean(gathered_order_means), stats.sem(gathered_order_means)
     else:
         mean, sem = gathered_means[0], 0.0
+        order_mean, order_sem = gathered_order_means[0], 0.0
 
-    return {"accuracy": (mean, sem)}
+    return {"accuracy": (mean, sem), "order": (order_mean, order_sem)}
 
 
 # PARSE CLIENT PARAMETERS
@@ -66,6 +57,7 @@ parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS, help="The n
 parser.add_argument("-i", "--iterations", type=int, default=10, help="Number of iterations the BO evaluates.")
 parser.add_argument("--initial", type=int, default=5, help="Number of initial configs produced to setup BO.")
 parser.add_argument("-e", "--epochs", type=int, default=40, help="Number of epochs per model.")
+parser.add_argument("--metric", type=str, choices=["accuracy", "order"], default="accuracy", help="Used metric.")
 
 # peripheral, optimization related arguments
 parser.add_argument("--data", type=str, default="cifar10", choices=AVAILABLE_DATASETS, help="dataset to use")
@@ -92,7 +84,7 @@ ax_client.create_experiment(
         "type": "range",
         "value_type": "float",
         "name": "w1",
-        "bounds": [2.0, 5.0],
+        "bounds": [1.0, 15.0],
     }, {
         "type": "range",
         "value_type": "float",
@@ -112,7 +104,7 @@ ax_client.create_experiment(
     ],
     # parameter_constraints=["w2 - w1 >= 1"],
     minimize=False,
-    objective_name="accuracy"
+    objective_name=args.metric
 )
 
 
@@ -133,7 +125,7 @@ for i in range(args.iterations):
     ax_client.complete_trial(trial_index=trial_index, raw_data=evaluate(parameters, other_args=args.__dict__))
 
     # save every iteration
-    ax_client.save_to_json_file(f"experiments/static/hpoptims/{args.network}_{hpoptim_id}.json")
+    ax_client.save_to_json_file(f"experiments/static/hpoptims/{args.network}_{args.metric}_{hpoptim_id}.json")
 
 # FINALIZATION
 if is_root:
