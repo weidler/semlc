@@ -14,7 +14,7 @@ from scipy import stats
 
 import run
 from networks.util import AVAILABLE_NETWORKS
-from utilities.data import AVAILABLE_DATASETS
+from utilities.data.datasets import AVAILABLE_DATASETS
 from utilities.util import HiddenPrints
 
 comm = MPI.COMM_WORLD
@@ -56,9 +56,10 @@ def evaluate(p: Dict[str, Any], other_args) -> Dict:
 parser = argparse.ArgumentParser()
 parser.add_argument("network", type=str, choices=AVAILABLE_NETWORKS, help="The network for which to hyperoptimize")
 parser.add_argument("-i", "--iterations", type=int, default=10, help="Number of iterations the BO evaluates.")
-parser.add_argument("--initial", type=int, default=5, help="Number of initial configs produced to setup BO.")
-parser.add_argument("-e", "--epochs", type=int, default=40, help="Number of epochs per model.")
+parser.add_argument("--initial", type=int, default=20, help="Number of initial configs produced to setup BO.")
+parser.add_argument("-e", "--epochs", type=int, default=3, help="Number of epochs per model.")
 parser.add_argument("--metric", type=str, choices=["accuracy", "order"], default="accuracy", help="Used metric.")
+parser.add_argument("--load-from", type=str, help="a filepath from which a state can be loaded", default=None)
 
 # peripheral, optimization related arguments
 parser.add_argument("--data", type=str, default="cifar10", choices=AVAILABLE_DATASETS, help="dataset to use")
@@ -78,7 +79,7 @@ ax_client = AxClient(
     random_seed=111,
     verbose_logging=False,
     generation_strategy=GenerationStrategy([
-        GenerationStep(model=Models.SOBOL, num_trials=20, min_trials_observed=3),
+        GenerationStep(model=Models.SOBOL, num_trials=args.initial, min_trials_observed=3),
         GenerationStep(model=Models.GPEI, num_trials=-1)],
         name="Sobol+GPEI"
     )
@@ -107,10 +108,12 @@ ax_client.create_experiment(
         "bounds": [0.0, 0.15],
     },
     ],
-    # parameter_constraints=["w2 - w1 >= 1"],
     minimize=False,
     objective_name=args.metric
 )
+
+if args.load_from is not None:
+    ax_client.load_from_json_file(args.load_from)
 
 # SEARCH PHASE
 for i in range(args.iterations):

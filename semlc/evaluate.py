@@ -11,7 +11,7 @@ from analysis.filter_differences import calc_order_statistics
 from config import CONFIG
 from core.statistics import accuracy
 from networks.util import build_network
-from utilities.data import get_number_of_classes, AVAILABLE_DATASETS, load_test_set
+from utilities.data.datasets import get_number_of_classes, AVAILABLE_DATASETS, load_test_set
 from utilities.evaluation import evaluate_classification
 
 

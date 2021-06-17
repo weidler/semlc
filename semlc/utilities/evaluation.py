@@ -1,31 +1,24 @@
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy
 import torch
 from torch import nn
 from torch.nn.modules.loss import _Loss
+from torch.utils.data import DataLoader
+
+from utilities.data.datasets import get_number_of_classes
+from utilities.data.imagenet import DALITorchLoader
 
 
 def evaluate_classification(model: nn.Module,
-                            data_loader,
+                            data_loader: Union[DataLoader, DALITorchLoader],
                             criterion: _Loss = None,
                             device: torch.device = "cpu") -> Tuple[torch.Tensor, torch.Tensor, float]:
     """Evaluate a model on a dataset (in a data loader). Return (correct, total)."""
-    if hasattr(data_loader.dataset, "classes"):
-        correct = torch.zeros(len(data_loader.dataset.classes))
-        total = torch.zeros(len(data_loader.dataset.classes))
-    elif hasattr(data_loader.dataset.dataset, "classes"):
-        correct = torch.zeros(len(data_loader.dataset.dataset.classes))
-        total = torch.zeros(len(data_loader.dataset.dataset.classes))
-    elif hasattr(data_loader.dataset, "labels"):
-        correct = torch.zeros(numpy.unique(data_loader.dataset.labels).size)
-        total = torch.zeros(numpy.unique(data_loader.dataset.labels).size)
-    elif hasattr(data_loader.dataset.dataset, "labels"):
-        correct = torch.zeros(numpy.unique(data_loader.dataset.dataset.labels).size)
-        total = torch.zeros(numpy.unique(data_loader.dataset.dataset.labels).size)
-    else:
-        raise AttributeError("Given DataLoader contains unexpected dataset "
-                             "structure preventing reading class labels.")
+    n_classes = get_number_of_classes(data_loader)
+
+    correct = torch.zeros(n_classes)
+    total = torch.zeros(n_classes)
 
     with torch.no_grad():
         batch = 0

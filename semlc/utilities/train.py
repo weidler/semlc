@@ -12,7 +12,7 @@ from utilities.evaluation import evaluate_classification
 from utilities.log import ExperimentLogger
 
 
-def train_model(model: BaseNetwork,train_set_loader: DataLoader, val_set_loader: DataLoader,
+def train_model(model: BaseNetwork, train_set_loader: DataLoader, val_set_loader: DataLoader,
                 n_epochs: int, device: torch.device, logger: ExperimentLogger):
     """Train a given model on a given dataset with the provided settings.
 
@@ -43,7 +43,7 @@ def train_model(model: BaseNetwork,train_set_loader: DataLoader, val_set_loader:
 
         epoch_start_time = time.time()
         for i, data in tqdm(enumerate(train_set_loader, 0), total=len(train_set_loader), disable=False,
-                                 desc=f"Training Epoch {epoch} of {n_epochs}", leave=False):
+                            desc=f"Training Epoch {epoch} of {n_epochs}", leave=False):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data[0].to(device), data[1].to(device)
             # zero the parameter gradients
