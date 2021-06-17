@@ -2,10 +2,10 @@
 
 #SBATCH --job-name=semlc-gpu
 #SBATCH --time=6:00:00
-#SBATCH --nodes=10
+#SBATCH --nodes=20
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=12
 #SBATCH --partition=normal
 #SBATCH --account=ich020
 #SBATCH --constraint=gpu
