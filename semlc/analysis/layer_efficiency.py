@@ -62,12 +62,12 @@ def make_passes(layer, n):
 def make_layer_functions():
     return [
         "conv2d",
-        functools.partial(SingleShotSemLC, ricker_width=wavelet_width, ricker_damp=damping),
-        functools.partial(SemLC, ricker_width=wavelet_width, ricker_damp=damping),
-        functools.partial(AdaptiveSemLC, ricker_width=wavelet_width, ricker_damp=damping),
-        functools.partial(ParametricSemLC, ricker_width=wavelet_width, ricker_damp=damping),
-        functools.partial(FFTAdaptiveSemLC, ricker_width=wavelet_width, ricker_damp=damping),
-        functools.partial(FFTSemLC, ricker_width=wavelet_width, ricker_damp=damping),
+        functools.partial(SingleShotSemLC, widths=wavelet_widths, ratio=2, damping=damping),
+        functools.partial(SemLC, widths=wavelet_widths, ratio=2, damping=damping),
+        functools.partial(AdaptiveSemLC, widths=wavelet_widths, ratio=2, damping=damping),
+        functools.partial(ParametricSemLC, widths=wavelet_widths, ratio=2, damping=damping),
+        functools.partial(FFTAdaptiveSemLC, widths=wavelet_widths, ratio=2, damping=damping),
+        functools.partial(FFTSemLC, widths=wavelet_widths, ratio=2, damping=damping),
     ]
 
 
@@ -103,7 +103,7 @@ n_passes = 100
 depth_x = [16, 32, 64, 128]
 width = 28
 height = 28
-wavelet_width = 6
+wavelet_widths = (3, 5)
 damping = 0.12
 
 tensor_in = make_input()

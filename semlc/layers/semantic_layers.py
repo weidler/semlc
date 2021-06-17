@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import torch
 from torch import nn
 
@@ -15,10 +17,10 @@ class SemLC(BaseSemLCLayer):
         --> where N is the number of batches, C the number of filters_per_group, and H and W are spatial dimensions.
     """
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
-                 pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
-        self.ricker_damp = ricker_damp
+    def __init__(self, hooked_conv: nn.Conv2d, widths: Tuple[float, float], ratio: float = 2, damping: float = 0.12,
+                 pad="circular", self_connection: bool = False, rings: int = 1):
+        super().__init__(hooked_conv, widths, ratio, damping, rings=rings)
+        self.ricker_damp = damping
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
@@ -28,9 +30,9 @@ class SemLC(BaseSemLCLayer):
 
         # construct filter toeplitz
         if self.is_circular:
-            self.tpl = toeplitz1d_circular(self.lateral_filter, self.in_channels)
+            self.tpl = toeplitz1d_circular(self.lateral_filter, self.ring_size)
         else:
-            self.tpl = toeplitz1d_zero(self.lateral_filter, self.in_channels)
+            self.tpl = toeplitz1d_zero(self.lateral_filter, self.rring_size)
 
         tpl_inv = (self.tpl - torch.eye(*self.tpl.shape)).inverse()
         self.register_buffer("tpl_inv", tpl_inv)  # register so that its moved to correct devices
@@ -40,13 +42,22 @@ class SemLC(BaseSemLCLayer):
         return f"SemLC"
 
     def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.ricker_wavelet(self.in_channels - 1,
-                                                    width=torch.tensor(self.ricker_width, dtype=torch.float32),
-                                                    damping=torch.tensor(self.ricker_damp, dtype=torch.float32),
-                                                    self_connect=self.self_connection)
+        return weight_initialization.difference_of_gaussians(self.ring_size - 1,
+                                                             widths=(torch.tensor(self.widths[0], dtype=torch.float32),
+                                                                     torch.tensor(self.widths[1], dtype=torch.float32)),
+                                                             ratio=torch.tensor(self.ratio),
+                                                             damping=torch.tensor(self.ricker_damp,
+                                                                                  dtype=torch.float32),
+                                                             self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
-        return ((-activations).permute(0, 2, 3, 1) @ self.tpl_inv.unsqueeze(0)).permute(0, 3, 1, 2).contiguous()
+        # todo parallel without loop?
+        per_ring_output = []
+        for ring in activations.split(self.ring_size, dim=1):
+            per_ring_output.append(((-ring).permute(0, 2, 3, 1) @ self.tpl_inv.unsqueeze(0)).permute(0, 3, 1, 2).contiguous())
+
+        stacked = torch.cat(per_ring_output, dim=1)
+        return stacked
 
 
 class SingleShotSemLC(BaseSemLCLayer):
@@ -57,14 +68,15 @@ class SingleShotSemLC(BaseSemLCLayer):
         --> where N is the number of batches, C the number of filters_per_group, and H and W are spatial dimensions.
     """
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12, learn_weights=False,
-                 pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
+    def __init__(self, hooked_conv: nn.Conv2d, widths: Tuple[float, float], ratio: float = 2, damping: float = 0.12,
+                 learn_weights=False,
+                 pad="circular", self_connection: bool = False, rings: int = 1):
+        super().__init__(hooked_conv, widths, ratio, damping, rings=rings)
 
         assert pad in ["circular", "zeros"]
 
         self.learn_weights = learn_weights
-        self.ricker_damp = ricker_damp
+        self.ricker_damp = damping
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
 
@@ -77,10 +89,13 @@ class SingleShotSemLC(BaseSemLCLayer):
         return f"SingleShot {'Frozen' if not self.learn_weights else 'Adaptive'}"
 
     def _make_filter(self):
-        return weight_initialization.ricker_wavelet(self.in_channels - 1,
-                                                    damping=torch.tensor(self.ricker_damp, dtype=torch.float32),
-                                                    width=torch.tensor(self.ricker_width, dtype=torch.float32),
-                                                    self_connect=self.self_connection)
+        return weight_initialization.difference_of_gaussians(self.ring_size - 1,
+                                                             damping=torch.tensor(self.ricker_damp,
+                                                                                  dtype=torch.float32),
+                                                             widths=(torch.tensor(self.widths[0], dtype=torch.float32),
+                                                                     torch.tensor(self.widths[1], dtype=torch.float32)),
+                                                             ratio=torch.tensor(self.ratio),
+                                                             self_connect=self.self_connection)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # construct filter toeplitz
@@ -103,19 +118,24 @@ class AdaptiveSemLC(BaseSemLCLayer):
         --> where N is the number of batches, C the number of filters_per_group, and H and W are spatial dimensions.
     """
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
-                 pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
-        self.ricker_damp = ricker_damp
+    def __init__(self, hooked_conv: nn.Conv2d, widths: Tuple[float, float], ratio: float = 2, damping: float = 0.12,
+                 pad="circular", self_connection: bool = False, rings: int = 1):
+        super().__init__(hooked_conv, widths, ratio, damping, rings=rings)
+        self.ricker_damp = damping
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
 
         # inhibition filter
-        lateral_filter = weight_initialization.ricker_wavelet(self.in_channels - 1,
-                                                              width=torch.tensor(ricker_width, dtype=torch.float32),
-                                                              damping=torch.tensor(ricker_damp, dtype=torch.float32),
-                                                              self_connect=self_connection)
+        lateral_filter = weight_initialization.difference_of_gaussians(self.ring_size - 1,
+                                                                       widths=(torch.tensor(self.widths[0],
+                                                                                            dtype=torch.float32),
+                                                                               torch.tensor(self.widths[1],
+                                                                                            dtype=torch.float32)),
+                                                                       ratio=torch.tensor(self.ratio),
+                                                                       damping=torch.tensor(damping,
+                                                                                            dtype=torch.float32),
+                                                                       self_connect=self_connection)
         self.register_parameter("lateral_filter", nn.Parameter(lateral_filter, requires_grad=True))
         self.lateral_filter.requires_grad = True
 
@@ -145,22 +165,23 @@ class ParametricSemLC(BaseSemLCLayer):
         --> where N is the number of batches, C the number of filters_per_group, and H and W are spatial dimensions.
     """
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
-                 pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
+    def __init__(self, hooked_conv: nn.Conv2d, widths: Tuple[float, float], ratio: float = 2, damping: float = 0.12,
+                 pad="circular", self_connection: bool = False, rings: int = 1):
+        super().__init__(hooked_conv, widths, ratio, damping, rings=rings)
 
         assert pad in ["circular", "zeros"]
         self.is_circular = pad == "circular"
         self.self_connection = self_connection
 
         # parameters
-        damp = torch.tensor(self.ricker_damp, dtype=torch.float32)
-        width = torch.tensor(self.ricker_width, dtype=torch.float32)
+        damp = torch.tensor(self.damping, dtype=torch.float32)
+        width = torch.tensor(self.widths, dtype=torch.float32)
 
         # inhibition filter
         self.register_parameter("damp", nn.Parameter(damp))
-        self.register_parameter("width", nn.Parameter(width))
-        self.damp.requires_grad, self.width.requires_grad = True, True
+        self.register_parameter("width_epsps", nn.Parameter(width[0]))
+        self.register_parameter("width_ipsps", nn.Parameter(width[1]))
+        self.damp.requires_grad, self.width_epsps.requires_grad, self.width_ipsps.requires_grad = True, True, True
 
     @property
     def name(self):
@@ -168,8 +189,11 @@ class ParametricSemLC(BaseSemLCLayer):
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         # make filter from current damp and width
-        self.lateral_filter = weight_initialization.ricker_wavelet(size=self.in_channels - 1, width=self.width,
-                                                                   damping=self.damp, self_connect=self.self_connection)
+        self.lateral_filter = weight_initialization.difference_of_gaussians(size=self.ring_size - 1,
+                                                                            widths=(self.width_epsps, self.width_ipsps),
+                                                                            ratio=torch.tensor(self.ratio),
+                                                                            damping=self.damp,
+                                                                            self_connect=self.self_connection)
 
         # construct filter toeplitz
         if self.is_circular:
@@ -187,23 +211,25 @@ class ParametricSemLC(BaseSemLCLayer):
 
 class GaussianSemLC(SemLC):
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float = 0.12,
-                 pad="circular", self_connection: bool = False):
-        super().__init__(hooked_conv, ricker_width, ricker_damp, pad, self_connection)
+    def __init__(self, hooked_conv: nn.Conv2d, widths: Tuple[float, float], ratio: float = 2, damping: float = 0.12,
+                 pad="circular", self_connection: bool = False, rings: int = 1):
+        super().__init__(hooked_conv, widths, ratio, damping, pad, self_connection, rings=rings)
 
     @property
     def name(self):
         return f"SemLC-G"
 
     def _make_filter(self) -> torch.Tensor:
-        return weight_initialization.matching_gaussian(self.in_channels - 1, width=self.ricker_width, ricker_damping=self.ricker_damp,
-                                                       self_connect=self.self_connection)
+        return weight_initialization.gaussian(self.ring_size - 1,
+                                              width=torch.tensor(self.widths[0]),
+                                              damping=torch.tensor(self.damping),
+                                              self_connect=self.self_connection)
 
 
 class LRN(BaseSemLCLayer):
 
-    def __init__(self, hooked_conv, ricker_width: float = 0, ricker_damp: float = 0):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
+    def __init__(self, hooked_conv, widths: Tuple[float, float] = (0, 0), ratio: float = 2, damping: float = 0):
+        super().__init__(hooked_conv, widths, ratio, damping)
 
         self.wrapped_lrn = nn.LocalResponseNorm(size=9, k=2, alpha=10e-4, beta=0.75)
 
@@ -213,8 +239,8 @@ class LRN(BaseSemLCLayer):
 
 class CMapLRN(BaseSemLCLayer):
 
-    def __init__(self, hooked_conv, ricker_width: float = 0, ricker_damp: float = 0):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
+    def __init__(self, hooked_conv, widths: Tuple[float, float] = (0, 0), ratio: float = 2, damping: float = 0):
+        super().__init__(hooked_conv, widths, ratio, damping)
 
         self.wrapped_lrn = nn.CrossMapLRN2d(size=9, k=2, alpha=10e-4, beta=0.75)
 
@@ -223,11 +249,11 @@ class CMapLRN(BaseSemLCLayer):
 
 
 class LRNSemLCChain(BaseSemLCLayer):
-    def __init__(self, hooked_conv, ricker_width: float, ricker_damp: float):
-        super().__init__(hooked_conv, ricker_width, ricker_damp)
+    def __init__(self, hooked_conv, widths: Tuple[float, float] = (0, 0), ratio: float = 2, damping: float = 0):
+        super().__init__(hooked_conv, widths, ratio, damping)
 
         self.lrn = LRN(hooked_conv)
-        self.semlc = SemLC(hooked_conv, ricker_width, ricker_damp)
+        self.semlc = SemLC(hooked_conv, widths, damping)
 
     def forward(self, activations: torch.Tensor) -> torch.Tensor:
         return self.semlc(self.lrn(activations))

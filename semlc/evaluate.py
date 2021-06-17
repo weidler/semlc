@@ -7,10 +7,11 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
+from analysis.filter_differences import calc_order_statistics
 from config import CONFIG
 from core.statistics import accuracy
 from networks.util import build_network
-from utilities.data import get_number_of_classes, AVAILABLE_DATASETS, load_test_set
+from utilities.data.datasets import get_number_of_classes, AVAILABLE_DATASETS, load_test_set
 from utilities.evaluation import evaluate_classification
 
 
@@ -27,7 +28,7 @@ def evaluate_on(model: nn.Module, data: Dict[str, Dataset], model_dir: str, batc
         # evaluate
         correct, total, loss = evaluate_classification(model, test_data_loader, criterion=nn.CrossEntropyLoss(),
                                                        device=device)
-        # calculate metrics
+        # calculate accuracy metrics
         total_accuracy = accuracy(correct.sum(), total.sum())
         category_wise_accuracy = accuracy(correct, total)
         balanced_total_accuracy = category_wise_accuracy.mean()
@@ -40,6 +41,13 @@ def evaluate_on(model: nn.Module, data: Dict[str, Dataset], model_dir: str, batc
             categories=category_wise_accuracy.tolist(),
         )
 
+    # calculate order metrics
+    filters = model.conv_one.weight.data.detach().cpu().numpy()
+    inter_filter_mse, _, _, _, percent_less_chaos = calc_order_statistics(filters)
+    print(f"Order of filters in V1: {round(percent_less_chaos, 2)}")
+    evaluation_results["inter_filter_mse"] = inter_filter_mse
+    evaluation_results["percent_less_chaos"] = percent_less_chaos
+
     # load potentially existing evaluation
     existing_data = {}
     if os.path.isfile(f"{model_dir}/evaluation.json"):
@@ -50,6 +58,8 @@ def evaluate_on(model: nn.Module, data: Dict[str, Dataset], model_dir: str, batc
     # write results
     with open(f"{model_dir}/evaluation.json", "w") as f:
         json.dump(existing_data, f)
+
+    return evaluation_results
 
 
 if __name__ == '__main__':

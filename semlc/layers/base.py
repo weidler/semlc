@@ -5,24 +5,36 @@ from torch import nn, Tensor
 
 class BaseSemLCLayer(nn.Module):
 
-    def __init__(self, hooked_conv: nn.Conv2d, ricker_width: float, ricker_damp: float):
+    def __init__(self, hooked_conv: nn.Conv2d, widths: Tuple[float, float], ratio: float, damping: float, rings: int = 1):
         super().__init__()
 
         self.hooked_conv = hooked_conv
         self.in_channels = self.hooked_conv.out_channels
         self.out_channels = self.hooked_conv.out_channels
 
+        # rings
+        self.n_rings = rings
+        self.ring_size = self.in_channels / self.n_rings
+        assert self.ring_size.is_integer(), "The number of channels must be a multiple of the number of rings."
+        self.ring_size = int(self.ring_size)  # convert to integer to use as index
+
+        # allocate rings
+        self.rings = [
+            self.hooked_conv.weight[i * self.ring_size:(i + 1) * self.ring_size, ...] for i in range(self.n_rings)
+        ]
+
         self.is_compiled = False
         self.input_height, self.input_width = None, None
         self.activations_shape = (None, None, None)
 
-        self.ricker_width = ricker_width
-        self.ricker_damp = ricker_damp
+        self.widths = widths
+        self.damping = damping
+        self.ratio = ratio
 
         self.gabor_filters = None
 
     def __repr__(self):
-        return f"{self.__class__.__name__}[w={self.ricker_width}; d={self.ricker_damp}; s={self.in_channels}]"
+        return f"{self.__class__.__name__}[w={self.widths}; r={self.ratio}; d={self.damping}; s={self.in_channels}]"
 
     @property
     def name(self):
@@ -38,7 +50,7 @@ class BaseSemLCLayer(nn.Module):
         raise Exception("Not implemented.")
 
     def sort_filters_in_layer(self, layer: int = 0):
-        """ Sorts the filters_per_group in a given layers according to the two_opt TSP algorithm.
+        """Sorts the filters_per_group in a given layers according to the two_opt TSP algorithm.
 
         :param layer: the number of the layers
 

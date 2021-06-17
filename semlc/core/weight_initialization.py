@@ -1,34 +1,14 @@
 """Functions providing initialization of lateral connectivity filters_per_group."""
-import itertools
 import math
-from typing import Tuple, Union
+import os
+from typing import Tuple, List
 
 import matplotlib.pyplot as plt
 import torch
-from scipy import signal
 from torch import nn
 
+from config import CONFIG
 from utilities.util import closest_factors
-
-
-def ricker_scipy(size: int, width: float, damping: float = 1, self_connect: bool = True) -> torch.Tensor:
-    """Compose a Ricker wavelet filter using scipy (not differentiable).
-
-    :param size:                size of the output vector
-    :param width:               width of the wavelet
-    :param damping:             damping factor scaling the amplitude of the wavelet
-    :param self_connect:        whether to form a connection of a neuron to itself
-
-    :return:                    the wavelet
-    """
-    assert size % 2 != 0, "Scope must have an odd number of dimensions."
-    assert size > 0, "WHAT?"
-
-    hat = torch.tensor(signal.ricker(size, width) * damping, dtype=torch.float)
-    if not self_connect:
-        hat[hat.shape[-1] // 2] = 0
-
-    return hat
 
 
 def ricker_wavelet(size: int, width: torch.Tensor, damping: torch.Tensor, self_connect: bool = True):
@@ -67,19 +47,15 @@ def ricker_wavelet(size: int, width: torch.Tensor, damping: torch.Tensor, self_c
 
 
 def difference_of_gaussians(size: int,
-                            widths: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
+                            widths: Tuple[torch.Tensor, torch.Tensor],
                             ratio: torch.Tensor,
                             damping: torch.Tensor,
                             self_connect: bool = True):
     """Difference of Gaussians kernel.
 
-    Peak is of height 1."""
-
-    if isinstance(widths, torch.Tensor):
-        widths = (widths, widths)
-
-    excitation_gaussian = gaussian(size, widths[0], torch.tensor(2) * ratio, True)
-    inhibition_gaussian = gaussian(size, widths[1], torch.tensor(1), True)
+    Peak is normalized to height 1."""
+    excitation_gaussian = gaussian(size, widths[0], torch.tensor(1), True)
+    inhibition_gaussian = gaussian(size, widths[1], torch.tensor(1) * ratio, True)
 
     dog = (excitation_gaussian - inhibition_gaussian) * damping
 
@@ -103,7 +79,7 @@ def gaussian(size: int, width: torch.Tensor, damping: torch.Tensor, self_connect
     assert size > 0, "WHAT?"
 
     start = -(size - 1.0) / 2
-    x = torch.tensor([start + i for i in range(size)])
+    x = torch.tensor([start + i for i in range(size)], device=width.device)
     gaussian_filter = damping * torch.exp(-(torch.pow(x, 2) / (2 * (width * width))))
     if not self_connect:
         gaussian_filter[gaussian_filter.shape[-1] // 2] = 0
@@ -179,7 +155,8 @@ def gabor_filter(size, theta, lamb, sigma, gamma):
     return complex_gabor
 
 
-def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, part="complex", scale: bool = False):
+def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, part="complex", scale: bool = False) \
+        -> List[torch.Tensor]:
     """Generate a bank of Gabor filters_per_group."""
     assert part in ["complex", "real", "imag"]
 
@@ -195,7 +172,7 @@ def generate_gabor_filter_bank(size: Tuple[int, ...], lamb, n_filters: int = 8, 
     filter_bank = []
     for theta in thetas:
         for scale in scales:
-            g = gabor_filter(size=size, theta=theta, lamb=lamb * scale, sigma=size[0] / 12 * scale, gamma=0.6)
+            g = gabor_filter(size=size, theta=theta, lamb=lamb * scale, sigma=size[0] / 4 * scale, gamma=1)
             if part == "real":
                 g = g.real
             elif part == "imag":
@@ -210,9 +187,10 @@ def fix_layer_weights_to_gabor(layer, scale=True):
     """Fix the weights of a convolutional or complex cell convolutional layer to gabor filters_per_group.
 
     TODO handle RGB correctly."""
-    lambdas = layer.kernel_size[0] / 4
+    lambdas = layer.kernel_size[0] / 2.5
 
-    gabor = generate_gabor_filter_bank(size=tuple(layer.kernel_size), lamb=lambdas,
+    gabor = generate_gabor_filter_bank(size=tuple(layer.kernel_size),
+                                       lamb=lambdas,
                                        n_filters=layer.out_channels, part="real", scale=scale)
 
     with torch.no_grad():
@@ -223,10 +201,17 @@ def fix_layer_weights_to_gabor(layer, scale=True):
                                     requires_grad=False)
 
 
+def fix_layer_weights_to_pretraining(layer):
+    pretrained_weights = torch.load(os.path.join(CONFIG.PRETRAIN_DIR, "v1_pretraining.pt"))
+
+    with torch.no_grad():
+        layer.weight = nn.Parameter(pretrained_weights, requires_grad=False)
+
+
 if __name__ == "__main__":
-    scope = 27
+    scope = 63
     width = torch.tensor(3.)
-    damping = torch.tensor(0.2)
+    damping = torch.tensor(.2)
     self_connect = True
 
     # for w in [0.1, 1,2,3,4,5,6,7]:
@@ -247,15 +232,79 @@ if __name__ == "__main__":
     # for tpsp, name in total_psps:
     #     plt.plot(tpsp, label=name)
 
-    plt.bar(range(scope), difference_of_gaussians(scope, (width, width * 3), torch.tensor(4), damping, self_connect), label="DoG")
-    # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
-
-    plt.legend()
+    plt.plot(range(scope), difference_of_gaussians(scope,
+                                                  (torch.tensor(4.5),
+                                                   torch.tensor(2.5)),
+                                                  torch.tensor(1.6),
+                                                  torch.tensor(0.01)))
+    # plt.plot(ricker_wavelet(scope, width, damping), label="Ricker", c="red")
     plt.show()
+
+    do = False
+    if do:
+        r_range = [0.1, 0.2, 0.3, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0]
+        w_range = range(4, 14)
+
+        fig, axs = plt.subplots(len(r_range), len(w_range))
+
+        i = 0
+        for r in r_range:
+            j = 0
+            for w in w_range:
+                the_dog = difference_of_gaussians(scope, (width, torch.tensor(w)), torch.tensor(r), damping,
+                                                  self_connect)
+                axs[i][j].bar(range(scope), the_dog)
+                axs[i][j].set_xticks([])
+                axs[i][j].set_yticks([])
+                plt.plot(ricker_wavelet(scope, width, damping), label="Ricker")
+                j += 1
+            i += 1
+
+        plt.legend()
+        plt.show()
+
+    do = True
+    if do:
+        epsp_widths = [2, 2.5, 3.0, 3.5, 4.0]
+        ipsp_width_adds = [1.5, 2.5, 3.5, 4.5, 5.5, 7.5, 10.0, 15.0]
+
+        fig, axs = plt.subplots(len(epsp_widths), len(ipsp_width_adds))
+        fig.set_size_inches((24, 12))
+
+        min_value = 100
+        max_value = -100
+
+        i = 0
+        for w1 in epsp_widths:
+            j = 0
+            for w2 in ipsp_width_adds:
+                the_dog = difference_of_gaussians(scope, (torch.tensor(w1), torch.tensor(w1 + w2)), torch.tensor(0.5),
+                                                  damping, self_connect)
+                the_ricker = ricker_wavelet(scope, width, damping)
+                axs[i][j].bar(range(scope), the_dog, label=f"{w1}, {w1 + w2}")
+                axs[i][j].plot(range(scope), the_ricker, label=f"ricker ({width})", c="red")
+                axs[i][j].set_xticks([])
+                axs[i][j].set_yticks([])
+                axs[i][j].legend()
+
+                j += 1
+
+                if the_dog.min() < min_value:
+                    min_value = the_dog.min()
+
+                if the_dog.max() > max_value:
+                    max_value = the_dog.max()
+
+            i += 1
+
+        tolerance = 0.1 * max_value
+        for i in range(len(axs)):
+            for j in range(len(axs[i])):
+                axs[i][j].set_ylim(min_value - tolerance, max_value + tolerance)
+
+        plt.show()
 
     # i = 4
     # b = beta(scope, torch.tensor(float(i)), torch.tensor(float(i)), torch.tensor(1.), self_connect)
     # a = beta(scope, torch.tensor(float(i + 6)), torch.tensor(float(i + 4)), torch.tensor(1.), self_connect)
     # plt.plot(a - b, label=str(i))
-
-

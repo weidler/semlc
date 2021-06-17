@@ -10,8 +10,10 @@ from torch.optim import lr_scheduler
 from torch.optim.lr_scheduler import _LRScheduler
 from torch.optim.optimizer import Optimizer
 
+import torch.nn.functional as F
+
 from config import RGB_TO_GREYSCALE_WEIGHTS
-from core.weight_initialization import fix_layer_weights_to_gabor
+from core.weight_initialization import fix_layer_weights_to_gabor, fix_layer_weights_to_pretraining
 from utilities.util import closest_factors
 
 
@@ -40,6 +42,12 @@ class BaseNetwork(nn.Module, abc.ABC):
     def init_gabors(self):
         if hasattr(self, "conv_one"):
             fix_layer_weights_to_gabor(self.conv_one)
+        else:
+            raise NotImplementedError("Cannot find conv_one layer in model and as such cannot init to gabor filters_per_group.")
+
+    def init_pretraining(self):
+        if hasattr(self, "conv_one"):
+            fix_layer_weights_to_pretraining(self.conv_one)
         else:
             raise NotImplementedError("Cannot find conv_one layer in model and as such cannot init to gabor filters_per_group.")
 
@@ -153,3 +161,10 @@ class BaseNetwork(nn.Module, abc.ABC):
     @abc.abstractmethod
     def get_final_block1_layer(self):
         pass
+
+    def perform_v1_pass(self, x):
+        out_conv_one = self.conv_one(x)
+        if self.lateral_layer_function is not None:
+            out_conv_one = self.lateral_layer(out_conv_one)
+
+        return F.relu(out_conv_one)

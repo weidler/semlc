@@ -5,6 +5,7 @@ import math
 from collections import OrderedDict
 
 import torch
+import torchsummary
 from torch import nn
 
 from networks import BaseNetwork, BaseSemLCLayer
@@ -212,11 +213,15 @@ class CORnetS(BaseCORnet):
 
 
 if __name__ == '__main__':
-    in_shape = (3, 64, 64)
-    lateral_function = prepare_lc_builder("semlc", 3, 0.2)
+    import os
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+    in_shape = (3, 32, 32)
+    lateral_function = prepare_lc_builder("parametric-semlc", (3, 5), 2, 0.2)
 
     cors = CORnetS(input_shape=in_shape, n_classes=1000)
     cors(torch.rand((10, *in_shape)))
 
-    corz = CORnetZ(input_shape=in_shape, n_classes=1000)
+    corz = CORnetZ(input_shape=in_shape, n_classes=1000, lateral_layer_function=lateral_function)
     corz((torch.rand((10, *in_shape))))
+    torchsummary.summary(corz, in_shape)

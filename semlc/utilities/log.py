@@ -2,21 +2,23 @@ import json
 import os
 import socket
 import time
+from typing import Union
 
 import numpy
+from torch.utils.data import DataLoader
 from torchvision.datasets import VisionDataset
 
 from config import CONFIG
 from networks import BaseNetwork
+from utilities.data.imagenet import DALITorchLoader
 
 
 class ExperimentLogger:
 
-    def __init__(self, model: BaseNetwork, dataset: VisionDataset, group: str = "ungrouped"):
+    def __init__(self, model: BaseNetwork, dataloader: Union[DALITorchLoader, DataLoader], group: str = "ungrouped"):
         self.model = model
-        self.dataset = dataset
+        self.dataloader = dataloader
         self.group = group
-        self.transform = self.dataset.transform
 
         self._generate_id()
         while os.path.isdir(self.model_dir):  # wait until time-based id is free
@@ -46,19 +48,30 @@ class ExperimentLogger:
         )
 
     def _make_meta_dict(self):
+        dataset_descriptor = {}
+        if isinstance(self.dataloader, VisionDataset):
+            dataset_descriptor = dict(
+                name=self.dataloader.__class__.__name__,
+                n_classes=len(self.dataloader.classes) if hasattr(self.dataloader, "classes") else len(
+                    numpy.unique(self.dataloader.labels)),
+                classes=self.dataloader.classes if hasattr(self.dataloader, "classes") else numpy.unique(
+                    self.dataloader.labels).tolist(),
+                transform=[str(t) for t in self.dataloader.transform.transforms]
+            )
+        elif isinstance(self.dataloader, DALITorchLoader):
+            dataset_descriptor = dict(
+                name=self.dataloader.dataset_name,
+                n_classes=self.dataloader.n_classes,
+                classes=["unknown"],
+                transform=["unknown"]
+            )
+
         return dict(
             **self.model.serialize_meta(),
             id=self.id,
             group=self.group,
             host=socket.gethostname(),
-            dataset=dict(
-                name=self.dataset.__class__.__name__,
-                n_classes=len(self.dataset.classes) if hasattr(self.dataset, "classes") else len(
-                    numpy.unique(self.dataset.labels)),
-                classes=self.dataset.classes if hasattr(self.dataset, "classes") else numpy.unique(
-                    self.dataset.labels).tolist(),
-                transform=[str(t) for t in self.dataset.transform.transforms]
-            ),
+            dataset=dataset_descriptor,
             ended_naturally=False
         )
 
@@ -83,7 +96,6 @@ class ExperimentLogger:
         Args:
             time_taken: time passed since beginning and end of training (in seconds)
         """
-        print("Finalizing training session.")
         # torch.save(self.layers.state_dict(), f"{self.model_dir}/final.parameters")
 
         with open(self.log_file, "r") as f:

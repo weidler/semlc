@@ -85,7 +85,7 @@ if __name__ == '__main__':
             x = x.cuda()
         return Variable(x)
 
-    lc = prepare_lc_builder("semlc", 0.5, 0.2)
+    lc = prepare_lc_builder("semlc", (0.5, 4), 2, 0.2)
     ae = SimpleAutoEncoder(input_shape=(3, 32, 32), lateral_layer_function=lc)
     ae.to("cuda")
 
