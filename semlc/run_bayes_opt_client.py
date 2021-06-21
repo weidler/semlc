@@ -1,8 +1,9 @@
 import argparse
 import time
+from pprint import pprint
 from typing import Any, Dict
 
-import numpy
+import numpy as np
 import pandas as pd
 from ax import Models
 from ax.modelbridge.generation_strategy import GenerationStrategy, GenerationStep
@@ -21,7 +22,7 @@ comm = MPI.COMM_WORLD
 rank = comm.rank
 is_root = rank == 0
 
-hpoptim_id = int(time.time())
+pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
 def train_evaluate(p: Dict[str, Any], other_args):
@@ -43,11 +44,16 @@ def evaluate(p: Dict[str, Any], other_args) -> Dict:
     gathered_means, gathered_order_means = comm.allgather(process_acc), comm.allgather(order)
 
     if len(gathered_means) > 1:
-        mean, sem = numpy.mean(gathered_means), stats.sem(gathered_means)
-        order_mean, order_sem = numpy.mean(gathered_order_means), stats.sem(gathered_order_means)
+        mean, sem = np.mean(gathered_means), stats.sem(gathered_means)
+        order_mean, order_sem = np.mean(gathered_order_means), stats.sem(gathered_order_means)
     else:
         mean, sem = gathered_means[0], 0.0
         order_mean, order_sem = gathered_order_means[0], 0.0
+
+    mean = mean if not np.isnan(mean) else 0.0
+    sem = sem if not np.isnan(sem) else 0.0
+    order_mean = order_mean if not np.isnan(order_mean) else 0.0
+    order_sem = order_sem if not np.isnan(order_sem) else 0.0
 
     return {"accuracy": (mean, sem), "order": (order_mean, order_sem)}
 
@@ -75,45 +81,48 @@ args.group = None
 args.auto_group = False
 
 # SET UP EXPERIMENT
-ax_client = AxClient(
-    random_seed=111,
-    verbose_logging=False,
-    generation_strategy=GenerationStrategy([
-        GenerationStep(model=Models.SOBOL, num_trials=args.initial, min_trials_observed=3),
-        GenerationStep(model=Models.GPEI, num_trials=-1)],
-        name="Sobol+GPEI"
+if args.load_from is None:
+    hpoptim_id = int(time.time())
+
+    ax_client = AxClient(
+        random_seed=111,
+        verbose_logging=False,
+        generation_strategy=GenerationStrategy([
+            GenerationStep(model=Models.SOBOL, num_trials=args.initial),
+            GenerationStep(model=Models.GPEI, num_trials=-1)],
+            name="Sobol+GPEI"
+        )
     )
-)
 
-ax_client.create_experiment(
-    parameters=[{
-        "type": "range",
-        "value_type": "float",
-        "name": "w1",
-        "bounds": [1.0, 15.0],
-    }, {
-        "type": "range",
-        "value_type": "float",
-        "name": "w2",
-        "bounds": [1.0, 15.0],
-    }, {
-        "name": "r",
-        "value_type": "float",
-        "type": "range",
-        "bounds": [0.0, 2.0],
-    }, {
-        "name": "d",
-        "value_type": "float",
-        "type": "range",
-        "bounds": [0.0, 0.15],
-    },
-    ],
-    minimize=False,
-    objective_name=args.metric
-)
-
-if args.load_from is not None:
-    ax_client.load_from_json_file(args.load_from)
+    ax_client.create_experiment(
+        parameters=[{
+            "type": "range",
+            "value_type": "float",
+            "name": "w1",
+            "bounds": [1.0, 15.0],
+        }, {
+            "type": "range",
+            "value_type": "float",
+            "name": "w2",
+            "bounds": [1.0, 15.0],
+        }, {
+            "name": "r",
+            "value_type": "float",
+            "type": "range",
+            "bounds": [0.0, 2.0],
+        }, {
+            "name": "d",
+            "value_type": "float",
+            "type": "range",
+            "bounds": [0.0, 0.15],
+        },
+        ],
+        minimize=False,
+        objective_name=args.metric
+    )
+else:
+    hpoptim_id = args.load_from[:-5].split("_")[-1]
+    ax_client = AxClient.load_from_json_file(args.load_from)
 
 # SEARCH PHASE
 for i in range(args.iterations):
@@ -132,11 +141,12 @@ for i in range(args.iterations):
     ax_client.complete_trial(trial_index=trial_index, raw_data=evaluate(parameters, other_args=args.__dict__))
 
     # save every iteration
-    ax_client.save_to_json_file(f"experiments/static/hpoptims/{args.network}_{args.metric}_{hpoptim_id}.json")
+
+    ax_client.save_to_json_file(f"experiments/static/hpoptims/{args.network}_{args.metric}_{hpoptim_id}"
+                                f"{'-loaded' if args.load_from is not None else ''}.json")
 
 # FINALIZATION
 if is_root:
-    pd.set_option("display.max_rows", None, "display.max_columns", None)
     print(ax_client.generation_strategy.trials_as_df)
 
     best_parameters, values = ax_client.get_best_parameters()
