@@ -18,7 +18,7 @@ module load daint-gpu
 module load cray-python
 
 # load virtual environment
-source ${HOME}/lcvenv/bin/activate
+source ${HOME}/semlcvenv/bin/activate
 
 # start job
 if test -z "$SCRIPTCOMMAND"

@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
-from ax import Models
+from ax import Models, Objective
 from ax.modelbridge.generation_strategy import GenerationStrategy, GenerationStep
 from ax.plot.render import plot_config_to_html
 from ax.service.ax_client import AxClient
@@ -155,7 +155,7 @@ if is_root:
     print(f"Best score: {means}")
 
     # create an Ax report
-    with open('report.html', 'w') as outfile:
+    with open(f'report_{args.network}.html', 'w') as outfile:
         outfile.write(render_report_elements(
             "example_report",
             html_elements=[

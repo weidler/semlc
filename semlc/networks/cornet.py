@@ -221,6 +221,7 @@ if __name__ == '__main__':
 
     cors = CORnetS(input_shape=in_shape, n_classes=1000)
     cors(torch.rand((10, *in_shape)))
+    torchsummary.summary(cors, in_shape)
 
     corz = CORnetZ(input_shape=in_shape, n_classes=1000, lateral_layer_function=lateral_function)
     corz((torch.rand((10, *in_shape))))
